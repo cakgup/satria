@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <span class="eyebrow">Ticket Detail</span>
+    <h2>Case #{{ ticket.id }}</h2>
+    <p>Monitoring case IRIS untuk {{ ticket_view.remote_name }}</p>
+  </div>
+  <div class="hero-actions">
+    <a class="hero-button" href="/tickets">Kembali ke Tickets</a>
+    {% if iris_login_url %}
+    <a class="hero-button" href="{{ iris_login_url }}" target="_blank" rel="noopener">Buka Login IRIS</a>
+    {% endif %}
+    {% if ticket.finding %}
+    <a class="hero-button subtle" href="/findings/{{ ticket.finding.id }}">Lihat Finding</a>
+    {% endif %}
+    {% if ticket.remote_case_id %}
+    <form method="post" action="/tickets/{{ ticket.id }}/refresh">
+      <button class="hero-button primary" type="submit">Refresh dari IRIS</button>
+    </form>
+    {% else %}
+    <form method="post" action="/tickets/{{ ticket.id }}/sync">
+      <button class="hero-button subtle" type="submit">Publish ke IRIS</button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+
+<section class="panel detail">
+  <div class="panel-head">
+    <div>
+      <span class="section-kicker">IRIS Summary</span>
+      <h3>Ringkasan monitor case</h3>
+    </div>
+  </div>
+  <dl>
+    <dt>Jenis Case</dt><dd>{{ ticket.case_kind }} / {{ ticket.incident_type or '-' }}</dd>
+    <dt>Remote State</dt><dd>{{ ticket_view.remote_state }}</dd>
+    <dt>Priority</dt><dd>{{ ticket.priority }}</dd>
+    <dt>Classification</dt><dd>{{ ticket_view.classification }}</dd>
+    <dt>Customer</dt><dd>{{ ticket_view.customer }}</dd>
+    <dt>SOC ID</dt><dd>{{ ticket_view.soc_id }}</dd>
+    <dt>IRIS Owner</dt><dd>{{ ticket_view.remote_owner }}</dd>
+    <dt>Provider</dt><dd>{{ ticket.provider }}</dd>
+    <dt>Sync Mode</dt><dd>{{ ticket.sync_mode|upper }}</dd>
+    <dt>Last Sync</dt><dd>{{ ticket.last_sync_status }}</dd>
+    <dt>Open Date</dt><dd>{{ ticket_view.remote_open_date }}</dd>
+    <dt>Reporter</dt><dd>{{ ticket.reporter or '-' }}</dd>
+    <dt>Source</dt><dd>{{ ticket.source_channel or '-' }}</dd>
+    <dt>Playbook</dt><dd>{{ ticket.playbook or '-' }}</dd>
+    <dt>Tags</dt><dd>{{ ticket_view.tags|join(', ') if ticket_view.tags else '-' }}</dd>
+    <dt>Asset</dt><dd>{{ ticket.asset.name }} - <code>{{ ticket.asset.target }}</code></dd>
+    <dt>Finding</dt><dd>{% if ticket.finding %}<a href="/findings/{{ ticket.finding.id }}">Finding #{{ ticket.finding.id }}</a> / {{ ticket.finding.title }}{% else %}-{% endif %}</dd>
+    <dt>Remote Case</dt><dd>{{ ticket.remote_case_id or '-' }}</dd>
+    <dt>Remote Alert</dt><dd>{{ ticket.remote_alert_id or '-' }}</dd>
+    <dt>Notes Directory</dt><dd>{{ ticket.remote_notes_directory_id or '-' }}</dd>
+    <dt>Evidence Folder</dt><dd>{{ ticket.remote_evidence_folder_id or '-' }}</dd>
+    <dt>Description</dt><dd><pre>{{ ticket.description or '-' }}</pre></dd>
+    <dt>Resolution Summary</dt><dd>{{ ticket.resolution_summary or '-' }}</dd>
+    <dt>Sync Error</dt><dd>{{ ticket.last_sync_error or '-' }}</dd>
+  </dl>
+</section>
+
+{% if not ticket.remote_case_id %}
+<section class="panel">
+  <div class="panel-head">
+    <div>
+      <span class="section-kicker">Publish Required</span>
+      <h3>Case belum tersedia di IRIS</h3>
+    </div>
+  </div>
+  <p class="empty-note">Case ini masih berupa mirror lokal dan belum memiliki `remote_case_id`. Gunakan tombol `Publish ke IRIS` di atas agar setelah itu SATRIA hanya memantau status remote-nya.</p>
+</section>
+{% endif %}
+
+<section class="panel">
+  <div class="panel-head">
+    <div>
+      <span class="section-kicker">IRIS Tasks</span>
+      <h3>Task dari case remote</h3>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Title</th><th>Role</th><th>Status</th><th>Assignee</th><th>Tags</th><th>Remote Task</th></tr>
+      {% for task in (remote_bundle.tasks if remote_bundle else []) %}
+      <tr>
+        <td>{{ task.task_title }}<br><small>{{ task.task_description or '' }}</small></td>
+        <td>{% if task.task_assignees %}{{ task.task_assignees[0].user }}{% else %}-{% endif %}</td>
+        <td>{{ task.status_name }}</td>
+        <td>{% if task.task_assignees %}{{ task.task_assignees | map(attribute='name') | join(', ') }}{% else %}-{% endif %}</td>
+        <td>{{ task.task_tags or '-' }}</td>
+        <td>{{ task.task_id }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% if not remote_bundle or not remote_bundle.tasks %}
+    <p class="empty-note">Belum ada data task remote yang bisa ditampilkan.</p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-head">
+    <div>
+      <span class="section-kicker">Local Mirror</span>
+      <h3>Timeline monitoring SATRIA</h3>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Waktu</th><th>Actor</th><th>Role</th><th>Type</th><th>Message</th><th>Remote Log</th></tr>
+      {% for activity in ticket.activities %}
+      <tr>
+        <td>{{ activity.created_at.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+        <td>{{ activity.actor }}</td>
+        <td>{{ activity.actor_role or '-' }}</td>
+        <td>{{ activity.activity_type }}</td>
+        <td>{{ activity.message }}</td>
+        <td>{{ activity.remote_note_id or '-' }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% if not ticket.activities %}
+    <p class="empty-note">Belum ada catatan monitoring lokal.</p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-head">
+    <div>
+      <span class="section-kicker">IRIS Evidence</span>
+      <h3>Evidence yang tersedia di case remote</h3>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Filename</th><th>Description</th><th>Source</th><th>Hash</th><th>Remote Evidence</th></tr>
+      {% for evidence in (remote_bundle.evidences if remote_bundle else []) %}
+      <tr>
+        <td>{{ evidence.filename }}</td>
+        <td>{{ evidence.file_description or '-' }}</td>
+        <td>{{ evidence.user.user_name if evidence.user else '-' }}</td>
+        <td>{{ evidence.file_hash or '-' }}</td>
+        <td>{{ evidence.id }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% if not remote_bundle or not remote_bundle.evidences %}
+    <p class="empty-note">Belum ada evidence remote yang bisa ditampilkan.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

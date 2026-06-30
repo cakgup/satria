@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .active-filters-panel {
+    margin-bottom: 16px;
+    padding: 16px 20px;
+  }
+
+  .active-filters-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .active-filters-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .active-filters-title strong {
+    color: var(--text);
+  }
+
+  .active-filters-list {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 999px;
+    background: rgba(221, 231, 242, 0.52);
+    border: 1px solid rgba(20, 57, 98, 0.1);
+    color: var(--text);
+    box-shadow: 0 10px 24px rgba(20, 57, 98, 0.06);
+  }
+
+  .filter-chip span {
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .filter-chip b {
+    font-size: 0.92rem;
+  }
+
+  .filter-bar {
+    padding: 18px 22px 14px;
+  }
+
+  .filter-form {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(180px, 1fr));
+    gap: 16px;
+    align-items: end;
+  }
+
+  .filter-form label {
+    min-width: 0;
+  }
+
+  .filter-form select {
+    min-height: 54px;
+    font-weight: 700;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  }
+
+  .filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    grid-column: 1 / -1;
+    min-height: auto;
+    padding-top: 4px;
+    flex-wrap: wrap;
+  }
+
+  .filter-auto-note {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .reset-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: auto;
+  }
+
+  .table-wrap table td:nth-child(4),
+  .table-wrap table td:nth-child(7),
+  .table-wrap table td:nth-child(10) {
+    white-space: nowrap;
+  }
+
+  .table-wrap table td:nth-child(7) {
+    min-width: 320px;
+    white-space: normal;
+  }
+
+  @media (max-width: 1180px) {
+    .filter-form {
+      grid-template-columns: repeat(2, minmax(220px, 1fr));
+    }
+
+    .filter-actions {
+      padding-top: 2px;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .active-filters-head {
+      align-items: flex-start;
+    }
+
+    .filter-form {
+      grid-template-columns: 1fr;
+    }
+
+    .filter-actions {
+      min-height: auto;
+    }
+
+    .reset-link {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
+<section class="hero">
+  <div class="hero-copy">
+    <span class="eyebrow">Step 4</span>
+    <h2>Tindak lanjuti findings dari yang paling berisiko.</h2>
+    <p>Untuk mempermudah operasi harian, halaman ini dipusatkan pada prioritas, filter, dan akses cepat ke detail finding. Fokus awal biasanya Critical dan High yang masih Open.</p>
+  </div>
+  <div class="hero-actions">
+    <a class="hero-button primary" href="/findings?severity=Critical">Critical</a>
+    <a class="hero-button" href="/findings?severity=High">High</a>
+    <a class="hero-button subtle" href="/vulnerability-summary">Bulk IRIS & Reports</a>
+  </div>
+</section>
+
+{% if active_filters %}
+<section class="panel active-filters-panel">
+  <div class="active-filters-head">
+    <div class="active-filters-title">
+      <span class="section-kicker">Context</span>
+      <strong>Filter aktif</strong>
+    </div>
+    <a class="text-link" href="/findings">Bersihkan semua filter</a>
+  </div>
+  <div class="active-filters-list">
+    {% for item in active_filters %}
+    <div class="filter-chip"><span>{{ item.label }}</span><b>{{ item.value }}</b></div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="filter-bar panel">
+  <form method="get" action="/findings" class="filter-form js-auto-filter-form">
+    <label>Severity
+      <select name="severity">
+        <option value="">Semua severity</option>
+        {% for sev in ['Critical','High','Medium','Low','Informational'] %}
+        <option value="{{ sev }}" {% if severity_filter == sev %}selected{% endif %}>{{ sev }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Aset
+      <select name="asset_id">
+        <option value="">Semua aset</option>
+        {% for asset in assets %}
+        <option value="{{ asset.id }}" {% if asset_filter == asset.id %}selected{% endif %}>{{ asset.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Status
+      <select name="status">
+        <option value="">Semua status</option>
+        {% for item in ['Open','Assigned','In Progress','Remediated','Retest','Closed','False Positive','Accepted Risk'] %}
+        <option value="{{ item }}" {% if status_filter == item %}selected{% endif %}>{{ item }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Scanner
+      <select name="scanner">
+        <option value="">Semua scanner</option>
+        {% for item in scanners %}
+        <option value="{{ item }}" {% if scanner_filter == item %}selected{% endif %}>{{ item|upper }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <div class="filter-actions">
+      <span class="filter-auto-note">Filter berjalan otomatis saat pilihan diubah.</span>
+      <a class="text-link reset-link" href="/findings">Reset</a>
+    </div>
+  </form>
+</section>
+
+<section class="cards compact-cards">
+  <div class="card"><span class="label">Open Findings</span><strong>{{ summary.open_findings }}</strong></div>
+  <div class="card"><span class="label">Critical + High</span><strong>{{ summary.critical_high }}</strong></div>
+  <div class="card"><span class="label">Total Findings</span><strong>{{ summary.findings }}</strong></div>
+  <div class="card"><span class="label">Assets Terdampak</span><strong>{{ summary.assets }}</strong></div>
+</section>
+
+<section class="panel">
+  <div class="panel-head">
+    <div>
+      <span class="section-kicker">Prioritized Queue</span>
+      <h3>Daftar findings</h3>
+    </div>
+    <span class="helper-copy">Klik nomor finding untuk melihat evidence, rekomendasi, dan aksi lanjutan.{% if scan_job_filter %} Saat ini daftar difilter dari scan #{{ scan_job_filter }}.{% endif %}{% if scanner_filter %} Filter scanner aktif: {{ scanner_filter|upper }}.{% endif %}</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <tr><th>No.</th><th>Risk</th><th>Severity</th><th>Asset</th><th>Scanner</th><th>Type</th><th>Title</th><th>CVE/CWE</th><th>Status</th><th>Ticket</th></tr>
+      {% for f in findings %}
+      <tr>
+        <td><a href="/findings/{{ f.id }}">{{ loop.index }}</a></td>
+        <td><strong>{{ f.risk_score }}</strong></td>
+        <td><span class="sev {{ f.severity_normalized|lower }}">{{ f.severity_normalized }}</span></td>
+        <td>{{ f.asset.name }}</td>
+        <td>{{ f.scanner }}</td>
+        <td>{{ f.finding_type }}</td>
+        <td>{{ f.title }}</td>
+        <td>{{ f.cve or f.cwe or '-' }}</td>
+        <td>{{ f.status }}</td>
+        <td>{% if f.ticket_case %}<a href="/tickets/{{ f.ticket_case.id }}">Case #{{ f.ticket_case.id }}</a>{% else %}-{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% if not findings %}
+    <p class="empty-note">Belum ada finding yang cocok dengan filter yang dipilih.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

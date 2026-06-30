@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login | SATRIA</title>
+  <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="/static/login.css">
+</head>
+<body class="login-page">
+  <div class="login-shell">
+    <div class="login-wrapper">
+      <section class="login-left">
+        <div class="login-left-inner">
+          <div class="login-brand-mark">IR</div>
+          <div class="login-brand-logo">
+            <img src="/static/iris-logo-white.png" alt="IRIS style logo">
+          </div>
+          <div class="login-brand-copy">
+            <span class="login-eyebrow">DFIR Workspace</span>
+            <h1 class="login-headline">SATRIA</h1>
+            <p class="login-description">
+              Security Assessment, Tracking, Remediation, and Incident Automation in one secure operational workspace.
+            </p>
+          </div>
+        </div>
+      </section>
+      <section class="login-right">
+        <div class="login-card">
+          <div class="login-card-head">
+            <span class="login-eyebrow login-eyebrow-muted">Welcome back</span>
+            <h2 class="login-form-title">Sign In</h2>
+            <p class="login-form-subtitle">
+              Untuk sementara akses manajemen dibuat sesederhana mungkin. Cukup klik tombol masuk untuk melanjutkan ke dashboard SATRIA.
+            </p>
+          </div>
+
+          {% if error %}
+          <div class="login-alert">{{ error }}</div>
+          {% endif %}
+
+          <form method="post" action="/login" class="login-form" novalidate>
+            <input type="hidden" name="next_url" value="{{ next_url }}">
+            <input type="hidden" name="username" value="top-management">
+
+            <div class="login-hint login-hint-banner">
+              Akses sementara tanpa username dan password untuk kebutuhan presentasi dan akses cepat top management.
+            </div>
+
+            <div class="login-actions">
+              <button type="submit" class="login-submit">Masuk ke SATRIA</button>
+            </div>
+          </form>
+
+          <div class="login-contact">
+            <span>Need access or assistance?</span><br>
+            Hubungi administrator SATRIA atau tim SOC platform.
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</body>
+</html>

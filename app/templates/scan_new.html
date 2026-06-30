@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <span class="eyebrow">Step 3</span>
+    <h2>Buat scan job dari asset yang sudah terdaftar.</h2>
+    <p>Pengguna biasanya memilih target lebih dulu, lalu baru menentukan profile. Karena itu form ini sengaja dibuat singkat dan fokus pada dua keputusan utama tersebut.</p>
+  </div>
+  <div class="hero-actions">
+    <a class="hero-button" href="/assets">Kelola Asset</a>
+    <a class="hero-button subtle" href="/scans">Lihat riwayat scan</a>
+  </div>
+</section>
+<section class="panel">
+    <div class="panel-head">
+      <div>
+        <span class="section-kicker">Create Scan Job</span>
+        <h3>Jalankan scan baru</h3>
+        <p class="helper-copy">Form ini hanya menyisakan keputusan yang benar-benar penting agar operator tidak sibuk dengan opsi yang jarang dipakai.</p>
+      </div>
+    </div>
+  <div class="helper-stack">
+    <p class="empty-note">Urutan yang disarankan: pilih asset, pilih profile, lalu pastikan target termasuk allowlist operasional.</p>
+    <p class="empty-note">`web_baseline` dan `web_full` membutuhkan URL `http/https`. Untuk kebutuhan web, SATRIA saat ini difokuskan ke jalur OWASP ZAP yang sudah operasional.</p>
+    <p class="empty-note">`infra_va` digunakan untuk host/IP yang dipindai lewat Greenbone/OpenVAS dan memerlukan koneksi SATRIA ke `gvmd`.</p>
+  </div>
+  {% if not assets %}
+  <p class="empty-note">Belum ada asset aktif. Tambahkan asset lebih dulu agar scan job bisa dibuat.</p>
+  <a class="hero-button primary" href="/assets">Tambah Asset</a>
+  {% else %}
+  <form method="post" action="/scan" class="form-grid">
+    <label class="field field-wide">
+      <span>Asset</span>
+      <select name="asset_id" required>
+        {% for a in assets %}
+        <option value="{{ a.id }}" {% if selected_asset_id == a.id %}selected{% endif %}>{{ a.name }} - {{ a.asset_type }} - {{ a.target }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="field">
+      <span>Scan Profile</span>
+      <select name="profile">
+        <option value="quick_container">Quick container - Trivy</option>
+        <option value="sbom_scan">SBOM scan - Syft + Grype</option>
+        <option value="full_container">Full container - Trivy + Syft + Grype</option>
+        <option value="repo_security">Repository security - Trivy + Syft</option>
+        <option value="web_baseline">Web baseline - OWASP ZAP baseline</option>
+        <option value="web_full">Web full - OWASP ZAP active scan</option>
+        <option value="infra_va">Infrastructure VA - Greenbone/OpenVAS</option>
+        <option value="retest">Retest - default retest</option>
+      </select>
+    </label>
+    <div class="form-actions">
+      <button type="submit">Jalankan Scan</button>
+    </div>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,91 @@
+services:
+  satria-db:
+    image: postgres:16-alpine
+    container_name: satria-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-satria}
+      POSTGRES_USER: ${POSTGRES_USER:-satria}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-satria_password}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-satria} -d ${POSTGRES_DB:-satria}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - satria_db_data:/var/lib/postgresql/data
+    networks:
+      - satria-net
+
+  satria-redis:
+    image: redis:7-alpine
+    container_name: satria-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - satria_redis_data:/data
+    networks:
+      - satria-net
+
+  satria-backend:
+    build: .
+    container_name: satria-backend
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+    env_file:
+      - .env
+    ports:
+      - "${BACKEND_PUBLIC_PORT:-8090}:8080"
+    volumes:
+      - satria_reports:/data/reports
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      satria-db:
+        condition: service_healthy
+      satria-redis:
+        condition: service_started
+    networks:
+      - satria-net
+
+  satria-worker:
+    build: .
+    container_name: satria-worker
+    command: ["celery", "-A", "app.tasks.celery_app", "worker", "--loglevel=INFO", "--concurrency=2"]
+    env_file:
+      - .env
+    volumes:
+      - satria_reports:/data/reports
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      satria-db:
+        condition: service_healthy
+      satria-redis:
+        condition: service_started
+    networks:
+      - satria-net
+
+  # Optional: ZAP daemon/container untuk pengembangan DAST manual.
+  # Worker SATRIA tetap bisa menjalankan mode sample bila ZAP CLI belum tersedia.
+  zap:
+    image: ghcr.io/zaproxy/zaproxy:stable
+    container_name: satria-zap
+    user: "0:0"
+    command: ["sleep", "infinity"]
+    profiles: ["scanner"]
+    volumes:
+      - satria_reports:/zap/wrk
+    networks:
+      - satria-net
+
+  # Optional placeholder untuk DFIR-IRIS.
+  # Untuk DFIR-IRIS production, gunakan compose resmi di infra/dfir-iris/README.md.
+  # SATRIA dapat dihubungkan ke IRIS melalui IRIS_URL dan IRIS_API_KEY pada .env.
+
+  # Optional placeholder untuk Greenbone/OpenVAS.
+  # Untuk OpenVAS production, gunakan Greenbone Community Containers dan hubungkan melalui GREENBONE_* env.
+
+volumes:
+  satria_db_data:
+  satria_redis_data:
+  satria_reports:
+
+networks:
+  satria-net:
+    name: satria-net

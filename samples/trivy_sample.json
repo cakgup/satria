@@ -1,0 +1,21 @@
+{
+  "SchemaVersion": 2,
+  "ArtifactName": "nginx:latest",
+  "Results": [
+    {
+      "Target": "nginx:latest",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2024-DEMO-0001",
+          "PkgName": "openssl",
+          "InstalledVersion": "1.1.1-demo",
+          "FixedVersion": "1.1.1z-demo",
+          "Severity": "CRITICAL",
+          "Title": "Demo vulnerable OpenSSL package",
+          "Description": "Example Trivy finding",
+          "CVSS": {"nvd": {"V3Score": 9.8}}
+        }
+      ]
+    }
+  ]
+}

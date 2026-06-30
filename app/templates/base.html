@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}SATRIA{% endblock %}</title>
+  <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="page-shell">
+  <header class="topbar">
+    <div class="brand-block">
+      <img class="brand-logo" src="/static/logo.png" alt="Logo SATRIA">
+      <div>
+        <h1>SATRIA</h1>
+        <p>Security Assessment, Tracking, Remediation, and Incident Automation</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <nav class="nav-links nav-primary">
+        <a href="/" class="{% if request.url.path == '/' %}active{% endif %}">Overview</a>
+        <a href="/assets" class="{% if request.url.path.startswith('/assets') %}active{% endif %}">Assets</a>
+        <a href="/scans" class="{% if request.url.path.startswith('/scans') %}active{% endif %}">Scans</a>
+        <a href="/findings" class="{% if request.url.path.startswith('/findings') %}active{% endif %}">Findings</a>
+        <a href="/tickets" class="{% if request.url.path.startswith('/tickets') or request.url.path.startswith('/soc-sop') %}active{% endif %}">Tickets</a>
+        <a href="/vulnerability-summary" class="{% if request.url.path.startswith('/vulnerability-summary') %}active{% endif %}">Reports</a>
+      </nav>
+      <nav class="nav-links nav-secondary">
+        <a href="/docs" target="_blank" rel="noreferrer">API Docs</a>
+        {% if request.state.current_user %}
+        <form method="post" action="/logout" class="nav-logout-form">
+          <button type="submit" class="nav-logout-button">Logout</button>
+        </form>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  <footer>
+    <span>MVP SATRIA - Docker Compose environment - Trivy/Syft/Grype/ZAP/DFIR-IRIS ready</span>
+  </footer>
+</div>
+<script>
+  (() => {
+    const forms = document.querySelectorAll(".js-auto-filter-form");
+    if (!forms.length) return;
+
+    forms.forEach((form) => {
+      let timer = null;
+      let navigating = false;
+
+      const navigateWithFilters = () => {
+        if (navigating) return;
+
+        const method = (form.getAttribute("method") || "get").toLowerCase();
+        if (method !== "get") {
+          form.requestSubmit();
+          return;
+        }
+
+        const action = form.getAttribute("action") || window.location.pathname;
+        const url = new URL(action, window.location.origin);
+        const params = new URLSearchParams();
+        const formData = new FormData(form);
+
+        for (const [key, value] of formData.entries()) {
+          const normalized = String(value ?? "").trim();
+          if (!normalized) continue;
+          params.set(key, normalized);
+        }
+
+        const target = params.toString() ? `${url.pathname}?${params.toString()}` : url.pathname;
+        const current = `${window.location.pathname}${window.location.search}`;
+        if (target === current) return;
+
+        navigating = true;
+        form.classList.add("is-filter-loading");
+        form.querySelectorAll("select, input").forEach((field) => {
+          field.setAttribute("aria-busy", "true");
+        });
+        window.location.assign(target);
+      };
+
+      form.querySelectorAll("select").forEach((field) => {
+        field.addEventListener("change", () => {
+          window.clearTimeout(timer);
+          timer = window.setTimeout(navigateWithFilters, 80);
+        });
+      });
+
+      form.querySelectorAll('input[type="text"], input[type="search"], input[type="number"], input:not([type])').forEach((field) => {
+        field.addEventListener("input", () => {
+          window.clearTimeout(timer);
+          timer = window.setTimeout(navigateWithFilters, 350);
+        });
+      });
+    });
+  })();
+</script>
+</body>
+</html>

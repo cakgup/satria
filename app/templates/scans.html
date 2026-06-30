@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .asset-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .asset-actions form {
+    margin: 0;
+  }
+
+  .table-action.table-action-danger {
+    background: linear-gradient(180deg, #f7d9d3, #ecb7ab);
+    color: #8f3d2c;
+    box-shadow: none;
+  }
+
+  .table-action.table-action-danger:hover {
+    background: linear-gradient(180deg, #efc5bc, #e29e8f);
+    color: #7d3425;
+    box-shadow: 0 14px 26px rgba(180, 98, 74, 0.18);
+  }
+
+  .scan-link {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .scan-link:hover {
+    color: var(--primary-strong);
+  }
+
+  .delete-action {
+    min-height: 42px;
+    padding: 9px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(20, 57, 98, 0.08);
+    background: rgba(255, 255, 255, 0.8);
+    color: #8f3d2c;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 12px 24px rgba(20, 57, 98, 0.08);
+    font-weight: 800;
+  }
+
+  .delete-action:hover {
+    transform: translateY(-1px);
+    background: linear-gradient(180deg, #f7d9d3, #ecb7ab);
+    border-color: rgba(143, 61, 44, 0.16);
+    box-shadow: 0 16px 28px rgba(180, 98, 74, 0.18);
+  }
+
+  .message-cell {
+    min-width: 260px;
+  }
+
+  .message-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .message-summary {
+    display: inline-flex;
+    max-width: 100%;
+    color: var(--text);
+    line-height: 1.45;
+    word-break: break-word;
+  }
+
+  .delete-dialog {
+    width: min(560px, calc(100vw - 32px));
+    border: 0;
+    border-radius: 26px;
+    padding: 0;
+    background: transparent;
+  }
+
+  .delete-dialog::backdrop {
+    background: rgba(15, 23, 42, 0.42);
+    backdrop-filter: blur(4px);
+  }
+
+  .delete-dialog-card {
+    border: 1px solid rgba(20, 57, 98, 0.12);
+    border-radius: 26px;
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 30px 70px rgba(22, 48, 76, 0.2);
+    padding: 24px;
+  }
+
+  .delete-dialog-card h3 {
+    margin: 0;
+  }
+
+  .delete-dialog-card p {
+    margin: 10px 0 0;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+
+  .delete-dialog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .delete-dialog-actions form,
+  .delete-dialog-actions button {
+    margin: 0;
+  }
+
+  .delete-dialog-actions form {
+    flex: 1 1 220px;
+  }
+
+  .delete-dialog-actions .hero-button,
+  .delete-dialog-actions .table-action,
+  .delete-dialog-actions .dialog-cancel {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .dialog-cancel {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 11px 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(20, 57, 98, 0.1);
+    background: rgba(221, 231, 242, 0.42);
+    color: var(--text);
+    font-weight: 800;
+  }
+
+  .dialog-cancel:hover {
+    transform: translateY(-1px);
+  }
+
+  .delete-dialog-note {
+    margin-top: 12px;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+
+  .delete-dialog-warning {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(191, 75, 75, 0.18);
+    background: linear-gradient(135deg, rgba(255, 242, 242, 0.98), rgba(254, 230, 230, 0.92));
+    color: #9b2c2c;
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+
+  .delete-dialog-warning strong {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+</style>
+<section class="hero">
+  <div class="hero-copy">
+    <span class="eyebrow">Step 3</span>
+    <h2>Pantau scan yang benar-benar relevan untuk operasi SOC.</h2>
+    <p>Riwayat ini difokuskan untuk job yang masih aktif atau masih perlu ditindaklanjuti. Job lama, simulasi, dan kegagalan validasi bisa dikeluarkan dari antrean operasional.</p>
+  </div>
+  <div class="hero-actions">
+    <a class="hero-button primary" href="/scan/new">Jalankan Scan Baru</a>
+    <a class="hero-button" href="/findings">Buka Findings</a>
+    <form method="post" action="/scans/archive-operational">
+      <button class="hero-button subtle" type="submit">Bersihkan Non-Operasional</button>
+    </form>
+  </div>
+</section>
+
+<section class="cards compact-cards">
+  <div class="card"><span class="label">Total Scan</span><strong>{{ summary.scans }}</strong></div>
+  <div class="card"><span class="label">Completed</span><strong>{{ summary.completed_scans }}</strong></div>
+  <div class="card"><span class="label">Failed</span><strong>{{ summary.failed_scans }}</strong></div>
+  <div class="card"><span class="label">Open Findings</span><strong>{{ summary.open_findings }}</strong></div>
+</section>
+
+<section class="filter-bar panel">
+  <form method="get" action="/scans" class="filter-form js-auto-filter-form">
+    <label>Status
+      <select name="status">
+        <option value="">Semua status</option>
+        {% for item in ['queued', 'running', 'completed', 'failed'] %}
+        <option value="{{ item }}" {% if status_filter == item %}selected{% endif %}>{{ item }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Profile
+      <select name="profile">
+        <option value="">Semua profile</option>
+        {% for item in profiles %}
+        <option value="{{ item }}" {% if profile_filter == item %}selected{% endif %}>{{ item }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <div class="filter-actions">
+      <span class="helper-copy">Filter berjalan otomatis saat pilihan diubah.</span>
+      <a class="text-link reset-link" href="/scans">Reset</a>
+    </div>
+  </form>
+</section>
+
+<section class="panel">
+  <div class="panel-head">
+    <div>
+      <span class="section-kicker">Execution History</span>
+      <h3>Riwayat scan</h3>
+    </div>
+    <span class="helper-copy">Status menunjukkan hasil job. Gunakan tombol hasil scan untuk langsung membuka findings dari job yang dipilih.</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <tr><th>No.</th><th>Asset</th><th>Profile</th><th>Scanner</th><th>Status</th><th>Mode</th><th>Report</th><th>Message</th><th>Created</th><th>Action</th></tr>
+      {% for s in scans %}
+      <tr>
+        <td><a class="scan-link" href="/scans/{{ s.id }}">{{ loop.index }}</a></td>
+        <td><a class="scan-link" href="/scans/{{ s.id }}">{{ s.asset_name }}</a></td>
+        <td><a class="scan-link" href="/scans/{{ s.id }}">{{ s.profile }}</a></td>
+        <td><a class="scan-link" href="/scans/{{ s.id }}">{{ s.scanner }}</a></td>
+        <td><a class="scan-link" href="/scans/{{ s.id }}"><span class="status">{{ s.status }}</span></a></td>
+        <td><a class="scan-link" href="/scans/{{ s.id }}"><span class="status {{ s.mode_class }}">{{ s.mode_label }}</span></a></td>
+        <td><a class="scan-link" href="/scans/{{ s.id }}"><code>{{ s.report_path }}</code></a></td>
+        <td class="message-cell">
+          <div class="message-stack">
+            <a class="scan-link message-summary" href="/scans/{{ s.id }}"><small>{{ s.message_summary }}</small></a>
+            <a class="table-action" href="/findings?scan_job_id={{ s.id }}">Hasil scan{% if s.findings_count %} ({{ s.findings_count }}){% endif %}</a>
+          </div>
+        </td>
+        <td><a class="scan-link" href="/scans/{{ s.id }}">{{ s.created_at }}</a></td>
+        <td>
+          <div class="asset-actions">
+            {% if s.can_retry %}
+            <form method="post" action="/scans/{{ s.id }}/rerun">
+              <input type="hidden" name="next_url" value="/scans">
+              <button class="table-action" type="submit">Ulang</button>
+            </form>
+            {% endif %}
+            {% if s.can_delete %}
+            <button
+              class="delete-action js-delete-trigger"
+              type="button"
+              title="Hapus scan dan seluruh data turunannya"
+              data-scan-label="{{ s.asset_name }} / {{ s.profile }}"
+              data-delete-url="/scans/{{ s.id }}/delete"
+              data-delete-iris-url="/scans/{{ s.id }}/delete-with-iris"
+              data-next-url="/scans"
+              data-failure-url="/scans/{{ s.id }}"
+              data-has-remote-cleanup="{{ 'true' if s.has_remote_cleanup else 'false' }}"
+            >Hapus</button>
+            {% else %}
+            <span class="helper-copy">Running</span>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</section>
+
+<dialog class="delete-dialog" id="scan-delete-dialog">
+  <div class="delete-dialog-card">
+    <span class="section-kicker">Konfirmasi Hapus</span>
+    <h3 id="scan-delete-title">Hapus scan ini?</h3>
+    <p id="scan-delete-description">Pilih apakah penghapusan dilakukan di SATRIA saja, atau sekalian membersihkan case remote di IRIS bila tersedia.</p>
+    <div class="delete-dialog-actions">
+      <form id="scan-delete-local-form" method="post" action="/scans/0/delete">
+        <input type="hidden" name="next_url" value="/scans">
+        <button class="hero-button subtle" type="submit">Hapus di SATRIA saja</button>
+      </form>
+      <form id="scan-delete-iris-form" method="post" action="/scans/0/delete-with-iris">
+        <input type="hidden" name="next_url" value="/scans">
+        <input type="hidden" name="failure_url" value="/scans">
+        <button class="hero-button primary" type="submit">Hapus di SATRIA + IRIS</button>
+      </form>
+      <button class="dialog-cancel" type="button" id="scan-delete-cancel">Batal</button>
+    </div>
+    <div class="delete-dialog-warning" id="scan-delete-warning" hidden>
+      <strong>Peringatan</strong>
+      IRIS akan ikut dibersihkan bila Anda memilih opsi kedua, supaya operator makin yakin sebelum menekan tombol.
+    </div>
+    <p class="delete-dialog-note" id="scan-delete-note">Data lokal scan, findings, dan ticket turunan di SATRIA akan dihapus permanen.</p>
+  </div>
+</dialog>
+
+<script>
+  (() => {
+    const dialog = document.getElementById("scan-delete-dialog");
+    if (!dialog) return;
+
+    const title = document.getElementById("scan-delete-title");
+    const description = document.getElementById("scan-delete-description");
+    const note = document.getElementById("scan-delete-note");
+    const warning = document.getElementById("scan-delete-warning");
+    const localForm = document.getElementById("scan-delete-local-form");
+    const remoteForm = document.getElementById("scan-delete-iris-form");
+    const cancelBtn = document.getElementById("scan-delete-cancel");
+
+    const openDialog = (button) => {
+      const label = button.dataset.scanLabel || "scan ini";
+      const deleteUrl = button.dataset.deleteUrl;
+      const deleteIrisUrl = button.dataset.deleteIrisUrl;
+      const nextUrl = button.dataset.nextUrl || "/scans";
+      const failureUrl = button.dataset.failureUrl || nextUrl;
+      const hasRemoteCleanup = button.dataset.hasRemoteCleanup === "true";
+
+      title.textContent = `Hapus ${label}?`;
+      description.textContent = hasRemoteCleanup
+        ? "Anda bisa menghapus data scan di SATRIA saja, atau sekalian meminta cleanup case remote di IRIS."
+        : "Scan ini tidak memiliki sinkronisasi IRIS yang perlu dibersihkan, jadi penghapusan akan dilakukan di SATRIA saja.";
+      note.textContent = hasRemoteCleanup
+        ? "Jika memilih SATRIA + IRIS, sistem akan mencoba menghapus case remote lebih dulu sebelum menghapus data lokal."
+        : "Data lokal scan, findings, dan ticket turunan di SATRIA akan dihapus permanen.";
+
+      localForm.action = deleteUrl;
+      localForm.querySelector('input[name=\"next_url\"]').value = nextUrl;
+
+      remoteForm.action = deleteIrisUrl;
+      remoteForm.querySelector('input[name=\"next_url\"]').value = nextUrl;
+      remoteForm.querySelector('input[name=\"failure_url\"]').value = failureUrl;
+      remoteForm.hidden = !hasRemoteCleanup;
+      warning.hidden = !hasRemoteCleanup;
+
+      dialog.showModal();
+    };
+
+    document.querySelectorAll(".js-delete-trigger").forEach((button) => {
+      button.addEventListener("click", () => openDialog(button));
+    });
+
+    cancelBtn.addEventListener("click", () => dialog.close());
+    dialog.addEventListener("click", (event) => {
+      const rect = dialog.getBoundingClientRect();
+      const inside =
+        rect.top <= event.clientY &&
+        event.clientY <= rect.top + rect.height &&
+        rect.left <= event.clientX &&
+        event.clientX <= rect.left + rect.width;
+      if (!inside) dialog.close();
+    });
+  })();
+</script>
+{% endblock %}

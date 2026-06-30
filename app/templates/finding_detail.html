@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <span class="eyebrow">Finding Detail</span>
+    <h2>Finding #{{ finding.id }}</h2>
+    <p>{{ finding.title }}</p>
+  </div>
+  <div class="hero-actions">
+    <a class="hero-button" href="/findings">Kembali ke Findings</a>
+    <a class="hero-button subtle" href="/vulnerability-summary">Bulk Actions</a>
+  </div>
+</section>
+<section class="panel detail">
+  <div class="panel-head">
+    <div>
+      <span class="section-kicker">Context</span>
+      <h3>Detail temuan dan aksi</h3>
+    </div>
+  </div>
+  <dl>
+    <dt>Asset</dt><dd>{{ finding.asset.name }} - <code>{{ finding.asset.target }}</code></dd>
+    <dt>Scanner</dt><dd>{{ finding.scanner }}</dd>
+    <dt>Type</dt><dd>{{ finding.finding_type }}</dd>
+    <dt>Severity</dt><dd><span class="sev {{ finding.severity_normalized|lower }}">{{ finding.severity_normalized }}</span></dd>
+    <dt>Risk Score</dt><dd>{{ finding.risk_score }}</dd>
+    <dt>CVE/CWE</dt><dd>{{ finding.cve or finding.cwe or '-' }}</dd>
+    <dt>Package</dt><dd>{{ finding.package_name or '-' }} {{ finding.installed_version or '' }}</dd>
+    <dt>Fixed Version</dt><dd>{{ finding.fixed_version or '-' }}</dd>
+    <dt>Affected Component</dt><dd><code>{{ finding.affected_component or '-' }}</code></dd>
+    <dt>Evidence</dt><dd><pre>{{ finding.evidence or '-' }}</pre></dd>
+    <dt>Description</dt><dd>{{ finding.description or '-' }}</dd>
+    <dt>Recommendation</dt><dd>{{ finding.recommendation or '-' }}</dd>
+    <dt>Status</dt><dd>{{ finding.status }}</dd>
+    <dt>Ticketing</dt>
+    <dd>
+      {% if finding.ticket_case %}
+      <a href="/tickets/{{ finding.ticket_case.id }}">Case #{{ finding.ticket_case.id }}</a>
+      / {{ finding.ticket_case.sync_mode|upper }}
+      / {{ finding.ticket_case.last_sync_status }}
+      {% else %}
+      Belum dibuat
+      {% endif %}
+    </dd>
+    <dt>Remote Case/Alert</dt>
+    <dd>
+      {% if finding.ticket_case %}
+      {{ finding.ticket_case.remote_case_id or '-' }} / {{ finding.ticket_case.remote_alert_id or '-' }}
+      {% else %}
+      {{ finding.iris_alert_id or '-' }}
+      {% endif %}
+    </dd>
+  </dl>
+  <div class="actions">
+    <form method="post" action="/findings/{{ finding.id }}/status">
+      <select name="status">
+        <option>Open</option><option>Assigned</option><option>In Progress</option><option>Remediated</option><option>Retest</option><option>Closed</option><option>False Positive</option><option>Accepted Risk</option>
+      </select>
+      <button type="submit">Update Status</button>
+    </form>
+    <form method="post" action="/findings/{{ finding.id }}/send-to-iris">
+      <button type="submit">{% if finding.ticket_case %}Refresh Ticket{% else %}Create Ticket{% endif %}</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

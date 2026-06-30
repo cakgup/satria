@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .asset-sop-nav {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+
+  .asset-sop-nav a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 10px 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(20, 57, 98, 0.08);
+    background: rgba(255, 255, 255, 0.76);
+    color: var(--primary-strong);
+    font-weight: 800;
+    text-decoration: none;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .asset-sop-nav a.active {
+    background: linear-gradient(180deg, #6f98dc, #4d73bc);
+    color: #fff;
+    border-color: transparent;
+  }
+
+  .asset-sop-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
+    gap: 18px;
+  }
+
+  .asset-sop-cards {
+    display: grid;
+    gap: 14px;
+    align-content: start;
+  }
+
+  .asset-sop-cards .card {
+    min-height: 0;
+  }
+
+  .asset-sop-cards .card strong {
+    font-size: 1.2rem;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+
+  .asset-sop-list {
+    margin: 0;
+    padding-left: 22px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .asset-sop-list li + li {
+    margin-top: 6px;
+  }
+
+  .asset-sop-back {
+    margin-top: 6px;
+  }
+
+  @media (max-width: 980px) {
+    .asset-sop-top {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<section class="hero">
+  <div class="hero-copy">
+    <span class="eyebrow">Asset SOP</span>
+    <h2>{{ selected_guide.hero }}</h2>
+    <p>{{ selected_guide.summary }}</p>
+    <div class="asset-sop-nav">
+      {% for item in asset_type_order %}
+      {% set meta = asset_type_meta[item] %}
+      <a href="/asset-sop?asset_type={{ item }}" class="{% if selected_asset_type == item %}active{% endif %}">{{ meta.label }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="hero-actions">
+    <a class="hero-button primary" href="/assets">Kembali ke Assets</a>
+    <a class="hero-button" href="/scan/new">Lanjut ke Scan</a>
+  </div>
+</section>
+
+<section class="asset-sop-top">
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <span class="section-kicker">Panduan</span>
+        <h3>Ringkasan operasional</h3>
+      </div>
+    </div>
+    <p class="helper-copy">Halaman ini merangkum cara pendaftaran aset, bentuk target yang benar, dan konteks pemindaian agar operator menggunakan mode yang tepat sejak awal.</p>
+    <div class="asset-sop-back">
+      <a class="text-link" href="/assets">Buka form Assets</a>
+    </div>
+  </section>
+
+  <section class="asset-sop-cards">
+    {% for item in selected_guide.cards %}
+    <div class="card">
+      <span class="label">{{ item.title }}</span>
+      <strong>{{ item.value }}</strong>
+      <small>{{ item.caption }}</small>
+    </div>
+    {% endfor %}
+  </section>
+</section>
+
+{% for section in selected_guide.sections %}
+<section class="panel">
+  <div class="panel-head">
+    <div>
+      <span class="section-kicker">Section {{ loop.index }}</span>
+      <h3>{{ section["title"] }}</h3>
+    </div>
+  </div>
+  <ol class="asset-sop-list">
+    {% for item in section["items"] %}
+    <li>{{ item }}</li>
+    {% endfor %}
+  </ol>
+</section>
+{% endfor %}
+{% endblock %}

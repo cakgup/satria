@@ -1,0 +1,14 @@
+.env
+.venv/
+.tmp_gvm/
+__pycache__/
+*.pyc
+
+migration-artifacts/
+migration_artifacts/
+tmp-reports/
+tmp-reports-core/
+tmp-smoke.db
+tmp-smoke-core.db
+
+infra/dfir-iris/iris-web-upstream/

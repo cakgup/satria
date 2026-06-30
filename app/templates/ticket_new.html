@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <span class="eyebrow">Manual Ticket</span>
+    <h2>Buat case manual untuk insiden operasional SOC.</h2>
+    <p>Gunakan form ini untuk incident yang tidak berasal dari scanner, misalnya malware pada laptop pegawai KPPN atau laporan phishing pada salah satu KPPN.</p>
+  </div>
+  <div class="hero-actions">
+    <a class="hero-button" href="/tickets">Kembali ke Tickets</a>
+    <a class="hero-button subtle" href="/soc-sop">Lihat SOP SOC</a>
+  </div>
+</section>
+
+<section class="panel">
+    <div class="panel-head">
+      <div>
+        <span class="section-kicker">Case Intake</span>
+        <h3>Form pembuatan ticket manual</h3>
+        <p class="helper-copy">Susunan form mengikuti intake SOC: pilih aset terdampak, pilih playbook, lalu isi konteks pelapor.</p>
+      </div>
+    </div>
+  <form method="post" action="/tickets/manual" class="form-grid">
+    <label class="field field-wide">
+      <span>Asset Terdampak</span>
+      <select name="asset_id">
+        {% for asset in assets %}
+        <option value="{{ asset.id }}">{{ asset.name }} - {{ asset.target }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="field">
+      <span>Playbook</span>
+      <select name="playbook_key">
+        {% for key, label in playbooks %}
+        <option value="{{ key }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="field">
+      <span>Pelapor</span>
+      <input type="text" name="reporter" value="Operator KPPN" required>
+    </label>
+    <label class="field">
+      <span>Unit Organisasi</span>
+      <input type="text" name="organization_unit" value="KPPN" required>
+    </label>
+    <div class="form-actions">
+      <button type="submit">Buat Ticket Manual</button>
+    </div>
+  </form>
+</section>
+
+<section class="panel">
+  <div class="panel-head">
+    <div>
+      <span class="section-kicker">Demo Users</span>
+      <h3>User SOC untuk demo</h3>
+    </div>
+  </div>
+  <table>
+    <tr><th>Role</th><th>Username</th><th>Peran Demo</th></tr>
+    <tr><td>L1</td><td>{{ demo_users.L1 }}</td><td>Triage, intake, containment awal</td></tr>
+    <tr><td>L2</td><td>{{ demo_users.L2 }}</td><td>Analisis teknis, scoping, hunting</td></tr>
+    <tr><td>L3</td><td>{{ demo_users.L3 }}</td><td>Eradikasi, recovery, closure</td></tr>
+  </table>
+</section>
+{% endblock %}

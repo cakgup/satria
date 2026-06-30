@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <span class="eyebrow">SOC SOP</span>
+    <h2>Standar operasional penanganan insiden SOC L1 hingga L3.</h2>
+    <p>Halaman ini dipakai sebagai panduan operasional demo dan acuan dokumentasi case. User demo yang dipakai adalah <code>cakgup1</code>, <code>cakgup2</code>, dan <code>cakgup3</code>.</p>
+  </div>
+  <div class="hero-actions">
+    <a class="hero-button primary" href="/tickets/new">Buat Ticket Manual</a>
+    <a class="hero-button" href="/tickets">Buka Tickets</a>
+  </div>
+</section>
+
+<section class="workflow-strip">
+  {% for section in sop_sections %}
+  <article class="workflow-step">
+    <span class="step-index">{{ loop.index }}</span>
+    <strong>{{ section.role }}</strong>
+    <p>{{ section.objective }}</p>
+  </article>
+  {% endfor %}
+</section>
+
+{% for section in sop_sections %}
+<section class="panel">
+  <div class="panel-head">
+    <div>
+      <span class="section-kicker">Role</span>
+      <h3>{{ section.role }}</h3>
+    </div>
+  </div>
+  <p class="helper-copy">{{ section.objective }}</p>
+  <ol class="check-list">
+    {% for step in section.steps %}
+    <li>{{ step }}</li>
+    {% endfor %}
+  </ol>
+</section>
+{% endfor %}
+
+<section class="panel">
+  <div class="panel-head">
+    <div>
+      <span class="section-kicker">Playbooks</span>
+      <h3>Contoh insiden manual untuk demo</h3>
+    </div>
+  </div>
+  <table>
+    <tr><th>Playbook</th><th>Incident Type</th><th>Priority</th><th>Deskripsi</th></tr>
+    {% for key, playbook in playbooks.items() %}
+    <tr>
+      <td>{{ playbook.playbook }}</td>
+      <td>{{ playbook.incident_type }}</td>
+      <td>{{ playbook.priority }}</td>
+      <td>{{ playbook.description }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

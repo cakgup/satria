@@ -1,0 +1,435 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .asset-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .guidance-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .guidance-head-copy {
+    flex: 1 1 280px;
+    min-width: 0;
+  }
+
+  .guidance-head-action {
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: flex-end;
+    align-self: flex-end;
+    margin-left: auto;
+    min-width: 0;
+  }
+
+  .sop-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 9px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(20, 57, 98, 0.1);
+    background: rgba(221, 231, 242, 0.52);
+    color: var(--primary-strong);
+    font-weight: 800;
+    font-size: 0.92rem;
+    box-shadow: var(--shadow-soft);
+    text-decoration: none;
+    transition:
+      transform 140ms ease,
+      box-shadow 140ms ease,
+      border-color 140ms ease,
+      background 140ms ease;
+  }
+
+  .sop-toggle:hover {
+    transform: translateY(-1px);
+    border-color: rgba(70, 121, 191, 0.18);
+    background: rgba(228, 237, 247, 0.82);
+  }
+
+  .guidance-mode {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 9px 12px;
+    border-radius: 999px;
+    background: rgba(221, 231, 242, 0.52);
+    border: 1px solid rgba(20, 57, 98, 0.08);
+    color: var(--primary-strong);
+    font-weight: 800;
+  }
+
+  .guidance-mode span {
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+
+  .context-guidance {
+    display: grid;
+    gap: 14px;
+    min-width: 0;
+  }
+
+  .context-card {
+    padding: 14px 15px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(20, 57, 98, 0.08);
+  }
+
+  .context-card h4 {
+    margin: 0 0 8px;
+    font-size: 0.96rem;
+    color: var(--text);
+  }
+
+  .context-card p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+  }
+
+  .context-card ul {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+
+  .context-card li + li {
+    margin-top: 6px;
+  }
+
+  .guidance-ghost {
+    display: none;
+  }
+
+  @media (max-width: 860px) {
+    .guidance-head {
+      align-items: flex-start;
+    }
+
+    .guidance-head-action {
+      width: 100%;
+      margin-left: 0;
+      justify-content: flex-start;
+      align-self: flex-start;
+    }
+
+    .sop-toggle {
+      width: 100%;
+    }
+  }
+
+  .asset-delete-form {
+    margin: 0;
+  }
+
+  .table-action.table-action-danger {
+    background: linear-gradient(180deg, #f7d9d3, #ecb7ab);
+    color: #8f3d2c;
+    box-shadow: none;
+  }
+
+  .table-action.table-action-danger:hover {
+    background: linear-gradient(180deg, #efc5bc, #e29e8f);
+    color: #7d3425;
+    box-shadow: 0 14px 26px rgba(180, 98, 74, 0.18);
+  }
+
+  .warning-panel {
+    margin-bottom: 20px;
+    border: 1px solid rgba(180, 98, 74, 0.18);
+    background: linear-gradient(135deg, rgba(255, 250, 248, 0.96), rgba(252, 236, 231, 0.92));
+  }
+
+  .warning-panel p {
+    margin: 0;
+    color: #7d3425;
+  }
+</style>
+<section class="hero">
+  <div class="hero-copy">
+    <span class="eyebrow">Step 2</span>
+    <h2>Daftarkan asset sebelum membuat scan job.</h2>
+    <p>Urutan ini paling umum dipakai operator: definisikan target, tetapkan environment dan PIC, lalu baru pilih profile scan yang sesuai.</p>
+  </div>
+  <div class="hero-actions">
+    <a class="hero-button primary" href="#asset-form">Tambah Asset</a>
+    <a class="hero-button" href="/scan/new">Lanjut ke Scan</a>
+  </div>
+</section>
+
+{% if cleanup_status == 'remote-failed' %}
+<section class="panel warning-panel">
+  <div class="panel-head">
+    <div>
+      <span class="section-kicker">Remote Cleanup</span>
+      <h3>Hapus asset belum berhasil</h3>
+    </div>
+  </div>
+  <p>Asset tidak dihapus karena cleanup remote IRIS gagal. Data lokal tetap dipertahankan agar operator bisa investigasi dan retry. Detail: {{ cleanup_message or 'remote cleanup failed' }}</p>
+</section>
+{% endif %}
+
+<section class="split-layout">
+  <div class="panel" id="asset-form">
+    <div class="panel-head">
+      <div>
+        <span class="section-kicker">Create Asset</span>
+        <h3>Tambah asset baru</h3>
+        <p class="helper-copy">Field disusun sesuai pola intake operasional: identitas aset, jenis target, lalu ownership.</p>
+      </div>
+    </div>
+    <form method="post" action="/assets" class="form-grid">
+      <label class="field">
+        <span>Nama asset</span>
+        <input name="name" required placeholder="SAKTI API Dev">
+      </label>
+      <label class="field">
+        <span>Jenis target</span>
+        <select name="asset_type" id="asset-type-select">
+          <option value="container_image">Container image</option>
+          <option value="source_repository">Source repository</option>
+          <option value="filesystem">Filesystem</option>
+          <option value="server_ip">Server / IP</option>
+          <option value="web_application">Web application</option>
+          <option value="api_endpoint">API endpoint</option>
+        </select>
+      </label>
+      <label class="field field-wide">
+        <span>Target</span>
+        <input id="asset-target-input" name="target" required placeholder="nginx:latest / https://example.com / 10.0.0.1">
+      </label>
+      <label class="field">
+        <span>Environment</span>
+        <select name="environment"><option>development</option><option>staging</option><option>production</option></select>
+      </label>
+      <label class="field">
+        <span>Criticality</span>
+        <select name="criticality"><option>low</option><option selected>medium</option><option>high</option><option>critical</option></select>
+      </label>
+      <label class="field">
+        <span>Owner</span>
+        <input name="owner" placeholder="Unit/Pemilik">
+      </label>
+      <label class="field">
+        <span>Technical PIC</span>
+        <input name="technical_pic" placeholder="PIC Teknis">
+      </label>
+      <div class="form-actions">
+        <button type="submit">Simpan Asset</button>
+      </div>
+    </form>
+  </div>
+
+  <aside class="panel checklist-panel">
+    <div class="guidance-head">
+      <div class="guidance-head-copy">
+        <span class="section-kicker">Guidance</span>
+        <h3>Data minimum yang sebaiknya diisi</h3>
+        <div class="guidance-mode"><span>Jenis aktif</span><strong id="guidance-mode-label">Container image</strong></div>
+      </div>
+      <div class="guidance-head-action">
+        <a class="sop-toggle" id="asset-sop-link" href="/asset-sop?asset_type=container_image">SOP Tambah Asset</a>
+      </div>
+    </div>
+    <div class="context-guidance" id="contextual-guidance-content"></div>
+    <div class="mini-stats">
+      <div><strong>{{ summary.assets }}</strong><span>Asset aktif</span></div>
+      <div><strong>{{ summary.scans }}</strong><span>Total scan</span></div>
+      <div><strong>{{ summary.findings }}</strong><span>Total finding</span></div>
+    </div>
+  </aside>
+</section>
+
+<template id="guidance-data-container_image">
+  <div class="context-card">
+    <h4>Data minimum yang sebaiknya diisi</h4>
+    <ul>
+      <li>Nama asset yang mudah dikenali tim operasi, misalnya <code>SAKTI API Dev</code>.</li>
+      <li>Target berupa nama image dan tag yang jelas, misalnya <code>registry.internal/sakti-api:2026.07.01</code>.</li>
+      <li>Environment dan PIC untuk memudahkan koordinasi setelah temuan muncul.</li>
+      <li>Pastikan image ada di server SATRIA atau bisa dipull dari sana.</li>
+    </ul>
+  </div>
+  <div class="context-card">
+    <h4>Ringkas cara operasional</h4>
+    <p>Gunakan mode ini untuk memeriksa artefak image sebelum deploy. Container tidak harus berjalan; yang penting image tersebut tersedia di host SATRIA. Setelah asset disimpan, lanjutkan scan dengan profile container seperti <code>quick_container</code>, <code>full_container</code>, atau <code>sbom_scan</code>.</p>
+  </div>
+</template>
+
+<template id="guidance-data-web_application">
+  <div class="context-card">
+    <h4>Data minimum yang sebaiknya diisi</h4>
+    <ul>
+      <li>Nama asset yang menggambarkan aplikasi dan lingkungan, misalnya <code>Portal Pegawai Staging</code>.</li>
+      <li>Target berupa URL aktif yang benar-benar bisa diakses, misalnya <code>https://portal.example.go.id</code>.</li>
+      <li>Isi owner dan PIC agar koordinasi validasi hasil ZAP lebih cepat.</li>
+      <li>Pastikan endpoint memang sedang hidup bila ingin diuji sebagai aplikasi web.</li>
+    </ul>
+  </div>
+  <div class="context-card">
+    <h4>Ringkas cara operasional</h4>
+    <p>Gunakan mode ini bila yang diuji adalah aplikasi web yang sedang berjalan. Setelah asset disimpan, lanjutkan dengan profile web seperti <code>web_baseline</code> atau <code>web_full</code>. Ini berbeda dengan scan image; fokusnya adalah perilaku aplikasi yang aktif di URL.</p>
+  </div>
+</template>
+
+<template id="guidance-data-server_ip">
+  <div class="context-card">
+    <h4>Data minimum yang sebaiknya diisi</h4>
+    <ul>
+      <li>Nama asset yang menunjukkan fungsi server, misalnya <code>Gateway API Production</code>.</li>
+      <li>Target berupa IP atau hostname yang valid, misalnya <code>10.216.208.249</code>.</li>
+      <li>Environment dan criticality penting untuk membedakan server produksi dan non-produksi.</li>
+      <li>Pastikan target sesuai allowlist dan kebijakan scanning infrastruktur.</li>
+    </ul>
+  </div>
+  <div class="context-card">
+    <h4>Ringkas cara operasional</h4>
+    <p>Gunakan mode ini untuk target host atau server yang diuji dari sisi jaringan atau layanan host. Setelah asset disimpan, pilih profile infrastruktur yang sesuai. Mode ini bukan untuk URL aplikasi web dan bukan untuk artefak image container.</p>
+  </div>
+</template>
+
+<template id="guidance-data-source_repository">
+  <div class="context-card">
+    <h4>Data minimum yang sebaiknya diisi</h4>
+    <ul>
+      <li>Nama asset yang mengikuti repo dan branch konteks kerja, misalnya <code>SAKTI API Repo Main</code>.</li>
+      <li>Target berupa URL repo, path clone, atau referensi yang konsisten dengan proses build internal.</li>
+      <li>Isi owner tim pengembang agar tindak lanjut dependency atau secret finding lebih cepat.</li>
+    </ul>
+  </div>
+  <div class="context-card">
+    <h4>Ringkas cara operasional</h4>
+    <p>Gunakan mode ini bila fokus Anda adalah source code atau dependency dari repository. Mode ini cocok untuk intake awal sebelum artefak container terbentuk, dan berbeda dari scan aplikasi hidup di URL.</p>
+  </div>
+</template>
+
+<template id="guidance-data-filesystem">
+  <div class="context-card">
+    <h4>Data minimum yang sebaiknya diisi</h4>
+    <ul>
+      <li>Nama asset yang mewakili path atau bundle yang discan.</li>
+      <li>Target berupa path konkret di host SATRIA, misalnya <code>/opt/releases/sakti-api</code>.</li>
+      <li>Pastikan path tersebut memang tersedia dan dapat diakses worker SATRIA.</li>
+    </ul>
+  </div>
+  <div class="context-card">
+    <h4>Ringkas cara operasional</h4>
+    <p>Gunakan mode ini untuk isi folder, bundle file, atau hasil ekstraksi artefak yang sudah ada di server SATRIA. Ini berguna saat tim belum ingin mendaftarkan repo atau image, tetapi sudah memiliki salinan filesystem yang siap ditinjau.</p>
+  </div>
+</template>
+
+<template id="guidance-data-api_endpoint">
+  <div class="context-card">
+    <h4>Data minimum yang sebaiknya diisi</h4>
+    <ul>
+      <li>Nama asset yang membedakan API per lingkungan, misalnya <code>SAKTI API Gateway Staging</code>.</li>
+      <li>Target berupa base URL endpoint yang valid, misalnya <code>https://api.example.go.id/v1</code>.</li>
+      <li>Isi PIC dan owner untuk memudahkan klarifikasi temuan auth, header, atau exposure endpoint.</li>
+    </ul>
+  </div>
+  <div class="context-card">
+    <h4>Ringkas cara operasional</h4>
+    <p>Gunakan mode ini bila target utama adalah endpoint API yang aktif. Setelah asset disimpan, operator bisa mengarahkan pengujian ke permukaan API yang hidup, berbeda dari mode image atau server host yang lebih rendah levelnya.</p>
+  </div>
+</template>
+
+<div class="guidance-ghost" aria-hidden="true">
+  <div id="asset-type-config"
+       data-container_image-label="Container image"
+       data-container_image-placeholder="registry.internal/app:2026.07.01 atau redteam-console-kali-redteam-console:latest"
+       data-web_application-label="Web application"
+       data-web_application-placeholder="https://portal.example.go.id"
+       data-server_ip-label="Server / IP"
+       data-server_ip-placeholder="10.216.208.249 atau host.internal.example"
+       data-source_repository-label="Source repository"
+       data-source_repository-placeholder="https://git.internal/example/app.git atau /srv/git/app"
+       data-filesystem-label="Filesystem"
+       data-filesystem-placeholder="/opt/releases/sakti-api atau /data/package"
+       data-api_endpoint-label="API endpoint"
+       data-api_endpoint-placeholder="https://api.example.go.id/v1">
+  </div>
+</div>
+
+<script>
+  (() => {
+    const typeSelect = document.getElementById("asset-type-select");
+    const targetInput = document.getElementById("asset-target-input");
+    const modeLabel = document.getElementById("guidance-mode-label");
+    const guidanceHost = document.getElementById("contextual-guidance-content");
+    const sopLink = document.getElementById("asset-sop-link");
+    const config = document.getElementById("asset-type-config");
+    if (!typeSelect || !targetInput || !modeLabel || !guidanceHost || !sopLink || !config) return;
+
+    const renderForType = (assetType) => {
+      const label = config.dataset[`${assetType}Label`] || assetType;
+      const placeholder = config.dataset[`${assetType}Placeholder`] || "Masukkan target yang sesuai";
+      const guidanceTemplate = document.getElementById(`guidance-data-${assetType}`);
+
+      modeLabel.textContent = label;
+      targetInput.placeholder = placeholder;
+      sopLink.href = `/asset-sop?asset_type=${encodeURIComponent(assetType)}`;
+
+      if (guidanceTemplate) {
+        guidanceHost.innerHTML = "";
+        guidanceHost.appendChild(guidanceTemplate.content.cloneNode(true));
+      }
+    };
+
+    typeSelect.addEventListener("change", () => renderForType(typeSelect.value));
+    renderForType(typeSelect.value);
+  })();
+</script>
+
+<section class="panel">
+  <div class="panel-head">
+    <div>
+      <span class="section-kicker">Inventory</span>
+      <h3>Daftar asset</h3>
+    </div>
+    <a class="text-link" href="/scan/new">Gunakan asset untuk scan</a>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <tr><th>No.</th><th>Nama</th><th>Jenis</th><th>Target</th><th>Env</th><th>Criticality</th><th>Owner</th><th>Aksi</th></tr>
+      {% for a in assets %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ a.name }}</td>
+        <td>{{ a.asset_type }}</td>
+        <td><code>{{ a.target }}</code></td>
+        <td>{{ a.environment }}</td>
+        <td>{{ a.criticality }}</td>
+        <td>{{ a.owner or '-' }}</td>
+        <td>
+          <div class="asset-actions">
+            <a class="table-action" href="/scan/new?asset_id={{ a.id }}">Scan</a>
+            <form method="post" action="/assets/{{ a.id }}/delete" class="asset-delete-form">
+              <button class="table-action table-action-danger" type="submit">Hapus</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% if not assets %}
+  <p class="empty-note">Belum ada asset aktif. Mulai dari form di atas agar halaman scan dan findings punya konteks kerja.</p>
+  {% endif %}
+</section>
+{% endblock %}

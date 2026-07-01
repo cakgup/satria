@@ -104,9 +104,65 @@ def refresh_ticket_case_from_iris(ticket_case: TicketCase) -> TicketCase:
     ticket_case.remote_case_soc_id = summary.get("case_soc_id") or ticket_case.remote_case_soc_id
     ticket_case.remote_customer_id = str(summary.get("customer_id") or ticket_case.remote_customer_id or "")
     ticket_case.current_owner = summary.get("owner") or ticket_case.current_owner
-    ticket_case.status = summary.get("state_name") or ticket_case.status
     ticket_case.last_sync_status = "monitored"
     ticket_case.last_sync_error = None
+    return ticket_case
+
+
+def sync_ticket_case_status(
+    ticket_case: TicketCase,
+    previous_status: str | None = None,
+    activity: TicketActivity | None = None,
+) -> TicketCase:
+    if not _can_use_iris_api():
+        ticket_case.last_sync_status = "local-only"
+        ticket_case.last_sync_error = None
+        return ticket_case
+
+    remote_case_id = _as_int(ticket_case.remote_case_id)
+    if not remote_case_id:
+        matched = find_remote_case_by_soc_id(ticket_case.remote_case_soc_id or default_soc_id_for_case(ticket_case))
+        if matched:
+            ticket_case.remote_case_id = str(matched.get("case_id") or "")
+            ticket_case.remote_case_name = matched.get("case_name") or ticket_case.remote_case_name
+            remote_case_id = _as_int(ticket_case.remote_case_id)
+
+    if not remote_case_id:
+        ticket_case.last_sync_status = "remote-missing"
+        ticket_case.last_sync_error = "remote case not found"
+        return ticket_case
+
+    try:
+        session = _client_session()
+        case_client = Case(session, case_id=remote_case_id)
+        status_changed = bool(previous_status) and previous_status != ticket_case.status
+        if status_changed:
+            note_resp = case_client.add_task_log(
+                message=f"[workflow] SATRIA status updated: {previous_status} -> {ticket_case.status}",
+                cid=remote_case_id,
+            )
+            if activity is not None:
+                activity.remote_note_id = str(
+                    _response_field(note_resp, "id")
+                    or _response_field(note_resp, "log_id")
+                    or activity.remote_note_id
+                    or ""
+                )
+
+        if ticket_case.resolution_summary:
+            case_client.set_summary(ticket_case.resolution_summary, cid=remote_case_id)
+
+        if ticket_case.status == "Closed":
+            case_client.close_case(case_id=remote_case_id)
+        else:
+            case_client.reopen_case(case_id=remote_case_id)
+
+        ticket_case.last_sync_status = "synced"
+        ticket_case.last_sync_error = None
+    except Exception as exc:
+        ticket_case.last_sync_status = "failed"
+        ticket_case.last_sync_error = str(exc)
+
     return ticket_case
 
 

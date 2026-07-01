@@ -14,7 +14,7 @@ from .models import Asset, AuditLog, Finding, ScanJob, TicketCase
 from .schemas import AssetCreate, AssetOut, FindingOut, ScanCreate, ScanOut
 from .scanner_runner import SUPPORTED_PROFILES, scanners_for_profile
 from .tasks import run_scan_job
-from .iris import delete_remote_ticket_case, get_remote_case_bundle, list_remote_cases, refresh_ticket_case_from_iris, send_finding_to_iris, sync_ticket_case
+from .iris import delete_remote_ticket_case, get_remote_case_bundle, list_remote_cases, refresh_ticket_case_from_iris, send_finding_to_iris, sync_ticket_case, sync_ticket_case_status
 from .reporting import active_findings_query, count_pie_segments, get_summary, severity_pie_segments, severity_pie_style, export_findings_csv, export_findings_xlsx, executive_markdown_report
 from .soc import MANUAL_PLAYBOOKS, SOC_DEMO_USERS, SOC_SOP, classification_label_for_case, default_soc_id_for_case, playbook_choices, tags_for_case
 from .ticketing import add_ticket_activity, add_ticket_evidence, add_ticket_task, create_manual_case_from_playbook, seed_demo_manual_cases, update_ticket_case
@@ -853,9 +853,7 @@ def tickets_page(request: Request, db: Session = Depends(get_db), status: str | 
         remote = remote_case_map.get(str(ticket.remote_case_id))
         if remote_cases and ticket.remote_case_id and not remote:
             continue
-        remote_state = (remote or {}).get('state_name')
-        effective_status = remote_state or ticket.status
-        if status and effective_status != status:
+        if status and ticket.status != status:
             continue
         monitored_tickets.append(ticket)
     return templates.TemplateResponse('tickets.html', {
@@ -919,7 +917,22 @@ def update_finding_status(finding_id: int, status: str = Form(...), db: Session 
     finding = db.get(Finding, finding_id)
     if not finding:
         raise HTTPException(status_code=404, detail='finding not found')
+    previous_status = finding.status
     finding.status = status
+    if finding.ticket_case:
+        finding.ticket_case.status = status
+        activity = None
+        if previous_status != status:
+            activity = add_ticket_activity(
+                db,
+                finding.ticket_case,
+                actor='SATRIA',
+                actor_role='workflow',
+                activity_type='status-update',
+                message=f'Workflow status changed in SATRIA: {previous_status} -> {status}',
+            )
+        if finding.ticket_case.remote_case_id or finding.ticket_case.sync_mode == 'api':
+            sync_ticket_case_status(finding.ticket_case, previous_status, activity)
     if status in {'Closed', 'Resolved'}:
         finding.resolved_at = datetime.utcnow()
     db.add(AuditLog(action='finding_status_updated', object_type='finding', object_id=str(finding.id), detail=status))
@@ -1209,12 +1222,19 @@ def api_findings(db: Session = Depends(get_db)):
 
 def _ticket_case_view(ticket: TicketCase, remote_case: dict | None = None) -> dict:
     settings = get_settings()
+    remote_state = (remote_case or {}).get('state_name')
+    if not remote_state:
+        if ticket.remote_case_id:
+            remote_state = 'Closed' if ticket.status == 'Closed' else 'Open'
+        else:
+            remote_state = '-'
     return {
         'classification': (remote_case or {}).get('classification') or classification_label_for_case(ticket),
         'soc_id': (remote_case or {}).get('case_soc_id') or ticket.remote_case_soc_id or default_soc_id_for_case(ticket),
         'customer': (remote_case or {}).get('client_name') or (remote_case or {}).get('customer_name') or settings.iris_customer_name,
         'tags': tags_for_case(ticket),
-        'remote_state': (remote_case or {}).get('state_name') or ticket.status,
+        'workflow_status': ticket.status,
+        'remote_state': remote_state,
         'remote_owner': (remote_case or {}).get('owner') or ticket.current_owner or '-',
         'remote_open_date': (remote_case or {}).get('case_open_date') or (remote_case or {}).get('open_date') or '-',
         'remote_name': (remote_case or {}).get('case_name') or ticket.remote_case_name or ticket.title,

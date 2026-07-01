@@ -71,11 +71,11 @@
       <span class="section-kicker">IRIS Monitor</span>
       <h3>Daftar case yang termonitor dari IRIS</h3>
     </div>
-    <span class="helper-copy">Update status, assignment, task, dan evidence dilakukan di IRIS. Jika sync gagal, baris case tetap ditampilkan agar operator bisa melihat error dan mengulangi publish.</span>
+    <span class="helper-copy">SATRIA menampilkan dua konteks berbeda: workflow lokal untuk tindak lanjut internal, dan state remote IRIS untuk monitoring case yang sudah terbit.</span>
   </div>
   <div class="table-wrap">
     <table>
-      <tr><th>IRIS Case</th><th>Sumber</th><th>Asset</th><th>IRIS Owner</th><th>Remote State</th><th>Classification</th><th>Sync</th><th>Task</th><th>Evidence</th><th>Customer</th><th>Aksi</th></tr>
+      <tr><th>IRIS Case</th><th>Sumber</th><th>Asset</th><th>Workflow</th><th>IRIS State</th><th>IRIS Owner</th><th>Classification</th><th>Sync</th><th>Task</th><th>Evidence</th><th>Customer</th><th>Aksi</th></tr>
       {% for ticket in tickets %}
       {% set ticket_view = ticket_views[ticket.id] %}
       <tr>
@@ -88,8 +88,9 @@
           {% endif %}
         </td>
         <td>{{ ticket.asset.name }}</td>
-        <td>{{ ticket_view.remote_owner }}</td>
+        <td>{{ ticket_view.workflow_status }}</td>
         <td>{{ ticket_view.remote_state }}<br><small>Open: {{ ticket_view.remote_open_date }}</small></td>
+        <td>{{ ticket_view.remote_owner }}</td>
         <td>{{ ticket_view.classification }}</td>
         <td>{{ ticket.last_sync_status }}{% if ticket.last_sync_error %}<br><small>{{ ticket.last_sync_error }}</small>{% endif %}</td>
         <td>{{ ticket.tasks|length }}</td>

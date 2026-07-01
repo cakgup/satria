@@ -32,6 +32,9 @@
     <dt>Description</dt><dd>{{ finding.description or '-' }}</dd>
     <dt>Recommendation</dt><dd>{{ finding.recommendation or '-' }}</dd>
     <dt>Status</dt><dd>{{ finding.status }}</dd>
+    {% if finding.ticket_case %}
+    <dt>Workflow Ticket</dt><dd>{{ finding.ticket_case.status }}</dd>
+    {% endif %}
     <dt>Ticketing</dt>
     <dd>
       {% if finding.ticket_case %}
@@ -54,7 +57,9 @@
   <div class="actions">
     <form method="post" action="/findings/{{ finding.id }}/status">
       <select name="status">
-        <option>Open</option><option>Assigned</option><option>In Progress</option><option>Remediated</option><option>Retest</option><option>Closed</option><option>False Positive</option><option>Accepted Risk</option>
+        {% for item in ['Open','Assigned','In Progress','Remediated','Retest','Closed','False Positive','Accepted Risk'] %}
+        <option value="{{ item }}" {% if finding.status == item %}selected{% endif %}>{{ item }}</option>
+        {% endfor %}
       </select>
       <button type="submit">Update Status</button>
     </form>
@@ -62,5 +67,8 @@
       <button type="submit">{% if finding.ticket_case %}Refresh Ticket{% else %}Create Ticket{% endif %}</button>
     </form>
   </div>
+  {% if finding.ticket_case and finding.ticket_case.remote_case_id %}
+  <p class="helper-copy">Update Status pada halaman ini mengubah workflow lokal SATRIA. State case di IRIS tetap ditampilkan terpisah sebagai konteks monitoring remote.</p>
+  {% endif %}
 </section>
 {% endblock %}

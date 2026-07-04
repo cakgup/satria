@@ -12,6 +12,23 @@ class Settings(BaseSettings):
     celery_broker_url: str = Field(default='redis://satria-redis:6379/0', alias='CELERY_BROKER_URL')
     celery_result_backend: str = Field(default='redis://satria-redis:6379/1', alias='CELERY_RESULT_BACKEND')
     report_dir: str = Field(default='/data/reports', alias='REPORT_DIR')
+    satria_api_service_account: str = Field(default='pipeline-service', alias='SATRIA_API_SERVICE_ACCOUNT')
+    satria_api_token: str | None = Field(default='change-me-pipeline-token', alias='SATRIA_API_TOKEN')
+    satria_api_scopes: str = Field(
+        default='release:write,scan:create,scan:read,ticket:publish',
+        alias='SATRIA_API_SCOPES',
+    )
+    gate_policy_name: str = Field(
+        default='default-production-container-gate',
+        alias='GATE_POLICY_NAME',
+    )
+    gate_block_on_critical: bool = Field(default=True, alias='GATE_BLOCK_ON_CRITICAL')
+    gate_high_threshold: int = Field(default=1, alias='GATE_HIGH_THRESHOLD')
+    gate_high_decision: str = Field(default='need_approval', alias='GATE_HIGH_DECISION')
+    gate_medium_threshold: int = Field(default=0, alias='GATE_MEDIUM_THRESHOLD')
+    gate_medium_decision: str = Field(default='allowed', alias='GATE_MEDIUM_DECISION')
+    gate_low_threshold: int = Field(default=0, alias='GATE_LOW_THRESHOLD')
+    gate_low_decision: str = Field(default='allowed', alias='GATE_LOW_DECISION')
     iris_url: str | None = Field(default=None, alias='IRIS_URL')
     iris_api_key: str | None = Field(default=None, alias='IRIS_API_KEY')
     iris_verify_ssl: bool = Field(default=False, alias='IRIS_VERIFY_SSL')
@@ -46,6 +63,9 @@ class Settings(BaseSettings):
 
     def allowlist(self) -> list[str]:
         return [item.strip() for item in self.scan_target_allowlist.split(',') if item.strip()]
+
+    def api_scopes(self) -> set[str]:
+        return {item.strip() for item in self.satria_api_scopes.split(',') if item.strip()}
 
 @lru_cache
 def get_settings() -> Settings:

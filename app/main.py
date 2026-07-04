@@ -1,21 +1,23 @@
 from datetime import datetime
+import json
 from pathlib import Path
 from urllib.parse import quote_plus
-from fastapi import Depends, FastAPI, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, Response, PlainTextResponse
+from fastapi import Depends, FastAPI, Form, Header, HTTPException, Request
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from .database import get_db, init_db
+from .allowlist import configured_allowlist_rules, database_allowlist_entries
 from .config import get_settings
-from .models import Asset, AuditLog, Finding, ScanJob, TicketCase
-from .schemas import AssetCreate, AssetOut, FindingOut, ScanCreate, ScanOut
+from .models import Asset, AuditLog, Finding, ReleaseArtifact, ScanAllowlistEntry, ScanJob, TicketCase
+from .schemas import AssetCreate, AssetOut, FindingOut, PipelinePublishTicketOut, PipelinePublishTicketRequest, PipelineScanCreate, PipelineScanResultOut, PipelineScanStatusOut, PipelineSeveritySummary, ReleaseIntakeCreate, ReleaseIntakeOut, ScanCreate, ScanOut
 from .scanner_runner import SUPPORTED_PROFILES, scanners_for_profile
 from .tasks import run_scan_job
-from .iris import delete_remote_ticket_case, get_remote_case_bundle, list_remote_cases, refresh_ticket_case_from_iris, send_finding_to_iris, sync_ticket_case, sync_ticket_case_status
-from .reporting import active_findings_query, count_pie_segments, get_summary, severity_pie_segments, severity_pie_style, export_findings_csv, export_findings_xlsx, executive_markdown_report
+from .iris import delete_remote_ticket_case, get_remote_case_bundle, import_remote_cases_to_satria, list_remote_cases, refresh_ticket_case_from_iris, send_finding_to_iris, sync_ticket_case
+from .reporting import active_findings_query, count_pie_segments, count_pie_style, get_summary, severity_pie_segments, severity_pie_style, export_findings_csv, export_findings_xlsx, executive_markdown_report
 from .soc import MANUAL_PLAYBOOKS, SOC_DEMO_USERS, SOC_SOP, classification_label_for_case, default_soc_id_for_case, playbook_choices, tags_for_case
 from .ticketing import add_ticket_activity, add_ticket_evidence, add_ticket_task, create_manual_case_from_playbook, seed_demo_manual_cases, update_ticket_case
 
@@ -27,6 +29,7 @@ PUBLIC_PATH_PREFIXES = (
     '/static',
     '/login',
     '/health',
+    '/api/v1',
     '/docs',
     '/openapi.json',
     '/redoc',
@@ -83,6 +86,236 @@ ASSET_TYPE_META = {
                 'Container tidak perlu sedang running; yang penting image tersedia di host SATRIA atau dapat dipull dari sana.',
             ]},
         ],
+        'sub_guides': {
+            'pipeline': {
+                'label': 'Interkoneksi pipeline CI/CD',
+                'hero': 'Panduan integrasi SATRIA ke pipeline CI/CD sebelum artefak dipromosikan ke staging atau production.',
+                'summary': 'Gunakan panduan ini saat SATRIA diposisikan sebagai security gate pada jalur build-release, misalnya melalui Jenkins, GitLab CI, atau pipeline internal lainnya, agar artefak release diperiksa, diberi keputusan gate, dan bila perlu diteruskan ke workflow ticketing sebelum promosi release.',
+                'cards': [
+                    {'title': 'Pola minimum', 'value': 'Build -> Push -> Intake -> Scan -> Gate', 'caption': 'Urutan minimum yang selaras dengan UR interkoneksi CI/CD'},
+                    {'title': 'Akses integrasi', 'value': 'Bearer token service account', 'caption': 'Pipeline cukup memakai token non-personal yang disimpan di credential store Jenkins/GitLab'},
+                    {'title': 'Keputusan gate', 'value': 'allowed / blocked / need_approval', 'caption': 'Pipeline membaca keputusan SATRIA untuk menentukan promote, stop, atau manual approval'},
+                    {'title': 'Output tindak lanjut', 'value': 'SATRIA -> IRIS', 'caption': 'Temuan berat dapat dipublish menjadi ticket IRIS setelah hasil scan terbukti relevan'},
+                ],
+                'sections': [
+                    {'title': 'Tujuan dan posisi SATRIA di jalur CI/CD', 'items': [
+                        'SATRIA diposisikan sebagai gerbang pemeriksaan keamanan terhadap artefak release sebelum deployment production, bukan sebagai pengganti build system, registry internal, atau change management yang sudah berjalan.',
+                        'Pipeline tetap menjalankan tahapan rekayasa perangkat lunak seperti checkout source, unit test, build, dan push image, sedangkan SATRIA berperan menerima intake release, membuat scan job, menyajikan hasil, dan mengembalikan keputusan gate.',
+                        'Dengan pola ini, setiap image release yang akan dipromosikan memiliki jejak audit yang jelas: siapa yang membangun, image mana yang diperiksa, profile scan apa yang digunakan, serta mengapa release diizinkan atau ditahan.',
+                    ]},
+                    {'title': 'Alur proses end-to-end yang diharapkan', 'items': [
+                        'Pipeline melakukan checkout source code dan quality gate dasar internal seperti unit test, static validation, atau tahapan build verification lain yang sudah berlaku.',
+                        'Pipeline membangun container image, memberi tag release yang jelas dan immutable, lalu melakukan push ke internal registry.',
+                        'Pipeline mengirim intake release ke SATRIA atau mengaitkan artefak dengan aset yang sudah terdaftar, minimal dengan data asset_code, asset_name, release_version, image_ref, image_digest, git_commit, build_number, dan environment_target.',
+                        'Pipeline membuat scan job SATRIA menggunakan profile yang sesuai, misalnya quick_container untuk gate cepat, full_container untuk aplikasi kritikal, atau sbom_scan untuk kebutuhan inventaris komponen.',
+                        'SATRIA melakukan pull image dari registry internal, menjalankan scanner, dan memperbarui status job dari queued ke running hingga completed, failed, cancelled, atau timeout.',
+                        'Pipeline melakukan polling status scan berdasarkan scan_id sampai hasil tersedia, kemudian membaca hasil JSON terstruktur untuk mengambil keputusan gate.',
+                        'Jika hasil dinyatakan allowed, pipeline dapat melanjutkan approval atau deploy sesuai tata kelola perubahan. Jika blocked, pipeline berhenti. Jika need_approval, pipeline masuk ke approval khusus atau risk acceptance yang sah.',
+                        'Temuan dengan tingkat risiko yang perlu remediation formal dapat dipublish dari SATRIA ke IRIS agar ada case, task, dan audit tindak lanjut resmi.',
+                    ]},
+                    {'title': 'Peran aktor yang terlibat', 'items': [
+                        'Tim Pengembang memastikan source code, dependency, dan artefak image dibangun dari branch yang benar, serta release version konsisten dengan commit yang diajukan.',
+                        'Tim DevOps mengelola Jenkins, GitLab CI, runner, registry, service account, secret pipeline, jalur jaringan, dan endpoint integrasi ke SATRIA.',
+                        'Operator SATRIA mengelola scan profile, engine scanner, policy severity, threshold gate, allowlist registry, dan monitoring job yang dibuat oleh pipeline.',
+                        'Pemilik Sistem atau Change Approver menggunakan hasil scan SATRIA sebagai salah satu dasar keputusan apakah release dapat diteruskan, ditahan, atau harus melalui jalur pengecualian.',
+                        'Tim Keamanan Informasi menetapkan rule gate, severity threshold, mekanisme exception, risk acceptance, dan pola publish ke IRIS bila temuan memerlukan pelacakan resmi.',
+                    ]},
+                    {'title': 'Persiapan administrasi dan token integrasi', 'intro': [
+                        'Pada implementasi SATRIA saat ini, token pipeline dikelola oleh administrator aplikasi melalui konfigurasi environment backend, bukan dibuat mandiri melalui menu UI. Dengan demikian, proses awal yang perlu dilakukan pengembang adalah meminta pembuatan service account dan token integrasi kepada operator SATRIA atau administrator platform.',
+                        'Token ini sebaiknya berbeda untuk setiap pipeline utama atau minimal setiap lini aplikasi besar, agar audit trail tetap jelas dan rotasi credential lebih mudah dilakukan.'
+                    ], 'items': [
+                        'Administrator SATRIA menetapkan nama akun layanan, misalnya pipeline-sakti-api atau jenkins-prod-gate.',
+                        'Administrator SATRIA mengisi token pada environment variable SATRIA_API_TOKEN dan membatasi hak aksesnya melalui SATRIA_API_SCOPES.',
+                        'Scope minimum yang disarankan untuk kebutuhan gate adalah release:write, scan:create, dan scan:read. Tambahkan ticket:publish hanya bila pipeline memang diizinkan membuat ticket ke IRIS.',
+                        'Token kemudian disimpan di Jenkins Credentials, GitLab CI Variables, atau secret manager internal. Jangan hardcode token di Jenkinsfile, YAML, atau repository aplikasi.',
+                        'Bila token perlu diputar, administrator mengganti nilai SATRIA_API_TOKEN di server SATRIA, memperbarui secret pada CI/CD, lalu menguji ulang endpoint /api/v1/releases/intake dan /api/v1/scans.',
+                    ], 'snippets': [
+                        {
+                            'title': 'Contoh konfigurasi environment di server SATRIA (.env backend)',
+                            'code': 'SATRIA_API_SERVICE_ACCOUNT=pipeline-service\nSATRIA_API_TOKEN=replace-with-long-random-token\nSATRIA_API_SCOPES=release:write,scan:create,scan:read,ticket:publish\nGATE_POLICY_NAME=ur-production-gate\nGATE_BLOCK_ON_CRITICAL=true\nGATE_HIGH_THRESHOLD=1\nGATE_HIGH_DECISION=need_approval\nGATE_MEDIUM_THRESHOLD=15\nGATE_MEDIUM_DECISION=need_approval\nGATE_LOW_THRESHOLD=9999\nGATE_LOW_DECISION=allowed'
+                        },
+                        {
+                            'title': 'Header yang dipakai pipeline saat memanggil API SATRIA',
+                            'code': 'Authorization: Bearer ${SATRIA_TOKEN}\nContent-Type: application/json'
+                        },
+                    ], 'note': 'MVP SATRIA saat ini belum menyediakan self-service API key melalui UI. Karena itu, proses memperoleh token dilakukan melalui administrator SATRIA agar kontrol akses tetap terjaga.'},
+                    {'title': 'Kebutuhan integrasi minimum yang perlu disiapkan', 'items': [
+                        'SATRIA perlu menyediakan API atau CLI resmi untuk intake release, pembuatan scan job, pengecekan status, pengambilan hasil JSON, dan publish ticket bila diperlukan.',
+                        'Pipeline sebaiknya menggunakan service account non-personal dengan autentikasi token, bearer token, API key, atau mekanisme sejenis yang dapat dibatasi scope-nya.',
+                        'Server SATRIA harus dapat mengakses internal registry untuk pull image, termasuk DNS resolution, firewall rule, TLS trust, dan credential read-only atau pull-only.',
+                        'Pipeline harus mengirim metadata release secara lengkap agar audit trail terbentuk, termasuk asset_code, release_version, image digest, git commit, build number, dan target environment.',
+                        'Scan profile yang dipakai pipeline harus sudah disetujui operator SATRIA, serta dapat dipetakan ke kritikalitas aset dan jenis keputusan gate yang diinginkan.',
+                    ]},
+                    {'title': 'Field intake release yang wajib dipetakan dari pipeline', 'intro': [
+                        'Bagian ini menjawab pertanyaan paling umum dari tim pengembang: field apa saja yang harus diisi dari Jenkins atau GitLab CI agar SATRIA dapat mengenali artefak release dengan benar. Semakin lengkap metadata yang dikirim, semakin baik kualitas audit trail dan pelacakan hasil scan.'
+                    ], 'items': [
+                        'asset_code: kode aset/aplikasi yang konsisten antar release, misalnya SAKTI-API.',
+                        'asset_name: nama bisnis atau nama aplikasi yang akan tampil pada SATRIA, misalnya SAKTI API.',
+                        'release_version: versi release immutable, misalnya release-2026.07.04-201-a1b2c3d4.',
+                        'image_ref: referensi image bertag, misalnya registry.internal/sakti-api:release-2026.07.04-201-a1b2c3d4.',
+                        'image_digest: digest image hasil push ke registry, agar SATRIA memindai artefak yang benar-benar akan dipromosikan.',
+                        'git_commit: commit SHA yang membentuk release tersebut.',
+                        'build_number: nomor build CI/CD, misalnya BUILD_NUMBER Jenkins atau CI_PIPELINE_ID GitLab.',
+                        'environment_target: target promosi release, misalnya staging atau production.',
+                        'risk_acceptance_ref: nomor dokumen pengecualian bila sudah ada keputusan resmi yang berlaku.',
+                        'gate_override_decision: dipakai sangat terbatas untuk kasus override formal yang telah disetujui, misalnya allowed walau ada high tertentu.',
+                    ], 'snippets': [
+                        {
+                            'title': 'Payload JSON intake release yang direkomendasikan',
+                            'code': '{\n  "asset_code": "SAKTI-API",\n  "asset_name": "SAKTI API",\n  "release_version": "release-2026.07.04-201-a1b2c3d4",\n  "image_ref": "registry.internal/sakti-api:release-2026.07.04-201-a1b2c3d4",\n  "image_digest": "registry.internal/sakti-api@sha256:abc123...",\n  "git_commit": "a1b2c3d4",\n  "build_number": "201",\n  "environment_target": "production",\n  "risk_acceptance_ref": "RA-2026-001",\n  "gate_override_decision": null\n}'
+                        },
+                    ]},
+                    {'title': 'Contoh endpoint atau kontrak integrasi minimum', 'items': [
+                        'POST /api/v1/releases/intake untuk mendaftarkan atau mengaitkan release image ke aset SATRIA.',
+                        'POST /api/v1/scans untuk membuat scan job dengan parameter asset_id, release_id, image_ref, scan_profile, requested_by, dan build_number.',
+                        'GET /api/v1/scans/{scan_id} untuk membaca status job seperti queued, running, completed, failed, cancelled, atau timeout.',
+                        'GET /api/v1/scans/{scan_id}/result untuk mengambil hasil JSON terstruktur yang berisi severity summary, gate decision, report URL, dan detail finding utama.',
+                        'POST /api/v1/scans/{scan_id}/publish-ticket untuk meneruskan finding yang relevan ke IRIS bila organisasi membutuhkan remediation formal.',
+                    ]},
+                    {'title': 'Urutan panggilan API yang direkomendasikan dari pipeline', 'intro': [
+                        'Secara praktis, pipeline tidak perlu mengetahui detail internal SATRIA. Pipeline cukup menjalankan lima tahap panggilan API: intake release, create scan, polling status, ambil hasil, lalu publish ticket bila perlu.'
+                    ], 'items': [
+                        'Langkah 1: pipeline memanggil POST /api/v1/releases/intake dan menyimpan release_id dari response.',
+                        'Langkah 2: pipeline memanggil POST /api/v1/scans menggunakan release_id, image_ref, scan_profile, requested_by, dan build_number; SATRIA mengembalikan scan_id.',
+                        'Langkah 3: pipeline melakukan polling GET /api/v1/scans/{scan_id} sampai status mencapai completed, failed, cancelled, atau timeout.',
+                        'Langkah 4: bila completed, pipeline memanggil GET /api/v1/scans/{scan_id}/result dan membaca summary, decision, policy_name, risk_acceptance_ref, serta report_url.',
+                        'Langkah 5: bila severity tertentu harus masuk workflow resmi, pipeline atau operator memanggil POST /api/v1/scans/{scan_id}/publish-ticket.',
+                    ], 'snippets': [
+                        {
+                            'title': 'Contoh sequence curl minimal',
+                            'code': 'curl -X POST "$SATRIA_URL/api/v1/releases/intake" \\\n  -H "Authorization: Bearer $SATRIA_TOKEN" \\\n  -H "Content-Type: application/json" \\\n  -d @release-intake.json\n\ncurl -X POST "$SATRIA_URL/api/v1/scans" \\\n  -H "Authorization: Bearer $SATRIA_TOKEN" \\\n  -H "Content-Type: application/json" \\\n  -d @scan-request.json\n\ncurl -H "Authorization: Bearer $SATRIA_TOKEN" \\\n  "$SATRIA_URL/api/v1/scans/$SCAN_ID"\n\ncurl -H "Authorization: Bearer $SATRIA_TOKEN" \\\n  "$SATRIA_URL/api/v1/scans/$SCAN_ID/result"\n\ncurl -X POST "$SATRIA_URL/api/v1/scans/$SCAN_ID/publish-ticket" \\\n  -H "Authorization: Bearer $SATRIA_TOKEN" \\\n  -H "Content-Type: application/json" \\\n  -d "{\\"target_system\\":\\"IRIS\\",\\"severity_filter\\":[\\"critical\\",\\"high\\"]}"'
+                        },
+                    ]},
+                    {'title': 'Policy gate dan keputusan release', 'items': [
+                        'Keputusan minimum yang perlu didukung adalah allowed, blocked, dan need_approval. Policy ini harus konsisten antara SATRIA, DevSecOps, dan approver perubahan.',
+                        'Contoh kebijakan yang umum: blocked bila ada Critical, need_approval bila ada High di atas ambang tertentu, dan allowed bila hanya ada Medium atau Low yang masih dalam toleransi.',
+                        'Kebijakan gate tidak harus murni berdasarkan jumlah temuan; organisasi dapat menambah parameter lain seperti jenis paket, exploitability, asset criticality, atau daftar pengecualian yang sah.',
+                        'Jika release diblokir, pipeline wajib berhenti sebelum stage deploy production. Jika need_approval, pipeline masuk ke hold stage sambil menunggu approval atau risk acceptance yang terdokumentasi.',
+                    ]},
+                    {'title': 'Contoh konfigurasi Jenkins yang direkomendasikan', 'intro': [
+                        'Bila organisasi memakai Jenkins, praktik yang disarankan adalah menyimpan token SATRIA di Jenkins Credentials, lalu memanggil API SATRIA dari stage terpisah setelah image berhasil dipush ke registry. Dengan cara ini, build dan security gate tetap terpisah secara jelas.'
+                    ], 'items': [
+                        'Buat credential bertipe Secret text di Jenkins, misalnya dengan ID satria-api-token, lalu simpan bearer token yang telah diberikan administrator SATRIA.',
+                        'Tambahkan environment variable di Jenkinsfile untuk SATRIA_URL, SATRIA_TOKEN, SATRIA_ASSET_CODE, SATRIA_ASSET_NAME, dan REGISTRY_IMAGE.',
+                        'Setelah stage build dan push selesai, buat file JSON intake dan scan-request, lalu panggil endpoint SATRIA menggunakan curl atau wrapper script bash/python.',
+                        'Simpan scan_id sebagai artefak pipeline atau environment sementara agar bisa dipakai pada stage polling, gate, dan publish ticket.',
+                        'Buat stage approval terpisah bila decision dari SATRIA bernilai need_approval, sehingga release tidak otomatis lanjut ke production.',
+                    ], 'snippets': [
+                        {
+                            'title': 'Contoh Jenkinsfile sederhana',
+                            'code': """pipeline {
+  agent any
+  environment {
+    SATRIA_URL = "http://10.216.208.249:8090"
+    SATRIA_TOKEN = credentials("satria-api-token")
+    REGISTRY_IMAGE = "registry.internal/sakti-api:${BUILD_NUMBER}-${GIT_COMMIT.take(8)}"
+    SATRIA_ASSET_CODE = "SAKTI-API"
+    SATRIA_ASSET_NAME = "SAKTI API"
+  }
+  stages {
+    stage("Build") {
+      steps {
+        sh "docker build -t ${REGISTRY_IMAGE} ."
+      }
+    }
+    stage("Push") {
+      steps {
+        sh "docker push ${REGISTRY_IMAGE}"
+      }
+    }
+    stage("Security Gate via SATRIA") {
+      steps {
+        sh \"\"\"
+cat > release-intake.json <<EOF
+{
+  \\"asset_code\\": \\"${SATRIA_ASSET_CODE}\\",
+  \\"asset_name\\": \\"${SATRIA_ASSET_NAME}\\",
+  \\"release_version\\": \\"release-${BUILD_NUMBER}-${GIT_COMMIT:0:8}\\",
+  \\"image_ref\\": \\"${REGISTRY_IMAGE}\\",
+  \\"git_commit\\": \\"${GIT_COMMIT}\\",
+  \\"build_number\\": \\"${BUILD_NUMBER}\\",
+  \\"environment_target\\": \\"production\\"
+}
+EOF
+RELEASE_RESPONSE=$(curl -s -X POST \\"$SATRIA_URL/api/v1/releases/intake\\" \\
+  -H \\"Authorization: Bearer $SATRIA_TOKEN\\" \\
+  -H \\"Content-Type: application/json\\" \\
+  -d @release-intake.json)
+echo "$RELEASE_RESPONSE" > release-response.json
+cat > scan-request.json <<EOF
+{
+  \\"asset_id\\": 1,
+  \\"release_id\\": 1,
+  \\"image_ref\\": \\"${REGISTRY_IMAGE}\\",
+  \\"scan_profile\\": \\"quick_container\\",
+  \\"requested_by\\": \\"jenkins\\",
+  \\"build_number\\": \\"${BUILD_NUMBER}\\"
+}
+EOF
+curl -s -X POST \\"$SATRIA_URL/api/v1/scans\\" \\
+  -H \\"Authorization: Bearer $SATRIA_TOKEN\\" \\
+  -H \\"Content-Type: application/json\\" \\
+  -d @scan-request.json > scan-response.json
+        \"\"\"
+      }
+    }
+  }
+}"""
+                        },
+                    ], 'note': 'Pada implementasi produksi, asset_id sebaiknya tidak di-hardcode. Gunakan hasil mapping aset yang telah disiapkan operator SATRIA atau sediakan endpoint lookup aset yang konsisten.'},
+                    {'title': 'Contoh GitLab CI / YAML minimal', 'intro': [
+                        'Untuk GitLab CI, prinsipnya sama: token SATRIA disimpan di CI/CD Variables dan dipanggil setelah image selesai dipush. Contoh berikut dapat dijadikan baseline awal lalu disesuaikan dengan runner dan registry internal yang digunakan.'
+                    ], 'items': [
+                        'Simpan SATRIA_TOKEN sebagai masked variable dan protected variable di GitLab.',
+                        'Simpan SATRIA_URL, SATRIA_ASSET_CODE, dan SATRIA_ASSET_NAME sebagai CI variable level project atau group.',
+                        'Pada job security_gate, gunakan curl untuk intake release, create scan, polling hasil, lalu set exit code job berdasarkan decision dari SATRIA.',
+                    ], 'snippets': [
+                        {
+                            'title': 'Contoh .gitlab-ci.yml minimal',
+                            'code': 'stages:\n  - build\n  - push\n  - security_gate\n\nvariables:\n  SATRIA_URL: "http://10.216.208.249:8090"\n  SATRIA_ASSET_CODE: "SAKTI-API"\n  SATRIA_ASSET_NAME: "SAKTI API"\n\nsecurity_gate:\n  stage: security_gate\n  image: curlimages/curl:8.8.0\n  script:\n    - export RELEASE_VERSION=\"release-${CI_PIPELINE_ID}-${CI_COMMIT_SHORT_SHA}\"\n    - export IMAGE_REF=\"${CI_REGISTRY_IMAGE}:${RELEASE_VERSION}\"\n    - |\n      cat > release-intake.json <<EOF\n      {\n        \"asset_code\": \"${SATRIA_ASSET_CODE}\",\n        \"asset_name\": \"${SATRIA_ASSET_NAME}\",\n        \"release_version\": \"${RELEASE_VERSION}\",\n        \"image_ref\": \"${IMAGE_REF}\",\n        \"git_commit\": \"${CI_COMMIT_SHA}\",\n        \"build_number\": \"${CI_PIPELINE_ID}\",\n        \"environment_target\": \"production\"\n      }\n      EOF\n    - curl -s -X POST \"$SATRIA_URL/api/v1/releases/intake\" -H \"Authorization: Bearer $SATRIA_TOKEN\" -H \"Content-Type: application/json\" -d @release-intake.json -o release-response.json\n    - echo \"Lanjutkan dengan create scan, polling, dan evaluasi decision dari release-response.json / result endpoint\"\n'
+                        },
+                    ]},
+                    {'title': 'Contoh stage gate dan logika keputusan pipeline', 'items': [
+                        'Jika decision = allowed, stage gate selesai sukses dan pipeline dapat lanjut ke promote/deploy berikutnya.',
+                        'Jika decision = blocked, pipeline harus berhenti dengan exit code non-zero dan release tidak boleh dipromosikan.',
+                        'Jika decision = need_approval, pipeline masuk ke hold stage atau manual approval; status ini bukan sukses otomatis dan bukan gagal teknis.',
+                        'Bila SATRIA mengembalikan failed, cancelled, timeout, atau error_code tertentu, pipeline menandai build sebagai failed atau unstable sesuai kebijakan DevSecOps.',
+                    ], 'snippets': [
+                        {
+                            'title': 'Contoh pseudo-code evaluasi gate',
+                            'code': 'if result.status != "completed":\n    fail_pipeline("scan belum selesai normal")\n\nif result.decision == "allowed":\n    continue_deploy()\nelif result.decision == "need_approval":\n    wait_manual_approval()\nelse:\n    fail_pipeline("release diblokir oleh SATRIA")'
+                        },
+                    ]},
+                    {'title': 'Publish ticket ke IRIS dari pipeline atau operator', 'intro': [
+                        'Tidak semua temuan harus langsung menjadi ticket IRIS. Praktik yang lebih aman adalah mempublish hanya temuan dengan severity tertentu, misalnya critical dan high, setelah hasil scan ditinjau cepat oleh tim yang berwenang.'
+                    ], 'items': [
+                        'Gunakan target_system = IRIS untuk kasus yang benar-benar harus masuk workflow resmi.',
+                        'Gunakan severity_filter agar pipeline tidak membuat ticket berlebihan untuk semua temuan medium atau low.',
+                        'Isi assign_to dan due_date bila organisasi sudah memiliki pemilik tindak lanjut yang jelas.',
+                        'SATRIA akan menyimpan referensi nomor case/ticket agar statusnya tetap bisa dipantau dari halaman Tickets.',
+                    ], 'snippets': [
+                        {
+                            'title': 'Contoh publish hanya temuan critical dan high',
+                            'code': """curl -X POST "$SATRIA_URL/api/v1/scans/$SCAN_ID/publish-ticket" \\
+  -H "Authorization: Bearer $SATRIA_TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "target_system": "IRIS",
+    "severity_filter": ["critical", "high"],
+    "assign_to": "Tim Pengembang SAKTI",
+    "due_date": "2026-07-31"
+  }'"""
+                        },
+                    ]},
+                    {'title': 'Error handling, audit trail, dan checklist implementasi', 'items': [
+                        'Pipeline harus menerima error yang jelas jika image tidak valid, aset tidak dikenal, profile scan tidak tersedia, credential registry gagal, atau scan timeout. Semua kondisi ini harus memunculkan pesan yang mudah dibaca operator.',
+                        'SATRIA perlu mencatat siapa yang meminta scan, kapan request dibuat, image dan digest yang diperiksa, profile scan yang digunakan, perubahan status job, serta keputusan gate yang dihasilkan.',
+                        'Checklist minimum implementasi meliputi: service account pipeline aktif, konektivitas SATRIA ke registry berhasil, profile scan disetujui, endpoint integrasi tersedia, threshold gate disepakati, dan format hasil JSON sudah dapat dibaca pipeline.',
+                        'Kondisi siap operasional dapat dinyatakan terpenuhi bila pipeline mampu membuat intake release, menjalankan scan otomatis, membaca hasil gate, menghentikan release yang tidak lolos, dan meneruskan temuan berat ke IRIS bila diperlukan.',
+                    ], 'note': 'Sebelum masuk produksi, lakukan smoke test integrasi menggunakan satu image uji yang aman. Verifikasi bahwa SATRIA menerima intake release, membuat scan job, mengembalikan result JSON, dan memunculkan decision yang dapat dibaca pipeline tanpa interaksi manual melalui UI.'},
+                ],
+            },
+        },
     },
     'web_application': {
         'label': 'Web application',
@@ -185,12 +418,203 @@ ASSET_TYPE_META = {
 }
 
 
+class ApiV1Error(Exception):
+    def __init__(
+        self,
+        status_code: int,
+        error_code: str,
+        message: str,
+        *,
+        scan_id: int | None = None,
+        details: dict | None = None,
+    ) -> None:
+        self.status_code = status_code
+        self.error_code = error_code
+        self.message = message
+        self.scan_id = scan_id
+        self.details = details or {}
+
+
 def _safe_next_path(next_path: str | None) -> str:
     if not next_path or not next_path.startswith('/'):
         return '/'
     if next_path.startswith('//'):
         return '/'
     return next_path
+
+
+def _raise_api_error(
+    status_code: int,
+    error_code: str,
+    message: str,
+    *,
+    scan_id: int | None = None,
+    details: dict | None = None,
+) -> None:
+    raise ApiV1Error(
+        status_code=status_code,
+        error_code=error_code,
+        message=message,
+        scan_id=scan_id,
+        details=details,
+    )
+
+
+@app.exception_handler(ApiV1Error)
+async def api_v1_error_handler(_: Request, exc: ApiV1Error):
+    payload: dict[str, object] = {
+        'error_code': exc.error_code,
+        'message': exc.message,
+    }
+    if exc.scan_id is not None:
+        payload['scan_id'] = exc.scan_id
+    if exc.details:
+        payload['details'] = exc.details
+    return JSONResponse(status_code=exc.status_code, content=payload)
+
+
+def _authorize_service_account(authorization: str | None, required_scope: str | None = None) -> str:
+    settings = get_settings()
+    expected_token = (settings.satria_api_token or '').strip()
+    if not expected_token:
+        _raise_api_error(503, 'API_AUTH_NOT_CONFIGURED', 'SATRIA API token is not configured')
+    if not authorization or not authorization.startswith('Bearer '):
+        _raise_api_error(401, 'API_AUTH_MISSING', 'Missing bearer token')
+    provided_token = authorization.split(' ', 1)[1].strip()
+    if provided_token != expected_token:
+        _raise_api_error(401, 'API_AUTH_INVALID', 'Invalid bearer token')
+    if required_scope and required_scope not in settings.api_scopes():
+        _raise_api_error(
+            403,
+            'API_SCOPE_DENIED',
+            f'Service account does not have scope {required_scope}',
+            details={'required_scope': required_scope},
+        )
+    return settings.satria_api_service_account
+
+
+def _service_account_scope(required_scope: str):
+    def dependency(authorization: str | None = Header(default=None)) -> str:
+        return _authorize_service_account(authorization, required_scope)
+
+    return dependency
+
+
+def _severity_summary_for_scan(db: Session, scan_job_id: int) -> dict[str, int]:
+    rows = (
+        db.query(Finding.severity_normalized, func.count(Finding.id))
+        .filter(Finding.scan_job_id == scan_job_id)
+        .group_by(Finding.severity_normalized)
+        .all()
+    )
+    summary = {
+        'critical': 0,
+        'high': 0,
+        'medium': 0,
+        'low': 0,
+        'informational': 0,
+        'total': 0,
+    }
+    for severity, count in rows:
+        normalized = (severity or 'Informational').lower()
+        if normalized == 'critical':
+            summary['critical'] += int(count)
+        elif normalized == 'high':
+            summary['high'] += int(count)
+        elif normalized == 'medium':
+            summary['medium'] += int(count)
+        elif normalized == 'low':
+            summary['low'] += int(count)
+        else:
+            summary['informational'] += int(count)
+        summary['total'] += int(count)
+    return summary
+
+
+def _normalize_gate_decision(value: str | None, fallback: str) -> str:
+    normalized = (value or '').strip().lower()
+    if normalized in {'allowed', 'need_approval', 'blocked', 'pending'}:
+        return normalized
+    return fallback
+
+
+def _release_metadata(scan: ScanJob) -> dict[str, object]:
+    if not scan.release or not scan.release.metadata_json:
+        return {}
+    try:
+        parsed = json.loads(scan.release.metadata_json)
+        if isinstance(parsed, dict):
+            return parsed
+    except json.JSONDecodeError:
+        return {}
+    return {}
+
+
+def _gate_decision_for_scan(scan: ScanJob, severity_summary: dict[str, int]) -> str:
+    settings = get_settings()
+    if scan.status in {'queued', 'running'}:
+        return 'pending'
+    if scan.status != 'completed':
+        return 'blocked'
+    release_metadata = _release_metadata(scan)
+    override_decision = _normalize_gate_decision(
+        str(release_metadata.get('gate_override_decision') or ''),
+        '',
+    )
+    if override_decision:
+        return override_decision
+    if settings.gate_block_on_critical and severity_summary.get('critical', 0) > 0:
+        return 'blocked'
+    if settings.gate_high_threshold > 0 and severity_summary.get('high', 0) >= settings.gate_high_threshold:
+        return _normalize_gate_decision(settings.gate_high_decision, 'need_approval')
+    if settings.gate_medium_threshold > 0 and severity_summary.get('medium', 0) >= settings.gate_medium_threshold:
+        return _normalize_gate_decision(settings.gate_medium_decision, 'allowed')
+    if settings.gate_low_threshold > 0 and severity_summary.get('low', 0) >= settings.gate_low_threshold:
+        return _normalize_gate_decision(settings.gate_low_decision, 'allowed')
+    return 'allowed'
+
+
+def _pipeline_status_payload(scan: ScanJob, db: Session) -> dict:
+    severity_summary = _severity_summary_for_scan(db, scan.id)
+    gate_decision = _gate_decision_for_scan(scan, severity_summary)
+    requested_by = scan.release.requested_by if scan.release else None
+    build_number = scan.release.build_number if scan.release else None
+    return {
+        'scan_id': scan.id,
+        'asset_id': scan.asset_id,
+        'asset_name': scan.asset.name if scan.asset else f'asset-{scan.asset_id}',
+        'release_id': scan.release_id,
+        'profile': scan.profile,
+        'scanner': scan.scanner,
+        'status': scan.status,
+        'gate_decision': gate_decision,
+        'requested_by': requested_by,
+        'build_number': build_number,
+        'created_at': scan.created_at,
+        'started_at': scan.started_at,
+        'completed_at': scan.completed_at,
+        'message': scan.message,
+        'severity_summary': severity_summary,
+    }
+
+
+def _pipeline_result_payload(scan: ScanJob, db: Session) -> dict:
+    status_payload = _pipeline_status_payload(scan, db)
+    mode_label, _ = _scan_mode(scan)
+    release_metadata = _release_metadata(scan)
+    settings = get_settings()
+    return {
+        **status_payload,
+        'mode': mode_label.lower().replace(' ', '_'),
+        'decision': status_payload['gate_decision'],
+        'policy_name': settings.gate_policy_name,
+        'total_findings': status_payload['severity_summary']['total'],
+        'report_path': scan.raw_report_path,
+        'report_url': f'/scans/{scan.id}',
+        'finding_url': f'/findings?scan_job_id={scan.id}',
+        'publish_ticket_url': f'/api/v1/scans/{scan.id}/publish-ticket',
+        'risk_acceptance_ref': release_metadata.get('risk_acceptance_ref'),
+    }
 
 
 @app.middleware('http')
@@ -435,9 +859,11 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
 @app.get('/vulnerability-summary', response_class=HTMLResponse)
 def vulnerability_summary(request: Request, db: Session = Depends(get_db)):
     summary = get_summary(db)
+    bulk_iris_candidates = bulk_critical_high_candidates_query(db).count()
     return templates.TemplateResponse('vulnerability_summary.html', {
         'request': request,
         'summary': summary,
+        'bulk_iris_candidates': bulk_iris_candidates,
         'pie_style': severity_pie_style(summary['severity']),
         'severity_pie_segments': severity_pie_segments(summary['severity']),
         'status_pie_segments': count_pie_segments(
@@ -469,11 +895,21 @@ def vulnerability_summary(request: Request, db: Session = Depends(get_db)):
         ),
     })
 
+
+def bulk_critical_high_candidates_query(db: Session):
+    return active_findings_query(db).filter(
+        Finding.severity_normalized.in_(['Critical', 'High']),
+        Finding.status.notin_(['Closed', 'False Positive', 'Accepted Risk']),
+        Finding.ticket_case == None,  # noqa: E711
+    )
+
 @app.get('/assets', response_class=HTMLResponse)
 def assets_page(
     request: Request,
     cleanup_status: str | None = None,
     cleanup_message: str | None = None,
+    allowlist_status: str | None = None,
+    allowlist_message: str | None = None,
     db: Session = Depends(get_db),
 ):
     assets = db.query(Asset).filter(Asset.is_active == True).order_by(Asset.id.desc()).all()  # noqa: E712
@@ -483,18 +919,29 @@ def assets_page(
         'summary': get_summary(db),
         'cleanup_status': cleanup_status,
         'cleanup_message': cleanup_message,
+        'allowlist_status': allowlist_status,
+        'allowlist_message': allowlist_message,
+        'allowlist_entries': database_allowlist_entries(db),
+        'config_allowlist': configured_allowlist_rules(),
     })
 
 
 @app.get('/asset-sop', response_class=HTMLResponse)
-def asset_sop_page(request: Request, asset_type: str = 'container_image'):
+def asset_sop_page(request: Request, asset_type: str = 'container_image', guide: str = 'default'):
     selected_asset_type = asset_type if asset_type in ASSET_TYPE_META else 'container_image'
+    selected_asset_meta = ASSET_TYPE_META[selected_asset_type]
+    sub_guides = selected_asset_meta.get('sub_guides', {})
+    selected_guide_key = guide if guide in sub_guides else 'default'
+    selected_guide = sub_guides[selected_guide_key] if selected_guide_key != 'default' else selected_asset_meta
     return templates.TemplateResponse('asset_sop.html', {
         'request': request,
         'asset_type_order': ASSET_TYPE_ORDER,
         'asset_type_meta': ASSET_TYPE_META,
         'selected_asset_type': selected_asset_type,
-        'selected_guide': ASSET_TYPE_META[selected_asset_type],
+        'selected_guide': selected_guide,
+        'selected_guide_key': selected_guide_key,
+        'selected_asset_meta': selected_asset_meta,
+        'asset_sub_guides': sub_guides,
     })
 
 @app.post('/assets')
@@ -521,6 +968,77 @@ def create_asset_form(
     db.add(AuditLog(action='asset_created', object_type='asset', detail=name))
     db.commit()
     return RedirectResponse('/assets', status_code=303)
+
+
+@app.post('/allowlist')
+def create_allowlist_entry(
+    rule: str = Form(...),
+    description: str = Form(''),
+    db: Session = Depends(get_db),
+):
+    normalized_rule = (rule or '').strip()
+    if not normalized_rule:
+        return RedirectResponse(
+            '/assets?allowlist_status=error&allowlist_message=Rule%20allowlist%20wajib%20diisi',
+            status_code=303,
+        )
+
+    existing = (
+        db.query(ScanAllowlistEntry)
+        .filter(func.lower(ScanAllowlistEntry.rule) == normalized_rule.lower())
+        .first()
+    )
+    if existing:
+        existing.description = (description or '').strip() or existing.description
+        existing.is_active = True
+        db.add(AuditLog(
+            action='allowlist_reactivated',
+            object_type='scan_allowlist',
+            object_id=str(existing.id),
+            detail=normalized_rule,
+        ))
+        db.commit()
+        return RedirectResponse(
+            '/assets?allowlist_status=updated&allowlist_message=Rule%20allowlist%20diaktifkan%20atau%20diperbarui',
+            status_code=303,
+        )
+
+    entry = ScanAllowlistEntry(
+        rule=normalized_rule,
+        description=(description or '').strip() or None,
+        is_active=True,
+    )
+    db.add(entry)
+    db.add(AuditLog(
+        action='allowlist_created',
+        object_type='scan_allowlist',
+        detail=normalized_rule,
+    ))
+    db.commit()
+    return RedirectResponse(
+        '/assets?allowlist_status=ok&allowlist_message=Rule%20allowlist%20berhasil%20ditambahkan',
+        status_code=303,
+    )
+
+
+@app.post('/allowlist/{entry_id}/delete')
+def delete_allowlist_entry(entry_id: int, db: Session = Depends(get_db)):
+    entry = db.get(ScanAllowlistEntry, entry_id)
+    if not entry:
+        raise HTTPException(status_code=404, detail='allowlist entry not found')
+
+    db.add(AuditLog(
+        action='allowlist_deleted',
+        object_type='scan_allowlist',
+        object_id=str(entry.id),
+        detail=entry.rule,
+    ))
+    db.delete(entry)
+    db.commit()
+    return RedirectResponse(
+        '/assets?allowlist_status=deleted&allowlist_message=Rule%20allowlist%20berhasil%20dihapus',
+        status_code=303,
+    )
 
 
 @app.post('/assets/{asset_id}/delete')
@@ -837,34 +1355,94 @@ def findings_page(
 
 
 @app.get('/tickets', response_class=HTMLResponse)
-def tickets_page(request: Request, db: Session = Depends(get_db), status: str | None = None, case_kind: str | None = None):
+def tickets_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    status: str | None = None,
+    case_kind: str | None = None,
+    remote_state: str | None = None,
+):
+    remote_cases = list_remote_cases()
+    imported = import_remote_cases_to_satria(db, remote_cases) if remote_cases else 0
+    if imported:
+        db.commit()
+
     q = db.query(TicketCase)
     if case_kind:
         q = q.filter(TicketCase.case_kind == case_kind)
     tickets = q.order_by(TicketCase.updated_at.desc(), TicketCase.id.desc()).limit(300).all()
-    remote_cases = list_remote_cases()
     remote_case_map = {
         str(case.get('case_id')): case
         for case in remote_cases
         if case.get('case_id') is not None
     }
     monitored_tickets = []
+    ticket_views: dict[int, dict] = {}
     for ticket in tickets:
         remote = remote_case_map.get(str(ticket.remote_case_id))
         if remote_cases and ticket.remote_case_id and not remote:
             continue
+        ticket_view = _ticket_case_view(ticket, remote)
+        ticket_views[ticket.id] = ticket_view
         if status and ticket.status != status:
             continue
+        if remote_state and ticket_view.get('remote_state') != remote_state:
+            continue
         monitored_tickets.append(ticket)
+
+    iris_state_order = ['Open', 'Assigned', 'In Progress', 'Remediated', 'Retest', 'Closed', 'False Positive', 'Accepted Risk']
+    iris_state_colors = {
+        'Open': '#4f5ed9',
+        'Assigned': '#7c3aed',
+        'In Progress': '#f28a30',
+        'Remediated': '#4fb8a7',
+        'Retest': '#f5cc42',
+        'Closed': '#5ec865',
+        'False Positive': '#94a3b8',
+        'Accepted Risk': '#64748b',
+    }
+    iris_state_counts: dict[str, int] = {key: 0 for key in iris_state_order}
+    for ticket in monitored_tickets:
+        state = ticket_views[ticket.id].get('remote_state') or 'Unknown'
+        if state not in iris_state_counts:
+            iris_state_counts[state] = 0
+        iris_state_counts[state] += 1
+    iris_state_pie_segments = count_pie_segments(
+        iris_state_counts,
+        iris_state_order + [key for key in iris_state_counts.keys() if key not in iris_state_order],
+        iris_state_colors,
+        lambda key: f"/tickets?remote_state={quote_plus(key)}" + (f"&status={quote_plus(status)}" if status else "") + (f"&case_kind={quote_plus(case_kind)}" if case_kind else ""),
+    )
+    iris_state_pie_style = count_pie_style(
+        iris_state_counts,
+        iris_state_order + [key for key in iris_state_counts.keys() if key not in iris_state_order],
+        iris_state_colors,
+    )
+    iris_state_total = sum(iris_state_counts.values())
+    iris_state_primary = next((key for key in iris_state_order if iris_state_counts.get(key, 0) > 0), 'Open')
+    ticket_summary = {
+        'total': len(monitored_tickets),
+        'finding': sum(1 for ticket in monitored_tickets if ticket.case_kind == 'finding'),
+        'manual': sum(1 for ticket in monitored_tickets if ticket.case_kind == 'manual'),
+        'synced': sum(1 for ticket in monitored_tickets if ticket.remote_case_id and ticket.last_sync_status in {'synced', 'monitored', 'partial-synced'}),
+        'pending': sum(1 for ticket in monitored_tickets if not ticket.remote_case_id or ticket.last_sync_status not in {'synced', 'monitored', 'partial-synced'}),
+    }
     return templates.TemplateResponse('tickets.html', {
         'request': request,
         'tickets': monitored_tickets,
-        'ticket_views': {ticket.id: _ticket_case_view(ticket, remote_case_map.get(str(ticket.remote_case_id))) for ticket in monitored_tickets},
+        'ticket_views': ticket_views,
         'remote_case_map': remote_case_map,
         'iris_login_url': _iris_login_url(),
         'summary': get_summary(db),
+        'ticket_summary': ticket_summary,
+        'iris_state_counts': iris_state_counts,
+        'iris_state_pie_segments': iris_state_pie_segments,
+        'iris_state_pie_style': iris_state_pie_style,
+        'iris_state_total': iris_state_total,
+        'iris_state_primary': iris_state_primary,
         'status_filter': status,
         'case_kind_filter': case_kind,
+        'remote_state_filter': remote_state,
         'playbook_choices': playbook_choices(),
     })
 
@@ -917,25 +1495,12 @@ def update_finding_status(finding_id: int, status: str = Form(...), db: Session 
     finding = db.get(Finding, finding_id)
     if not finding:
         raise HTTPException(status_code=404, detail='finding not found')
-    previous_status = finding.status
-    finding.status = status
-    if finding.ticket_case:
-        finding.ticket_case.status = status
-        activity = None
-        if previous_status != status:
-            activity = add_ticket_activity(
-                db,
-                finding.ticket_case,
-                actor='SATRIA',
-                actor_role='workflow',
-                activity_type='status-update',
-                message=f'Workflow status changed in SATRIA: {previous_status} -> {status}',
-            )
-        if finding.ticket_case.remote_case_id or finding.ticket_case.sync_mode == 'api':
-            sync_ticket_case_status(finding.ticket_case, previous_status, activity)
-    if status in {'Closed', 'Resolved'}:
-        finding.resolved_at = datetime.utcnow()
-    db.add(AuditLog(action='finding_status_updated', object_type='finding', object_id=str(finding.id), detail=status))
+    db.add(AuditLog(
+        action='finding_status_update_blocked',
+        object_type='finding',
+        object_id=str(finding.id),
+        detail=f'requested={status}',
+    ))
     db.commit()
     return RedirectResponse(f'/findings/{finding.id}', status_code=303)
 
@@ -997,12 +1562,14 @@ def sync_ticket(ticket_case_id: int, db: Session = Depends(get_db)):
 
 @app.post('/tickets/refresh')
 def refresh_tickets_from_iris(db: Session = Depends(get_db)):
+    remote_cases = list_remote_cases()
+    imported = import_remote_cases_to_satria(db, remote_cases) if remote_cases else 0
     tickets = db.query(TicketCase).filter(TicketCase.remote_case_id.is_not(None)).all()
     refreshed = 0
     for ticket in tickets:
         refresh_ticket_case_from_iris(ticket)
         refreshed += 1
-    db.add(AuditLog(action='tickets_monitored_from_iris', object_type='ticket_case', detail=f'refreshed={refreshed}'))
+    db.add(AuditLog(action='tickets_monitored_from_iris', object_type='ticket_case', detail=f'refreshed={refreshed}; imported={imported}'))
     db.commit()
     return RedirectResponse('/tickets', status_code=303)
 
@@ -1129,15 +1696,11 @@ def add_ticket_evidence_form(
 
 @app.post('/ticketing/send-critical-high-to-iris')
 def send_critical_high_to_iris(db: Session = Depends(get_db)):
-    findings = active_findings_query(db).filter(
-        Finding.severity_normalized.in_(['Critical', 'High']),
-        Finding.status.notin_(['Closed', 'False Positive', 'Accepted Risk'])
-    ).order_by(Finding.risk_score.desc()).limit(100).all()
+    findings = bulk_critical_high_candidates_query(db).order_by(Finding.risk_score.desc()).limit(100).all()
     sent = 0
     for finding in findings:
-        if not finding.ticket_case:
-            send_finding_to_iris(db, finding, finding.asset)
-            sent += 1
+        send_finding_to_iris(db, finding, finding.asset)
+        sent += 1
     db.add(AuditLog(action='bulk_findings_sent_to_iris', object_type='finding', detail=f'sent={sent}'))
     db.commit()
     return RedirectResponse('/tickets', status_code=303)
@@ -1168,6 +1731,222 @@ def report_executive_md(db: Session = Depends(get_db)):
         media_type='text/markdown',
         headers={'Content-Disposition': 'attachment; filename="satria-executive-summary.md"'}
     )
+
+@app.post('/api/v1/releases/intake', response_model=ReleaseIntakeOut)
+def api_v1_release_intake(
+    payload: ReleaseIntakeCreate,
+    service_account: str = Depends(_service_account_scope('release:write')),
+    db: Session = Depends(get_db),
+):
+    asset = db.get(Asset, payload.asset_id) if payload.asset_id else None
+    if not asset:
+        asset = (
+            db.query(Asset)
+            .filter(
+                Asset.name == payload.asset_name,
+                Asset.asset_type == payload.asset_type,
+            )
+            .one_or_none()
+        )
+    if not asset:
+        asset = Asset(
+            name=payload.asset_name,
+            asset_type=payload.asset_type,
+            target=payload.target or payload.image_ref,
+            environment=payload.environment,
+            criticality=payload.criticality,
+            owner=payload.owner,
+            technical_pic=payload.technical_pic,
+        )
+        db.add(asset)
+        db.flush()
+    else:
+        asset.target = payload.target or payload.image_ref
+        asset.environment = payload.environment
+        asset.criticality = payload.criticality
+        if payload.owner:
+            asset.owner = payload.owner
+        if payload.technical_pic:
+            asset.technical_pic = payload.technical_pic
+
+    release = ReleaseArtifact(
+        asset_id=asset.id,
+        asset_code=payload.asset_code,
+        release_version=payload.release_version,
+        image_ref=payload.image_ref,
+        image_digest=payload.image_digest,
+        git_commit=payload.git_commit,
+        build_number=payload.build_number,
+        requested_by=payload.requested_by or service_account,
+        environment_target=payload.environment_target or payload.environment,
+        source_registry=payload.source_registry,
+        metadata_json=json.dumps({
+            **(payload.metadata or {}),
+            **({'risk_acceptance_ref': payload.risk_acceptance_ref} if payload.risk_acceptance_ref else {}),
+            **({'gate_override_decision': payload.gate_override_decision} if payload.gate_override_decision else {}),
+        }, ensure_ascii=True),
+    )
+    db.add(release)
+    db.add(AuditLog(
+        actor=service_account,
+        action='release_intake_v1',
+        object_type='release_artifact',
+        detail=f"{payload.asset_name}|{payload.release_version or '-'}|{payload.image_ref}",
+    ))
+    db.commit()
+    db.refresh(release)
+    return {
+        'asset_id': asset.id,
+        'release_id': release.id,
+        'asset_name': asset.name,
+        'asset_code': release.asset_code,
+        'release_version': release.release_version,
+        'image_ref': release.image_ref,
+        'image_digest': release.image_digest,
+        'git_commit': release.git_commit,
+        'build_number': release.build_number,
+        'requested_by': release.requested_by,
+        'environment_target': release.environment_target,
+        'risk_acceptance_ref': payload.risk_acceptance_ref,
+        'gate_override_decision': payload.gate_override_decision,
+        'created_at': release.created_at,
+    }
+
+
+@app.post('/api/v1/scans', response_model=PipelineScanStatusOut)
+def api_v1_create_scan(
+    payload: PipelineScanCreate,
+    service_account: str = Depends(_service_account_scope('scan:create')),
+    db: Session = Depends(get_db),
+):
+    release = db.get(ReleaseArtifact, payload.release_id) if payload.release_id else None
+    asset = db.get(Asset, payload.asset_id) if payload.asset_id else None
+    if not asset and release:
+        asset = release.asset
+    if not asset:
+        _raise_api_error(404, 'ASSET_NOT_FOUND', 'asset not found')
+    if payload.profile not in SUPPORTED_PROFILES:
+        _raise_api_error(
+            400,
+            'SCAN_PROFILE_UNSUPPORTED',
+            'unsupported scan profile',
+            details={'supported_profiles': sorted(SUPPORTED_PROFILES)},
+        )
+    if payload.image_ref and release:
+        registered_refs = {release.image_ref, asset.target}
+        if release.image_digest:
+            registered_refs.add(release.image_digest)
+        if payload.image_ref not in registered_refs:
+            _raise_api_error(
+                400,
+                'RELEASE_IMAGE_MISMATCH',
+                'image_ref does not match registered release',
+                details={'registered_refs': sorted(registered_refs)},
+            )
+
+    job = ScanJob(
+        asset_id=asset.id,
+        release_id=release.id if release else None,
+        profile=payload.profile,
+        scanner='+'.join(scanners_for_profile(payload.profile)),
+        status='queued',
+    )
+    db.add(job)
+    db.add(AuditLog(
+        actor=service_account,
+        action='scan_created_v1',
+        object_type='scan_job',
+        detail=f"{asset.name}/{payload.profile}/release={release.id if release else '-'}",
+    ))
+    db.commit()
+    db.refresh(job)
+    run_scan_job.delay(job.id)
+    return _pipeline_status_payload(job, db)
+
+
+@app.get('/api/v1/scans/{scan_id}', response_model=PipelineScanStatusOut)
+def api_v1_scan_status(
+    scan_id: int,
+    service_account: str = Depends(_service_account_scope('scan:read')),
+    db: Session = Depends(get_db),
+):
+    scan = db.get(ScanJob, scan_id)
+    if not scan:
+        _raise_api_error(404, 'SCAN_NOT_FOUND', 'scan not found', scan_id=scan_id)
+    return _pipeline_status_payload(scan, db)
+
+
+@app.get('/api/v1/scans/{scan_id}/result', response_model=PipelineScanResultOut)
+def api_v1_scan_result(
+    scan_id: int,
+    service_account: str = Depends(_service_account_scope('scan:read')),
+    db: Session = Depends(get_db),
+):
+    scan = db.get(ScanJob, scan_id)
+    if not scan:
+        _raise_api_error(404, 'SCAN_NOT_FOUND', 'scan not found', scan_id=scan_id)
+    return _pipeline_result_payload(scan, db)
+
+
+@app.post('/api/v1/scans/{scan_id}/publish-ticket', response_model=PipelinePublishTicketOut)
+def api_v1_publish_ticket(
+    scan_id: int,
+    payload: PipelinePublishTicketRequest,
+    service_account: str = Depends(_service_account_scope('ticket:publish')),
+    db: Session = Depends(get_db),
+):
+    scan = db.get(ScanJob, scan_id)
+    if not scan:
+        _raise_api_error(404, 'SCAN_NOT_FOUND', 'scan not found', scan_id=scan_id)
+    if scan.status != 'completed':
+        _raise_api_error(409, 'SCAN_NOT_COMPLETED', 'scan is not completed', scan_id=scan_id)
+    if payload.target_system.lower() != 'iris':
+        _raise_api_error(
+            400,
+            'TARGET_SYSTEM_UNSUPPORTED',
+            'target_system is not supported',
+            scan_id=scan_id,
+            details={'supported_target_systems': ['iris']},
+        )
+
+    severity_filter = payload.severity_filter or ['Critical', 'High']
+    normalized_filter = {item.strip().title() for item in severity_filter if item.strip()}
+    if not normalized_filter:
+        normalized_filter = {'Critical', 'High'}
+
+    findings = (
+        db.query(Finding)
+        .filter(
+            Finding.scan_job_id == scan.id,
+            Finding.severity_normalized.in_(sorted(normalized_filter)),
+        )
+        .order_by(Finding.risk_score.desc(), Finding.id.desc())
+        .all()
+    )
+    remote_ids: list[str] = []
+    for finding in findings:
+        remote_ids.append(send_finding_to_iris(db, finding, finding.asset))
+    db.add(AuditLog(
+        actor=service_account,
+        action='scan_publish_ticket_v1',
+        object_type='scan_job',
+        object_id=str(scan.id),
+        detail=(
+            f'published={len(remote_ids)}'
+            f'|target_system={payload.target_system}'
+            f'|severity={",".join(sorted(normalized_filter))}'
+            f'|assign_to={payload.assign_to or "-"}'
+            f'|due_date={payload.due_date.isoformat() if payload.due_date else "-"}'
+        ),
+    ))
+    db.commit()
+    return {
+        'scan_id': scan.id,
+        'published_count': len(remote_ids),
+        'remote_ids': remote_ids,
+        'status': 'published' if remote_ids else 'no_critical_high_findings',
+    }
+
 
 @app.get('/api/summary')
 def api_summary(db: Session = Depends(get_db)):
@@ -1222,12 +2001,19 @@ def api_findings(db: Session = Depends(get_db)):
 
 def _ticket_case_view(ticket: TicketCase, remote_case: dict | None = None) -> dict:
     settings = get_settings()
-    remote_state = (remote_case or {}).get('state_name')
+    remote_state = (
+        (remote_case or {}).get('state_name')
+        or (remote_case or {}).get('status_name')
+        or (remote_case or {}).get('case_state')
+        or (remote_case or {}).get('state')
+    )
     if not remote_state:
         if ticket.remote_case_id:
-            remote_state = 'Closed' if ticket.status == 'Closed' else 'Open'
+            remote_state = ticket.status or 'Open'
         else:
             remote_state = '-'
+    elif remote_state != '-':
+        remote_state = str(remote_state).replace('In progress', 'In Progress')
     return {
         'classification': (remote_case or {}).get('classification') or classification_label_for_case(ticket),
         'soc_id': (remote_case or {}).get('case_soc_id') or ticket.remote_case_soc_id or default_soc_id_for_case(ticket),

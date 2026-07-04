@@ -1,9 +1,13 @@
 # SATRIA + DFIR-IRIS Demo SOP
 
+## Dokumen Pendamping
+
+- Walkthrough top management IRIS: [IRIS-TOP-MANAGEMENT-WALKTHROUGH.md](C:/Users/gufroni/Documents/GitHub/satria/docs/IRIS-TOP-MANAGEMENT-WALKTHROUGH.md)
+
 ## Akses
 
 - SATRIA: `http://127.0.0.1:8090`
-- DFIR-IRIS: `https://127.0.0.1:10443`
+- DFIR-IRIS: `https://127.0.0.1:8092`
 - IRIS admin:
   - username: `administrator`
   - password: `SATRIA-IRIS-Admin!2026`
@@ -18,16 +22,68 @@ Ketiga user sudah dibuat di DFIR-IRIS dan dimasukkan ke grup `Analysts`.
 
 ## Case Demo Yang Sudah Tersinkron
 
-- IRIS Case `#2`: `Insiden phishing pada salah satu KPPN`
-- IRIS Case `#3`: `Insiden malware pada laptop pegawai KPPN`
+Selain case manual awal, environment IRIS telah diisi 20 case dummy terstruktur dengan kode:
 
-Di masing-masing case sudah tersinkron:
+- `INC-DUMMY-001` sampai `INC-DUMMY-020`
 
-- case metadata dari SATRIA
-- task L1, L2, L3
-- activity/timeline
-- evidence record
-- upload file evidence ke datastore IRIS
+Case-case tersebut dibuat untuk menggambarkan alur lengkap:
+
+- intake dan triase awal
+- eskalasi SOC L1 ke L2 dan L3
+- koordinasi ke pengembang atau pemilik layanan
+- evidence, IOC, asset, notes, task, dan summary
+- closure pada sebagian case agar dashboard terlihat realistis
+
+## Dua Jalur Input ke IRIS
+
+### 1. Manual langsung di IRIS
+
+Dipakai untuk insiden yang berasal dari:
+
+- laporan user
+- laporan unit kerja
+- monitoring non-SATRIA
+- eskalasi manual
+
+Contoh:
+
+- phishing email
+- malware endpoint
+- akses tidak sah yang dilaporkan helpdesk
+
+### 2. Dari SATRIA ke IRIS
+
+Dipakai untuk finding hasil scanning SATRIA yang perlu dinaikkan menjadi case.
+
+Alur ringkas:
+
+1. `Assets`: daftar target
+2. `Scans`: jalankan profile scan
+3. `Findings`: review dan pilih finding prioritas
+4. kirim finding ke IRIS
+5. `Tickets`: pantau sinkronisasi dan remote case
+
+Di IRIS, case hasil SATRIA lalu diteruskan oleh SOC L1, L2, L3 sampai ke pengembang atau stakeholder bila diperlukan.
+
+## Skenario Demo SATRIA ke IRIS
+
+### Container image ke IRIS
+
+1. Daftarkan image di menu `Assets`.
+2. Jalankan scan container di menu `Scans`.
+3. Buka menu `Findings`.
+4. Filter severity `Critical` atau `High`.
+5. Buka detail finding lalu kirim ke IRIS.
+6. Cek menu `Tickets` untuk memastikan remote case berhasil dibuat.
+7. Lanjutkan investigasi dan task lanjutan di IRIS.
+
+### Web application ke IRIS
+
+1. Daftarkan URL aplikasi di menu `Assets`.
+2. Jalankan `web_baseline` atau `web_full`.
+3. Review temuan ZAP di menu `Findings`.
+4. Kirim finding yang valid ke IRIS.
+5. Di IRIS, tim SOC dan pengembang menindaklanjuti hasilnya sampai retest selesai.
 
 ## SOP Operasional
 

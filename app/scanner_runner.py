@@ -23,6 +23,7 @@ except ImportError:  # pragma: no cover - handled at runtime in scanner guard
         pass
 
 from .config import get_settings
+from .allowlist import effective_allowlist_rules
 
 settings = get_settings()
 
@@ -49,7 +50,7 @@ def scanners_for_profile(profile: str) -> list[str]:
 
 
 def is_allowed_target(target: str) -> bool:
-    allowlist = settings.allowlist()
+    allowlist = effective_allowlist_rules()
     if not allowlist:
         return False
 

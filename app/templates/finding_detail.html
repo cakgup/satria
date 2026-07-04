@@ -55,20 +55,12 @@
     </dd>
   </dl>
   <div class="actions">
-    <form method="post" action="/findings/{{ finding.id }}/status">
-      <select name="status">
-        {% for item in ['Open','Assigned','In Progress','Remediated','Retest','Closed','False Positive','Accepted Risk'] %}
-        <option value="{{ item }}" {% if finding.status == item %}selected{% endif %}>{{ item }}</option>
-        {% endfor %}
-      </select>
-      <button type="submit">Update Status</button>
-    </form>
     <form method="post" action="/findings/{{ finding.id }}/send-to-iris">
-      <button type="submit">{% if finding.ticket_case %}Refresh Ticket{% else %}Create Ticket{% endif %}</button>
+      <button type="submit">{% if finding.ticket_case %}Refresh dari IRIS{% else %}Kirim ke IRIS{% endif %}</button>
     </form>
   </div>
   {% if finding.ticket_case and finding.ticket_case.remote_case_id %}
-  <p class="helper-copy">Update Status pada halaman ini mengubah workflow lokal SATRIA. State case di IRIS tetap ditampilkan terpisah sebagai konteks monitoring remote.</p>
+  <p class="helper-copy">SATRIA hanya menampilkan hasil sinkronisasi dan status ticket dari IRIS. Perubahan workflow case dilakukan langsung di IRIS agar alur operasional tetap terpusat pada sistem ticketing utama.</p>
   {% endif %}
 </section>
 {% endblock %}

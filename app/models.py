@@ -20,12 +20,46 @@ class Asset(Base):
     scans: Mapped[list['ScanJob']] = relationship(back_populates='asset')
     findings: Mapped[list['Finding']] = relationship(back_populates='asset')
     ticket_cases: Mapped[list['TicketCase']] = relationship(back_populates='asset')
+    releases: Mapped[list['ReleaseArtifact']] = relationship(back_populates='asset')
+
+
+class ScanAllowlistEntry(Base):
+    __tablename__ = 'scan_allowlist_entries'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    rule: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    description: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class ReleaseArtifact(Base):
+    __tablename__ = 'release_artifacts'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    asset_id: Mapped[int] = mapped_column(ForeignKey('assets.id'), index=True)
+    asset_code: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
+    release_version: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
+    image_ref: Mapped[str] = mapped_column(Text)
+    image_digest: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    git_commit: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
+    build_number: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
+    requested_by: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
+    environment_target: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
+    source_registry: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    metadata_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    asset: Mapped['Asset'] = relationship(back_populates='releases')
+    scans: Mapped[list['ScanJob']] = relationship(back_populates='release')
+
 
 class ScanJob(Base):
     __tablename__ = 'scan_jobs'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     asset_id: Mapped[int] = mapped_column(ForeignKey('assets.id'), index=True)
+    release_id: Mapped[int | None] = mapped_column(ForeignKey('release_artifacts.id'), nullable=True, index=True)
     profile: Mapped[str] = mapped_column(String(80), index=True)
     scanner: Mapped[str] = mapped_column(String(80), index=True)
     status: Mapped[str] = mapped_column(String(30), default='queued', index=True)
@@ -37,6 +71,7 @@ class ScanJob(Base):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     asset: Mapped['Asset'] = relationship(back_populates='scans')
+    release: Mapped['ReleaseArtifact | None'] = relationship(back_populates='scans')
     findings: Mapped[list['Finding']] = relationship(back_populates='scan_job')
 
 class Finding(Base):

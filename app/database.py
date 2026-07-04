@@ -29,7 +29,16 @@ def _ensure_runtime_schema():
         scan_job_columns = {column['name'] for column in inspector.get_columns('scan_jobs')}
         _add_missing_columns('scan_jobs', {
             'is_visible': "BOOLEAN DEFAULT TRUE",
+            'release_id': 'INTEGER',
         }, scan_job_columns)
+        if 'release_id' not in scan_job_columns and inspector.has_table('release_artifacts'):
+            _ensure_foreign_key(
+                'scan_jobs',
+                'release_id',
+                'release_artifacts',
+                'id',
+                'fk_scan_jobs_release_id',
+            )
 
     if inspector.has_table('ticket_cases'):
         ticket_case_columns = {column['name'] for column in inspector.get_columns('ticket_cases')}
@@ -71,3 +80,37 @@ def _add_missing_columns(table_name: str, columns: dict[str, str], existing_colu
             continue
         with engine.begin() as conn:
             conn.execute(text(f'ALTER TABLE "{table_name}" ADD COLUMN "{column_name}" {ddl}'))
+
+
+def _ensure_foreign_key(
+    table_name: str,
+    column_name: str,
+    ref_table: str,
+    ref_column: str,
+    constraint_name: str,
+):
+    if engine.dialect.name != 'postgresql':
+        return
+    sql = text("""
+        SELECT 1
+        FROM information_schema.table_constraints tc
+        JOIN information_schema.key_column_usage kcu
+          ON tc.constraint_name = kcu.constraint_name
+         AND tc.table_schema = kcu.table_schema
+        WHERE tc.constraint_type = 'FOREIGN KEY'
+          AND tc.table_name = :table_name
+          AND tc.constraint_name = :constraint_name
+          AND kcu.column_name = :column_name
+    """)
+    with engine.begin() as conn:
+        exists = conn.execute(sql, {
+            'table_name': table_name,
+            'constraint_name': constraint_name,
+            'column_name': column_name,
+        }).scalar()
+        if exists:
+            return
+        conn.execute(text(
+            f'ALTER TABLE "{table_name}" ADD CONSTRAINT "{constraint_name}" '
+            f'FOREIGN KEY ("{column_name}") REFERENCES "{ref_table}" ("{ref_column}")'
+        ))

@@ -160,6 +160,131 @@
     margin: 0;
     color: #7d3425;
   }
+
+  .allowlist-panel {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .allowlist-layout {
+    display: grid;
+    grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.1fr);
+    gap: 16px;
+  }
+
+  .allowlist-helper {
+    margin: 0;
+    color: var(--muted);
+  }
+
+  .allowlist-card {
+    padding: 16px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(20, 57, 98, 0.08);
+    min-width: 0;
+  }
+
+  .allowlist-card h4 {
+    margin: 0 0 8px;
+    color: var(--text);
+    font-size: 1rem;
+  }
+
+  .allowlist-card p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .allowlist-card p + p {
+    margin-top: 8px;
+  }
+
+  .allowlist-list {
+    display: grid;
+    gap: 14px;
+  }
+
+  .allowlist-entry-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .allowlist-entry {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(221, 231, 242, 0.32);
+    border: 1px solid rgba(20, 57, 98, 0.06);
+  }
+
+  .allowlist-entry-copy {
+    min-width: 0;
+  }
+
+  .allowlist-entry-copy code {
+    display: inline-block;
+    overflow-wrap: anywhere;
+  }
+
+  .allowlist-entry-copy small {
+    display: block;
+    margin-top: 6px;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+
+  .allowlist-entry-action {
+    flex: 0 0 auto;
+  }
+
+  .allowlist-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .allowlist-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(221, 231, 242, 0.42);
+    border: 1px solid rgba(20, 57, 98, 0.08);
+    color: var(--primary-strong);
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+
+  .allowlist-banner {
+    border-radius: 16px;
+    padding: 14px 16px;
+    border: 1px solid rgba(20, 57, 98, 0.08);
+    background: rgba(227, 240, 255, 0.55);
+    color: var(--primary-strong);
+  }
+
+  .allowlist-banner.is-error {
+    border-color: rgba(180, 98, 74, 0.2);
+    background: linear-gradient(135deg, rgba(255, 250, 248, 0.96), rgba(252, 236, 231, 0.92));
+    color: #8f3d2c;
+  }
+
+  .allowlist-banner strong {
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  @media (max-width: 980px) {
+    .allowlist-layout {
+      grid-template-columns: 1fr;
+    }
+  }
 </style>
 <section class="hero">
   <div class="hero-copy">
@@ -182,6 +307,13 @@
     </div>
   </div>
   <p>Asset tidak dihapus karena cleanup remote IRIS gagal. Data lokal tetap dipertahankan agar operator bisa investigasi dan retry. Detail: {{ cleanup_message or 'remote cleanup failed' }}</p>
+</section>
+{% endif %}
+
+{% if allowlist_message %}
+<section class="allowlist-banner {% if allowlist_status == 'error' %}is-error{% endif %}">
+  <strong>Allowlist operasional</strong>
+  <span>{{ allowlist_message }}</span>
 </section>
 {% endif %}
 
@@ -254,6 +386,70 @@
       <div><strong>{{ summary.findings }}</strong><span>Total finding</span></div>
     </div>
   </aside>
+</section>
+
+<section class="panel allowlist-panel">
+  <div class="panel-head">
+    <div>
+      <span class="section-kicker">Allowlist</span>
+      <h3>Kelola target yang diizinkan untuk discan</h3>
+      <p class="allowlist-helper">Tambahkan rule allowlist di sini agar scan web atau infrastruktur tidak terblokir. Rule dapat berupa IP, hostname, domain, URL, atau CIDR. Contoh: <code>10.216.208.107</code>, <code>10.216.208.0/24</code>, <code>sipp.internal.go.id</code>, atau <code>http://10.216.208.107/</code>.</p>
+    </div>
+  </div>
+  <div class="allowlist-layout">
+    <div class="allowlist-card">
+      <h4>Tambah rule allowlist</h4>
+      <form method="post" action="/allowlist" class="form-grid">
+        <label class="field field-wide">
+          <span>Rule target</span>
+          <input name="rule" required placeholder="10.216.208.107 / https://portal.example.go.id / 10.216.208.0/24">
+        </label>
+        <label class="field field-wide">
+          <span>Keterangan</span>
+          <input name="description" placeholder="Contoh: aplikasi internal SIPP atau subnet staging">
+        </label>
+        <div class="form-actions">
+          <button type="submit">Tambah Allowlist</button>
+        </div>
+      </form>
+    </div>
+    <div class="allowlist-list">
+      <div class="allowlist-card">
+        <h4>Allowlist operasional</h4>
+        {% if allowlist_entries %}
+        <div class="allowlist-entry-list">
+          {% for entry in allowlist_entries %}
+          <div class="allowlist-entry">
+            <div class="allowlist-entry-copy">
+              <code>{{ entry.rule }}</code>
+              <small>{{ entry.description or 'Rule ditambahkan dari menu Assets untuk kebutuhan operasional scan.' }}</small>
+            </div>
+            <div class="allowlist-entry-action">
+              <form method="post" action="/allowlist/{{ entry.id }}/delete" class="asset-delete-form" onsubmit="return confirm('Hapus rule allowlist {{ entry.rule }}?');">
+                <button type="submit" class="table-action table-action-danger">Hapus</button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p>Belum ada rule allowlist operasional dari UI. Tambahkan rule pertama untuk memulai scan target yang diblokir policy.</p>
+        {% endif %}
+      </div>
+      <div class="allowlist-card">
+        <h4>Allowlist bawaan sistem</h4>
+        {% if config_allowlist %}
+        <div class="allowlist-tag-list">
+          {% for rule in config_allowlist %}
+          <span class="allowlist-tag">{{ rule }}</span>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p>Tidak ada allowlist bawaan dari konfigurasi sistem.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 </section>
 
 <template id="guidance-data-container_image">

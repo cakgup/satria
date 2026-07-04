@@ -453,58 +453,6 @@
       </div>
       <a class="text-link" href="/findings?severity=Critical">Lihat prioritas tinggi</a>
     </div>
-    <div class="risk-view">
-      <div class="risk-pie-wrap">
-        <a class="risk-pie-link" href="/findings" title="Buka semua findings">
-          <div class="risk-pie">
-            <svg class="risk-svg" viewBox="0 0 120 120" role="img" aria-label="Distribusi severity findings">
-              <circle class="pie-bg" cx="60" cy="60" r="54"></circle>
-              <circle class="pie-track" cx="60" cy="60" r="42"></circle>
-              {% for segment in pie_segments %}
-              <a href="{{ segment.href }}" title="Buka finding {{ segment.label }} ({{ segment.value }})">
-                <circle
-                  class="pie-slice"
-                  cx="60"
-                  cy="60"
-                  r="42"
-                  stroke="{{ segment.color }}"
-                  stroke-dasharray="{{ segment.dasharray }}"
-                  stroke-dashoffset="{{ segment.dashoffset }}"></circle>
-              </a>
-              {% endfor %}
-              <circle class="pie-hole" cx="60" cy="60" r="22"></circle>
-            </svg>
-            <div class="risk-pie-label">
-              <strong>{{ summary.findings }}</strong>
-              <span>Total</span>
-            </div>
-          </div>
-        </a>
-      </div>
-      <div class="risk-copy">
-        <p>Distribusi severity membantu menentukan urutan remediation. Panel ini sengaja dibuat lebih dominan agar prioritas risiko langsung terbaca sejak pertama membuka dashboard.</p>
-        <div class="risk-highlights">
-          <a class="risk-highlight-link" href="/findings?severity=Critical" title="Buka semua finding Critical">
-            <div class="risk-highlight">
-              <span>Critical</span>
-              <strong>{{ severity.get('Critical', 0) }}</strong>
-            </div>
-          </a>
-          <a class="risk-highlight-link" href="/findings?severity=High" title="Buka semua finding High">
-            <div class="risk-highlight">
-              <span>High</span>
-              <strong>{{ severity.get('High', 0) }}</strong>
-            </div>
-          </a>
-          <a class="risk-highlight-link" href="/findings" title="Buka seluruh finding yang masih perlu ditindaklanjuti">
-            <div class="risk-highlight">
-              <span>Actionable</span>
-              <strong>{{ summary.open_findings }}</strong>
-            </div>
-          </a>
-        </div>
-      </div>
-    </div>
     <table class="risk-table">
       <tr><th>Severity</th><th>Total</th></tr>
       {% for sev in ['Critical','High','Medium','Low','Informational'] %}

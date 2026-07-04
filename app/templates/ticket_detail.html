@@ -60,7 +60,7 @@
     <dt>Resolution Summary</dt><dd>{{ ticket.resolution_summary or '-' }}</dd>
     <dt>Sync Error</dt><dd>{{ ticket.last_sync_error or '-' }}</dd>
   </dl>
-  <p class="helper-copy">Workflow Status di SATRIA dapat berubah menjadi `Assigned`, `In Progress`, atau status lain untuk kebutuhan tindak lanjut internal. Remote State tetap mengikuti kondisi case di IRIS dan tidak selalu berubah bersamaan.</p>
+  <p class="helper-copy">SATRIA berfungsi sebagai panel monitoring dan sinkronisasi ticket. Status operasional case tetap mengikuti IRIS sebagai sistem ticketing utama.</p>
 </section>
 
 {% if not ticket.remote_case_id %}

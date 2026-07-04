@@ -11,6 +11,8 @@ from .soc import default_soc_id_for_case, tags_for_case
 from .ticketing import create_ticket_for_finding
 
 settings = get_settings()
+IRIS_IMPORTED_ASSET_NAME = "IRIS Imported Cases"
+IRIS_IMPORTED_ASSET_TARGET = "iris://remote-case-monitor"
 
 try:
     from dfir_iris_client.alert import Alert
@@ -42,6 +44,71 @@ def list_remote_cases() -> list[dict]:
         return data if isinstance(data, list) else []
     except Exception:
         return []
+
+
+def import_remote_cases_to_satria(db: Session, remote_cases: list[dict] | None = None) -> int:
+    remote_cases = remote_cases if remote_cases is not None else list_remote_cases()
+    if not remote_cases:
+        return 0
+
+    tickets = db.query(TicketCase).all()
+    tickets_by_remote_id = {
+        str(ticket.remote_case_id): ticket
+        for ticket in tickets
+        if ticket.remote_case_id
+    }
+    tickets_by_soc_id = {
+        str(ticket.remote_case_soc_id): ticket
+        for ticket in tickets
+        if ticket.remote_case_soc_id
+    }
+    imported = 0
+    imported_asset: Asset | None = None
+
+    for remote_case in remote_cases:
+        remote_case_id = str(remote_case.get("case_id") or "").strip()
+        if not remote_case_id:
+            continue
+
+        remote_soc_id = str(remote_case.get("case_soc_id") or "").strip() or None
+        ticket = tickets_by_remote_id.get(remote_case_id)
+        if ticket is None and remote_soc_id:
+            ticket = tickets_by_soc_id.get(remote_soc_id)
+
+        if ticket is None:
+            imported_asset = imported_asset or _ensure_imported_case_asset(db)
+            ticket = TicketCase(
+                asset_id=imported_asset.id,
+                provider="dfir-iris",
+                title=remote_case.get("case_name") or f"IRIS Case #{remote_case_id}",
+                description=_remote_case_description(remote_case),
+                status=_remote_case_status(remote_case),
+                sync_mode="api",
+                remote_case_id=remote_case_id,
+                remote_customer_id=_remote_case_customer_id(remote_case),
+                remote_case_name=remote_case.get("case_name") or f"IRIS Case #{remote_case_id}",
+                remote_case_soc_id=remote_soc_id or f"IRIS-REMOTE-{remote_case_id}",
+                last_sync_status="monitored",
+                case_kind="manual",
+                incident_type="iris-manual-case",
+                priority=_remote_case_priority(remote_case),
+                source_channel="IRIS/manual",
+                organization_unit=_remote_case_customer_name(remote_case),
+                reporter=remote_case.get("owner") or "IRIS operator",
+                current_role="IRIS",
+                current_owner=remote_case.get("owner") or None,
+                playbook="IRIS-REMOTE-MANUAL",
+            )
+            db.add(ticket)
+            db.flush()
+            imported += 1
+
+        _apply_remote_case_summary(ticket, remote_case)
+        tickets_by_remote_id[str(ticket.remote_case_id or remote_case_id)] = ticket
+        if ticket.remote_case_soc_id:
+            tickets_by_soc_id[str(ticket.remote_case_soc_id)] = ticket
+
+    return imported
 
 
 def find_remote_cases_by_soc_id(soc_id: str | None) -> list[dict]:
@@ -99,13 +166,7 @@ def refresh_ticket_case_from_iris(ticket_case: TicketCase) -> TicketCase:
         ticket_case.last_sync_status = "monitor-unavailable"
         return ticket_case
 
-    summary = bundle["summary"]
-    ticket_case.remote_case_name = summary.get("case_name") or ticket_case.remote_case_name or ticket_case.title
-    ticket_case.remote_case_soc_id = summary.get("case_soc_id") or ticket_case.remote_case_soc_id
-    ticket_case.remote_customer_id = str(summary.get("customer_id") or ticket_case.remote_customer_id or "")
-    ticket_case.current_owner = summary.get("owner") or ticket_case.current_owner
-    ticket_case.last_sync_status = "monitored"
-    ticket_case.last_sync_error = None
+    _apply_remote_case_summary(ticket_case, bundle["summary"])
     return ticket_case
 
 
@@ -339,6 +400,32 @@ def _can_use_iris_api() -> bool:
     return bool(settings.iris_url and settings.iris_api_key and ClientSession and Case and Alert)
 
 
+def _ensure_imported_case_asset(db: Session) -> Asset:
+    asset = (
+        db.query(Asset)
+        .filter(Asset.name == IRIS_IMPORTED_ASSET_NAME, Asset.target == IRIS_IMPORTED_ASSET_TARGET)
+        .first()
+    )
+    if asset:
+        if asset.is_active:
+            asset.is_active = False
+        return asset
+
+    asset = Asset(
+        name=IRIS_IMPORTED_ASSET_NAME,
+        asset_type="iris_case",
+        target=IRIS_IMPORTED_ASSET_TARGET,
+        environment="ticketing",
+        criticality="medium",
+        owner="DFIR-IRIS",
+        technical_pic="IRIS operator",
+        is_active=False,
+    )
+    db.add(asset)
+    db.flush()
+    return asset
+
+
 def _client_session() -> ClientSession:
     return ClientSession(
         apikey=settings.iris_api_key,
@@ -505,6 +592,91 @@ def _resolve_case_classification(helper: CaseClassificationsHelper, ticket_case:
     return resolved or 36
 
 
+def _apply_remote_case_summary(ticket_case: TicketCase, summary: dict | None) -> TicketCase:
+    summary = summary or {}
+    remote_state = _remote_case_status(summary)
+    remote_name = summary.get("case_name") or ticket_case.remote_case_name or ticket_case.title
+    remote_soc_id = summary.get("case_soc_id") or ticket_case.remote_case_soc_id
+    remote_customer_id = _remote_case_customer_id(summary) or ticket_case.remote_customer_id or ""
+    remote_owner = summary.get("owner") or ticket_case.current_owner
+    remote_description = _remote_case_description(summary)
+
+    ticket_case.remote_case_name = remote_name
+    ticket_case.remote_case_soc_id = remote_soc_id
+    ticket_case.remote_customer_id = str(remote_customer_id or "")
+    ticket_case.current_owner = remote_owner
+    ticket_case.status = remote_state
+    ticket_case.priority = _remote_case_priority(summary) or ticket_case.priority
+    ticket_case.organization_unit = _remote_case_customer_name(summary) or ticket_case.organization_unit
+    if ticket_case.case_kind == "manual" and ticket_case.finding_id is None:
+        ticket_case.title = remote_name
+        ticket_case.description = remote_description or ticket_case.description
+    if ticket_case.finding is not None:
+        ticket_case.finding.status = remote_state
+        if remote_state == "Closed":
+            ticket_case.finding.resolved_at = datetime.utcnow()
+        elif ticket_case.finding.resolved_at is not None:
+            ticket_case.finding.resolved_at = None
+    ticket_case.last_sync_status = "monitored"
+    ticket_case.last_sync_error = None
+    return ticket_case
+
+
+def _remote_case_status(remote_case: dict | None) -> str:
+    remote_case = remote_case or {}
+    return _normalize_case_state(
+        remote_case.get("state_name")
+        or remote_case.get("status_name")
+        or remote_case.get("case_state")
+        or remote_case.get("state")
+    )
+
+
+def _remote_case_priority(remote_case: dict | None) -> str:
+    remote_case = remote_case or {}
+    raw = (
+        remote_case.get("case_priority")
+        or remote_case.get("priority")
+        or remote_case.get("priority_name")
+        or remote_case.get("severity_name")
+        or remote_case.get("severity")
+        or ""
+    )
+    normalized = str(raw).strip().lower()
+    if normalized in {"critical", "high", "medium", "low"}:
+        return normalized
+    return "medium"
+
+
+def _remote_case_description(remote_case: dict | None) -> str:
+    remote_case = remote_case or {}
+    return (
+        remote_case.get("case_description")
+        or remote_case.get("description")
+        or remote_case.get("summary")
+        or remote_case.get("case_name")
+        or "IRIS remote case imported into SATRIA monitoring."
+    )
+
+
+def _remote_case_customer_name(remote_case: dict | None) -> str:
+    remote_case = remote_case or {}
+    return (
+        remote_case.get("client_name")
+        or remote_case.get("customer_name")
+        or settings.iris_customer_name
+    )
+
+
+def _remote_case_customer_id(remote_case: dict | None) -> str:
+    remote_case = remote_case or {}
+    return str(
+        remote_case.get("customer_id")
+        or remote_case.get("client_id")
+        or ""
+    )
+
+
 def _alert_payload(finding: Finding, asset: Asset) -> dict:
     return {
         "alert_title": f"[{finding.severity_normalized}] {finding.title}",
@@ -570,6 +742,28 @@ def _normalize_task_status(status: str | None) -> str:
         "on hold": "On hold",
     }
     normalized = (status or "To do").strip()
+    return mapping.get(normalized.lower(), normalized)
+
+
+def _normalize_case_state(state: str | None) -> str:
+    mapping = {
+        "open": "Open",
+        "opened": "Open",
+        "new": "Open",
+        "assigned": "Assigned",
+        "in progress": "In Progress",
+        "in-progress": "In Progress",
+        "progress": "In Progress",
+        "remediated": "Remediated",
+        "retest": "Retest",
+        "closed": "Closed",
+        "done": "Closed",
+        "false positive": "False Positive",
+        "accepted risk": "Accepted Risk",
+    }
+    normalized = (state or "").strip()
+    if not normalized:
+        return "Open"
     return mapping.get(normalized.lower(), normalized)
 
 

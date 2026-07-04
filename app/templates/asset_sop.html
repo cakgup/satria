@@ -1,17 +1,48 @@
 {% extends "base.html" %}
 {% block content %}
 <style>
-  .asset-sop-nav {
+  .asset-sop-hero {
+    display: block;
+  }
+
+  .asset-sop-hero-head {
     display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  .asset-sop-hero-copy {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .asset-sop-hero-copy p {
+    max-width: 920px;
+  }
+
+  .asset-sop-hero-actions {
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+
+  .asset-sop-section + .asset-sop-section {
+    margin-top: 18px;
+  }
+
+  .asset-sop-nav {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
     gap: 10px;
-    flex-wrap: wrap;
+    width: 100%;
     margin-top: 14px;
   }
 
   .asset-sop-nav a {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
+    width: 100%;
     min-height: 42px;
     padding: 10px 16px;
     border-radius: 999px;
@@ -29,26 +60,65 @@
     border-color: transparent;
   }
 
+  .asset-sop-subnav {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+    width: 100%;
+    margin-top: 16px;
+  }
+
+  .asset-sop-subnav a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 42px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    border: 1px solid rgba(20, 57, 98, 0.12);
+    background: rgba(255, 255, 255, 0.82);
+    color: var(--primary-strong);
+    font-weight: 800;
+    text-decoration: none;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .asset-sop-subnav a.active {
+    background: linear-gradient(180deg, #6f98dc, #4d73bc);
+    color: #fff;
+    border-color: transparent;
+  }
+
   .asset-sop-top {
     display: grid;
     grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
     gap: 18px;
+    align-items: stretch;
   }
 
   .asset-sop-cards {
     display: grid;
-    gap: 14px;
+    gap: 18px;
     align-content: start;
   }
 
+  .asset-sop-top > .panel,
   .asset-sop-cards .card {
     min-height: 0;
+    padding: 24px 24px 22px;
   }
 
   .asset-sop-cards .card strong {
     font-size: 1.2rem;
     line-height: 1.2;
     overflow-wrap: anywhere;
+    margin-top: 10px;
+  }
+
+  .asset-sop-cards .card small {
+    margin-top: 10px;
+    line-height: 1.55;
   }
 
   .asset-sop-list {
@@ -62,36 +132,118 @@
     margin-top: 6px;
   }
 
+  .asset-sop-copy p + p {
+    margin-top: 10px;
+  }
+
+  .asset-sop-note {
+    margin-top: 14px;
+    padding: 14px 16px;
+    border-radius: 18px;
+    border: 1px solid rgba(20, 57, 98, 0.08);
+    background: rgba(241, 246, 255, 0.72);
+    color: var(--muted);
+    line-height: 1.65;
+  }
+
+  .asset-sop-snippets {
+    display: grid;
+    gap: 14px;
+    margin-top: 16px;
+  }
+
+  .asset-sop-snippet {
+    padding: 16px 18px;
+    border-radius: 22px;
+    border: 1px solid rgba(20, 57, 98, 0.08);
+    background: rgba(255, 255, 255, 0.82);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .asset-sop-snippet strong {
+    display: block;
+    margin-bottom: 10px;
+    color: var(--primary-strong);
+  }
+
+  .asset-sop-snippet pre {
+    margin: 0;
+    padding: 14px 16px;
+    border-radius: 18px;
+    overflow-x: auto;
+    background: rgba(228, 236, 250, 0.88);
+    color: #203252;
+    line-height: 1.55;
+    font-size: 0.92rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
   .asset-sop-back {
     margin-top: 6px;
   }
 
+  .asset-sop-top .panel .panel-head,
+  .asset-sop-section .panel-head {
+    margin-bottom: 12px;
+  }
+
+  .asset-sop-top .helper-copy,
+  .asset-sop-section .asset-sop-list {
+    margin-top: 0;
+  }
+
+  .asset-sop-top .panel p,
+  .asset-sop-section p,
+  .asset-sop-section li {
+    max-width: 100%;
+  }
+
   @media (max-width: 980px) {
+    .asset-sop-hero-head {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .asset-sop-hero-actions {
+      margin-left: 0;
+    }
+
     .asset-sop-top {
       grid-template-columns: 1fr;
     }
   }
 </style>
 
-<section class="hero">
-  <div class="hero-copy">
-    <span class="eyebrow">Asset SOP</span>
-    <h2>{{ selected_guide.hero }}</h2>
-    <p>{{ selected_guide.summary }}</p>
-    <div class="asset-sop-nav">
-      {% for item in asset_type_order %}
-      {% set meta = asset_type_meta[item] %}
-      <a href="/asset-sop?asset_type={{ item }}" class="{% if selected_asset_type == item %}active{% endif %}">{{ meta.label }}</a>
-      {% endfor %}
+<section class="hero asset-sop-hero">
+  <div class="asset-sop-hero-head">
+    <div class="asset-sop-hero-copy">
+      <span class="eyebrow">Asset SOP</span>
+      <h2>{{ selected_guide.hero }}</h2>
+      <p>{{ selected_guide.summary }}</p>
+    </div>
+    <div class="hero-actions asset-sop-hero-actions">
+      <a class="hero-button primary" href="/assets">Kembali ke Assets</a>
+      <a class="hero-button" href="/scan/new">Lanjut ke Scan</a>
     </div>
   </div>
-  <div class="hero-actions">
-    <a class="hero-button primary" href="/assets">Kembali ke Assets</a>
-    <a class="hero-button" href="/scan/new">Lanjut ke Scan</a>
+  <div class="asset-sop-nav">
+    {% for item in asset_type_order %}
+    {% set meta = asset_type_meta[item] %}
+    <a href="/asset-sop?asset_type={{ item }}" class="{% if selected_asset_type == item %}active{% endif %}">{{ meta.label }}</a>
+    {% endfor %}
   </div>
+  {% if asset_sub_guides %}
+  <div class="asset-sop-subnav">
+    <a href="/asset-sop?asset_type={{ selected_asset_type }}" class="{% if selected_guide_key == 'default' %}active{% endif %}">{{ selected_asset_meta.label }}</a>
+    {% for key, guide_item in asset_sub_guides.items() %}
+    <a href="/asset-sop?asset_type={{ selected_asset_type }}&guide={{ key }}" class="{% if selected_guide_key == key %}active{% endif %}">{{ guide_item.label }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
 </section>
 
-<section class="asset-sop-top">
+<section class="asset-sop-top asset-sop-section">
   <section class="panel">
     <div class="panel-head">
       <div>
@@ -117,18 +269,40 @@
 </section>
 
 {% for section in selected_guide.sections %}
-<section class="panel">
+<section class="panel asset-sop-section">
   <div class="panel-head">
     <div>
       <span class="section-kicker">Section {{ loop.index }}</span>
       <h3>{{ section["title"] }}</h3>
     </div>
   </div>
+  {% if section.get("intro") %}
+  <div class="asset-sop-copy">
+    {% for paragraph in section.get("intro", []) %}
+    <p>{{ paragraph }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% if section.get("items") %}
   <ol class="asset-sop-list">
     {% for item in section["items"] %}
     <li>{{ item }}</li>
     {% endfor %}
   </ol>
+  {% endif %}
+  {% if section.get("note") %}
+  <div class="asset-sop-note">{{ section.get("note") }}</div>
+  {% endif %}
+  {% if section.get("snippets") %}
+  <div class="asset-sop-snippets">
+    {% for snippet in section.get("snippets", []) %}
+    <div class="asset-sop-snippet">
+      <strong>{{ snippet["title"] }}</strong>
+      <pre><code>{{ snippet["code"] }}</code></pre>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
 </section>
 {% endfor %}
 {% endblock %}

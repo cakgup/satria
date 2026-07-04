@@ -1,0 +1,11 @@
+services:
+  sitp-landing:
+    image: satria-satria-backend
+    container_name: sitp-landing
+    restart: unless-stopped
+    command: ["python", "-m", "http.server", "80", "--directory", "/srv"]
+    ports:
+      - "80:80"
+    volumes:
+      - ./index.html:/srv/index.html:ro
+      - ./logo.png:/srv/logo.png:ro

@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flyer PANAH - SATRIA - PERISAI</title>
+  <style>
+    :root {
+      --navy: #1f315f;
+      --blue: #4a74c5;
+      --blue-soft: #edf4ff;
+      --blue-mist: #f6f9ff;
+      --line: rgba(55, 84, 146, 0.14);
+      --text: #203358;
+      --muted: #5f7398;
+      --white: #ffffff;
+      --shadow: 0 28px 60px rgba(47, 79, 159, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(106, 156, 255, 0.22), transparent 28%),
+        radial-gradient(circle at top right, rgba(76, 116, 197, 0.18), transparent 24%),
+        linear-gradient(180deg, #f4f8ff 0%, #edf3fc 100%);
+      min-height: 100vh;
+      padding: 36px;
+    }
+
+    .flyer {
+      max-width: 1380px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(103, 130, 188, 0.18);
+      border-radius: 34px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 28px;
+      padding: 34px 38px 28px;
+      background:
+        radial-gradient(circle at right top, rgba(245, 214, 96, 0.18), transparent 18%),
+        linear-gradient(135deg, rgba(80, 120, 207, 0.12), rgba(255, 255, 255, 0.7));
+    }
+
+    .brand-bar {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 18px;
+    }
+
+    .brand-logo {
+      width: 110px;
+      height: 110px;
+      object-fit: contain;
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(97, 135, 216, 0.18), rgba(255, 255, 255, 0.6));
+      padding: 14px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    }
+
+    .brand-copy h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: var(--blue);
+    }
+
+    .brand-copy p {
+      margin: 8px 0 0;
+      font-size: 14px;
+      color: var(--muted);
+      max-width: 460px;
+      line-height: 1.55;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(74, 116, 197, 0.12);
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    .hero h2 {
+      margin: 0 0 12px;
+      font-size: 42px;
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+    }
+
+    .hero .lead {
+      margin: 0;
+      max-width: 760px;
+      font-size: 19px;
+      line-height: 1.65;
+      color: var(--muted);
+    }
+
+    .summary-card {
+      align-self: stretch;
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid rgba(103, 130, 188, 0.16);
+      border-radius: 28px;
+      padding: 24px;
+      display: grid;
+      gap: 16px;
+      box-shadow: 0 24px 48px rgba(62, 99, 177, 0.08);
+    }
+
+    .summary-card h3 {
+      margin: 0;
+      font-size: 15px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--blue);
+    }
+
+    .summary-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .summary-item {
+      background: var(--blue-mist);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px 16px;
+    }
+
+    .summary-item strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 15px;
+    }
+
+    .summary-item span {
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+
+    .content {
+      padding: 0 38px 38px;
+      display: grid;
+      gap: 24px;
+    }
+
+    .apps {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .app-card {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(242, 247, 255, 0.96));
+      border: 1px solid rgba(103, 130, 188, 0.18);
+      border-radius: 28px;
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(59, 95, 170, 0.08);
+      min-height: 320px;
+      display: grid;
+      align-content: start;
+      gap: 14px;
+    }
+
+    .app-badge {
+      display: inline-flex;
+      justify-self: start;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(74, 116, 197, 0.12);
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .app-card h3 {
+      margin: 0;
+      font-size: 31px;
+      line-height: 1;
+    }
+
+    .app-card h4 {
+      margin: 0;
+      color: var(--navy);
+      font-size: 17px;
+      line-height: 1.45;
+    }
+
+    .app-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    .app-card ul {
+      margin: 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 8px;
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .flow-panel {
+      display: grid;
+      gap: 18px;
+      background:
+        radial-gradient(circle at right top, rgba(245, 214, 96, 0.18), transparent 16%),
+        linear-gradient(135deg, rgba(82, 122, 207, 0.08), rgba(255, 255, 255, 0.92));
+      border: 1px solid rgba(103, 130, 188, 0.18);
+      border-radius: 30px;
+      padding: 26px 28px;
+    }
+
+    .flow-panel h3,
+    .tool-panel h3 {
+      margin: 0;
+      font-size: 15px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--blue);
+    }
+
+    .flow-line {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: center;
+    }
+
+    .flow-step {
+      position: relative;
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid rgba(103, 130, 188, 0.16);
+      border-radius: 24px;
+      padding: 18px 18px 18px 20px;
+      min-height: 116px;
+    }
+
+    .flow-step:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      right: -14px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--blue);
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+    }
+
+    .flow-step strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 19px;
+    }
+
+    .flow-step span {
+      display: block;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .tool-panel {
+      display: grid;
+      gap: 18px;
+      background: #f7faff;
+      border: 1px solid rgba(103, 130, 188, 0.16);
+      border-radius: 30px;
+      padding: 26px 28px;
+    }
+
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .tool-card {
+      background: var(--white);
+      border: 1px solid rgba(103, 130, 188, 0.14);
+      border-radius: 20px;
+      padding: 16px;
+      min-height: 168px;
+    }
+
+    .tool-card strong {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 18px;
+      color: var(--navy);
+    }
+
+    .tool-card p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.65;
+      color: var(--muted);
+    }
+
+    .footer-note {
+      padding: 0 38px 34px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    @media print {
+      body {
+        padding: 0;
+        background: #ffffff;
+      }
+
+      .flyer {
+        max-width: none;
+        border: none;
+        box-shadow: none;
+        border-radius: 0;
+      }
+    }
+
+    @media (max-width: 1100px) {
+      body {
+        padding: 20px;
+      }
+
+      .hero,
+      .apps,
+      .flow-line,
+      .tool-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .flow-step:not(:last-child)::after {
+        content: "↓";
+        right: 50%;
+        top: auto;
+        bottom: -14px;
+        transform: translateX(50%);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="flyer">
+    <section class="hero">
+      <div>
+        <div class="brand-bar">
+          <img class="brand-logo" src="../app/static/logo.png" alt="Logo SATRIA">
+          <div class="brand-copy">
+            <h1>EKOSISTEM PLATFORM KEAMANAN SIBER</h1>
+            <p>
+              Tiga aplikasi dalam satu alur kerja: pengujian teknis, orkestrasi temuan,
+              dan investigasi insiden untuk mendukung operasi SOC, remediasi, dan koordinasi lintas tim.
+            </p>
+          </div>
+        </div>
+        <span class="eyebrow">Flyer Internal</span>
+        <h2>PANAH, SATRIA, dan PERISAI dalam satu alur operasional terintegrasi.</h2>
+        <p class="lead">
+          PANAH membantu assessment teknis, SATRIA mengelola aset dan pemindaian,
+          sedangkan PERISAI menjadi pusat eskalasi, analisis insiden, dan manajemen case.
+        </p>
+      </div>
+
+      <aside class="summary-card">
+        <h3>Nilai Utama</h3>
+        <div class="summary-list">
+          <div class="summary-item">
+            <strong>Satu jalur kerja yang jelas</strong>
+            <span>Assessment, scanning, triage, ticketing, dan investigasi bergerak dalam alur yang lebih tertata.</span>
+          </div>
+          <div class="summary-item">
+            <strong>Prioritas berbasis risiko</strong>
+            <span>Tim teknis dan SOC dapat memusatkan perhatian pada temuan yang paling berdampak.</span>
+          </div>
+          <div class="summary-item">
+            <strong>Kolaborasi lintas peran</strong>
+            <span>Operator, analis, pengembang, dan stakeholder memiliki konteks yang sama untuk tindak lanjut.</span>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="content">
+      <section class="apps">
+        <article class="app-card">
+          <span class="app-badge">Aplikasi 1</span>
+          <h3>PANAH</h3>
+          <h4>Pentest Automation and Network Assessment Hub</h4>
+          <p>
+            Platform untuk automasi pengujian teknis, simulasi assessment berantai,
+            dan penilaian keamanan jaringan atau aplikasi dari sisi operasional pentest.
+          </p>
+          <ul>
+            <li>Automasi assessment teknis dan simulasi chain.</li>
+            <li>Katalog modul pentest dan network review.</li>
+            <li>Evidence, console, dan report teknis untuk tim pelaksana.</li>
+          </ul>
+        </article>
+
+        <article class="app-card">
+          <span class="app-badge">Aplikasi 2</span>
+          <h3>SATRIA</h3>
+          <h4>Security Assessment, Tracking, Remediation, and Incident Automation</h4>
+          <p>
+            Platform orkestrasi aset, pemindaian keamanan, prioritisasi temuan,
+            dan pengiriman tiket agar tindak lanjut operasional lebih mudah dipantau.
+          </p>
+          <ul>
+            <li>Registrasi aset dan penentuan profil scan.</li>
+            <li>Prioritas temuan berbasis severity dan risiko.</li>
+            <li>Pengiriman tiket ke IRIS dan monitoring status dari satu panel.</li>
+          </ul>
+        </article>
+
+        <article class="app-card">
+          <span class="app-badge">Aplikasi 3</span>
+          <h3>PERISAI</h3>
+          <h4>Platform for Escalation, Response, Incident Security Analysis, and Investigation</h4>
+          <p>
+            Platform ticketing dan investigasi insiden untuk mengelola case, task,
+            evidence, analisis, koordinasi, hingga penutupan penanganan.
+          </p>
+          <ul>
+            <li>Manajemen case dan workflow investigasi insiden.</li>
+            <li>Kolaborasi analis melalui task, activity, dan evidence.</li>
+            <li>Pelacakan status hingga penyelesaian dan dokumentasi tindak lanjut.</li>
+          </ul>
+        </article>
+      </section>
+
+      <section class="flow-panel">
+        <h3>Alur Kerja Terintegrasi</h3>
+        <div class="flow-line">
+          <div class="flow-step">
+            <strong>PANAH</strong>
+            <span>Assessment teknis, validasi target, simulasi pengujian, dan pengumpulan evidence awal.</span>
+          </div>
+          <div class="flow-step">
+            <strong>SATRIA</strong>
+            <span>Registrasi aset, orkestrasi scan, pembacaan hasil, prioritisasi risiko, dan pengiriman tiket.</span>
+          </div>
+          <div class="flow-step">
+            <strong>PERISAI</strong>
+            <span>Eskalasi, investigasi, tasking L1-L3, evidence handling, dan penutupan case secara terstruktur.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="tool-panel">
+        <h3>Cakupan Tool Utama</h3>
+        <div class="tool-grid">
+          <div class="tool-card">
+            <strong>Syft</strong>
+            <p>Inventaris komponen software atau SBOM untuk membantu identifikasi artefak yang dipindai.</p>
+          </div>
+          <div class="tool-card">
+            <strong>Grype</strong>
+            <p>Pemeriksaan CVE dari paket dan komponen software yang ditemukan pada image atau artefak.</p>
+          </div>
+          <div class="tool-card">
+            <strong>Trivy</strong>
+            <p>Scanner serbaguna untuk container, repository, IaC, konfigurasi, dan secret.</p>
+          </div>
+          <div class="tool-card">
+            <strong>ZAP</strong>
+            <p>Scanner keamanan aplikasi web untuk baseline maupun active assessment berbasis kebijakan.</p>
+          </div>
+          <div class="tool-card">
+            <strong>OpenVAS</strong>
+            <p>Scanner keamanan server dan jaringan untuk identifikasi paparan layanan dan kerentanan host.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <div class="footer-note">
+      Mendukung operasi SOC, pengujian teknis, remediasi kerentanan, dan koordinasi penanganan insiden
+      dalam satu ekosistem kerja yang lebih terhubung.
+    </div>
+  </main>
+</body>
+</html>

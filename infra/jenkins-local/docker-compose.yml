@@ -1,0 +1,28 @@
+services:
+  jenkins-local:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jenkins-satria-local
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      CASC_JENKINS_CONFIG: /var/jenkins_home/casc_configs/jenkins.yaml
+      JAVA_OPTS: -Djenkins.install.runSetupWizard=false
+    ports:
+      - "${JENKINS_HTTP_PORT:-8088}:8080"
+      - "${JENKINS_AGENT_PORT:-50088}:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - ./casc/jenkins.yaml:/var/jenkins_home/casc_configs/jenkins.yaml:ro
+      - ./init.groovy.d:/var/jenkins_home/init.groovy.d:ro
+      - ./jobs:/var/jenkins_home/seed-jobs:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/login >/dev/null || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 15
+
+volumes:
+  jenkins_home:

@@ -3,6 +3,8 @@
 .tmp_gvm/
 __pycache__/
 *.pyc
+infra/jenkins-local/.env
+infra/jenkins-local/jenkins_home/
 
 migration-artifacts/
 migration_artifacts/
@@ -10,5 +12,6 @@ tmp-reports/
 tmp-reports-core/
 tmp-smoke.db
 tmp-smoke-core.db
+tmp_satria_deploy.tar.gz
 
 infra/dfir-iris/iris-web-upstream/

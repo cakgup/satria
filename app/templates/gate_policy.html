@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Gate Policy - SATRIA{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <span class="eyebrow">Admin Pipeline Gate</span>
+    <h2>Atur kebijakan allowed, need approval, dan blocked langsung dari UI SATRIA.</h2>
+    <p>Halaman ini dipakai administrator untuk menyesuaikan ambang severity yang menentukan apakah artefak release boleh lanjut, harus meminta approval, atau diblokir sebelum menuju staging dan production.</p>
+  </div>
+  <div class="hero-actions">
+    <a class="hero-button" href="/admin/service-accounts">Buka Admin Token</a>
+  </div>
+</section>
+
+{% if page_message %}
+<section class="panel alert-panel alert-{{ page_status or 'info' }}">
+  <div>
+    <span class="section-kicker">Status</span>
+    <h3>{{ page_message }}</h3>
+  </div>
+</section>
+{% endif %}
+
+<section class="split-layout">
+  <article class="panel">
+    <div class="panel-head">
+      <div>
+        <span class="section-kicker">Gate Policy</span>
+        <h3>Konfigurasi ambang severity</h3>
+        <p class="helper-copy">Nilai yang disimpan di halaman ini akan dipakai lebih dulu. Jika belum pernah diubah, SATRIA tetap memakai fallback dari environment backend.</p>
+      </div>
+    </div>
+    <form method="post" action="/admin/gate-policy" class="form-grid">
+      <label class="field field-wide">
+        <span>Nama policy</span>
+        <input type="text" name="gate_policy_name" value="{{ effective.gate_policy_name }}" placeholder="ur-production-gate">
+        <small>Nama tampil policy untuk kebutuhan audit pipeline dan API result.</small>
+      </label>
+
+      <label class="field">
+        <span>Ambang High</span>
+        <input type="number" min="0" name="gate_high_threshold" value="{{ effective.gate_high_threshold }}">
+        <small>Jumlah temuan High minimum sebelum keputusan gate dipicu.</small>
+      </label>
+      <label class="field">
+        <span>Keputusan High</span>
+        <select name="gate_high_decision">
+          {% for option in decision_options %}
+          <option value="{{ option.value }}" {% if effective.gate_high_decision == option.value %}selected{% endif %}>{{ option.label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Ambang Medium</span>
+        <input type="number" min="0" name="gate_medium_threshold" value="{{ effective.gate_medium_threshold }}">
+        <small>Isi 0 bila Medium tidak ingin dijadikan pemicu khusus.</small>
+      </label>
+      <label class="field">
+        <span>Keputusan Medium</span>
+        <select name="gate_medium_decision">
+          {% for option in decision_options %}
+          <option value="{{ option.value }}" {% if effective.gate_medium_decision == option.value %}selected{% endif %}>{{ option.label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Ambang Low</span>
+        <input type="number" min="0" name="gate_low_threshold" value="{{ effective.gate_low_threshold }}">
+        <small>Isi 0 bila Low hanya dicatat tanpa mempengaruhi gate.</small>
+      </label>
+      <label class="field">
+        <span>Keputusan Low</span>
+        <select name="gate_low_decision">
+          {% for option in decision_options %}
+          <option value="{{ option.value }}" {% if effective.gate_low_decision == option.value %}selected{% endif %}>{{ option.label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label class="field field-wide field-checkbox-line">
+        <span class="field-checkbox">
+          <input type="checkbox" name="gate_block_on_critical" value="true" {% if effective.gate_block_on_critical %}checked{% endif %}>
+          <strong>Block otomatis bila ada temuan Critical</strong>
+        </span>
+        <small>Jika aktif, satu saja temuan Critical akan langsung menghasilkan keputusan <code>blocked</code>.</small>
+      </label>
+
+      <div class="field field-wide">
+        <button type="submit">Simpan Gate Policy</button>
+      </div>
+    </form>
+  </article>
+
+  <aside class="panel">
+    <div class="panel-head">
+      <div>
+        <span class="section-kicker">Effective Policy</span>
+        <h3>Nilai yang sedang aktif</h3>
+      </div>
+    </div>
+    <div class="helper-stack gate-summary-stack">
+      <div class="helper-tile">
+        <span class="label">Policy Name</span>
+        <strong>{{ effective.gate_policy_name }}</strong>
+        <small>Nama policy yang akan tampil pada endpoint hasil pipeline.</small>
+      </div>
+      <div class="helper-card">
+        <h4>Critical</h4>
+        <p>{{ 'Blocked otomatis aktif' if effective.gate_block_on_critical else 'Tidak diblokir otomatis' }}</p>
+      </div>
+      <div class="helper-card">
+        <h4>High</h4>
+        <p>Threshold <code>{{ effective.gate_high_threshold }}</code> -> <code>{{ effective.gate_high_decision }}</code></p>
+      </div>
+      <div class="helper-card">
+        <h4>Medium</h4>
+        <p>Threshold <code>{{ effective.gate_medium_threshold }}</code> -> <code>{{ effective.gate_medium_decision }}</code></p>
+      </div>
+      <div class="helper-card">
+        <h4>Low</h4>
+        <p>Threshold <code>{{ effective.gate_low_threshold }}</code> -> <code>{{ effective.gate_low_decision }}</code></p>
+      </div>
+      <div class="helper-card">
+        <h4>Sumber override database</h4>
+        <div class="chip-list">
+          {% for key, value in stored_values.items() %}
+            {% if value %}
+            <span class="scope-chip">{{ key }}</span>
+            {% endif %}
+          {% endfor %}
+          {% if not has_overrides %}
+          <span class="scope-chip">Belum ada override</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </aside>
+</section>
+{% endblock %}

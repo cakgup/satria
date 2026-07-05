@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 from math import pi
 from collections import OrderedDict
 from datetime import datetime
@@ -13,11 +14,128 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from .models import Asset, Finding, ScanJob
+from .config import get_settings
+from .models import AppSetting, Asset, Finding, ScanJob
 
 SEVERITY_ORDER = ["Critical", "High", "Medium", "Low", "Informational"]
 STATUS_ORDER = ["Open", "Assigned", "In Progress", "Remediated", "Retest", "Closed", "False Positive", "Accepted Risk"]
 SCANNER_ORDER = ["trivy", "syft", "grype", "zap", "openvas"]
+
+
+def _setting_value(db: Session, key: str) -> str | None:
+    return db.query(AppSetting.value).filter(AppSetting.key == key).scalar()
+
+
+def _normalize_gate_decision(value: str | None, fallback: str) -> str:
+    normalized = (value or "").strip().lower()
+    if normalized in {"allowed", "need_approval", "blocked", "pending"}:
+        return normalized
+    return fallback
+
+
+def _parse_setting_bool(value: str | None, fallback: bool) -> bool:
+    if value is None:
+        return fallback
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _parse_setting_int(value: str | None, fallback: int) -> int:
+    try:
+        return max(0, int((value or "").strip()))
+    except (TypeError, ValueError):
+        return fallback
+
+
+def _gate_runtime_config(db: Session) -> dict[str, object]:
+    settings = get_settings()
+    return {
+        "gate_block_on_critical": _parse_setting_bool(
+            _setting_value(db, "gate_block_on_critical"),
+            settings.gate_block_on_critical,
+        ),
+        "gate_high_threshold": _parse_setting_int(
+            _setting_value(db, "gate_high_threshold"),
+            settings.gate_high_threshold,
+        ),
+        "gate_high_decision": _normalize_gate_decision(
+            _setting_value(db, "gate_high_decision"),
+            _normalize_gate_decision(settings.gate_high_decision, "need_approval"),
+        ),
+        "gate_medium_threshold": _parse_setting_int(
+            _setting_value(db, "gate_medium_threshold"),
+            settings.gate_medium_threshold,
+        ),
+        "gate_medium_decision": _normalize_gate_decision(
+            _setting_value(db, "gate_medium_decision"),
+            _normalize_gate_decision(settings.gate_medium_decision, "allowed"),
+        ),
+        "gate_low_threshold": _parse_setting_int(
+            _setting_value(db, "gate_low_threshold"),
+            settings.gate_low_threshold,
+        ),
+        "gate_low_decision": _normalize_gate_decision(
+            _setting_value(db, "gate_low_decision"),
+            _normalize_gate_decision(settings.gate_low_decision, "allowed"),
+        ),
+    }
+
+
+def _release_metadata(scan: ScanJob) -> dict[str, object]:
+    if not scan.release or not scan.release.metadata_json:
+        return {}
+    try:
+        parsed = json.loads(scan.release.metadata_json)
+        if isinstance(parsed, dict):
+            return parsed
+    except json.JSONDecodeError:
+        return {}
+    return {}
+
+
+def _severity_summary_for_scan(db: Session, scan_id: int) -> dict[str, int]:
+    rows = (
+        db.query(Finding.severity_normalized, func.count(Finding.id))
+        .filter(Finding.scan_job_id == scan_id)
+        .group_by(Finding.severity_normalized)
+        .all()
+    )
+    summary = {"critical": 0, "high": 0, "medium": 0, "low": 0, "informational": 0, "total": 0}
+    for severity, count in rows:
+        normalized = (severity or "").strip().lower()
+        if normalized == "critical":
+            summary["critical"] += int(count)
+        elif normalized == "high":
+            summary["high"] += int(count)
+        elif normalized == "medium":
+            summary["medium"] += int(count)
+        elif normalized == "low":
+            summary["low"] += int(count)
+        else:
+            summary["informational"] += int(count)
+        summary["total"] += int(count)
+    return summary
+
+
+def _gate_decision_for_scan(scan: ScanJob, db: Session) -> str:
+    gate_config = _gate_runtime_config(db)
+    severity_summary = _severity_summary_for_scan(db, scan.id)
+    if scan.status in {"queued", "running"}:
+        return "pending"
+    if scan.status != "completed":
+        return "blocked"
+    release_metadata = _release_metadata(scan)
+    override_decision = _normalize_gate_decision(str(release_metadata.get("gate_override_decision") or ""), "")
+    if override_decision:
+        return override_decision
+    if gate_config["gate_block_on_critical"] and severity_summary.get("critical", 0) > 0:
+        return "blocked"
+    if gate_config["gate_high_threshold"] > 0 and severity_summary.get("high", 0) >= gate_config["gate_high_threshold"]:
+        return _normalize_gate_decision(str(gate_config["gate_high_decision"]), "need_approval")
+    if gate_config["gate_medium_threshold"] > 0 and severity_summary.get("medium", 0) >= gate_config["gate_medium_threshold"]:
+        return _normalize_gate_decision(str(gate_config["gate_medium_decision"]), "allowed")
+    if gate_config["gate_low_threshold"] > 0 and severity_summary.get("low", 0) >= gate_config["gate_low_threshold"]:
+        return _normalize_gate_decision(str(gate_config["gate_low_decision"]), "allowed")
+    return "allowed"
 
 
 def _ordered_counts(rows: Iterable[tuple[str | None, int]], order: list[str]) -> OrderedDict[str, int]:
@@ -60,7 +178,7 @@ def get_summary(db: Session) -> dict:
     failed_scans = db.query(ScanJob).filter(ScanJob.is_visible == True, ScanJob.status == "failed").count()  # noqa: E712
 
     top_assets = (
-        db.query(Asset.name, func.count(Finding.id).label("total"), func.max(Finding.risk_score).label("max_risk"))
+        db.query(Asset.id, Asset.name, func.count(Finding.id).label("total"), func.max(Finding.risk_score).label("max_risk"))
         .join(Finding, Finding.asset_id == Asset.id)
         .join(ScanJob, Finding.scan_job_id == ScanJob.id)
         .filter(Asset.is_active == True, ScanJob.is_visible == True)  # noqa: E712
@@ -71,6 +189,22 @@ def get_summary(db: Session) -> dict:
     )
     recent_scans = db.query(ScanJob).filter(ScanJob.is_visible == True).order_by(ScanJob.id.desc()).limit(20).all()  # noqa: E712
     latest_findings = active_findings.order_by(Finding.risk_score.desc(), Finding.id.desc()).limit(20).all()
+
+    top_asset_rows = []
+    for asset_id, name, total, max_risk in top_assets:
+        latest_scan = (
+            db.query(ScanJob)
+            .filter(ScanJob.asset_id == asset_id, ScanJob.is_visible == True)  # noqa: E712
+            .order_by(ScanJob.id.desc())
+            .first()
+        )
+        gate_decision = _gate_decision_for_scan(latest_scan, db) if latest_scan else "allowed"
+        top_asset_rows.append({
+            "name": name,
+            "total": total,
+            "max_risk": max_risk,
+            "gate_decision": gate_decision,
+        })
 
     return {
         "generated_at": datetime.utcnow().isoformat() + "Z",
@@ -84,7 +218,7 @@ def get_summary(db: Session) -> dict:
         "severity": severity,
         "status": status,
         "scanner": scanner,
-        "top_assets": [{"name": name, "total": total, "max_risk": max_risk} for name, total, max_risk in top_assets],
+        "top_assets": top_asset_rows,
         "recent_scans": recent_scans,
         "latest_findings": latest_findings,
     }
@@ -255,6 +389,8 @@ def executive_markdown_report(summary: dict) -> str:
         lines.append(f"- {key}: {value}")
     lines.extend(["", "## Top Risk Assets", ""])
     for item in summary["top_assets"]:
-        lines.append(f"- {item['name']}: {item['total']} finding(s), max risk {item['max_risk']}")
+        lines.append(
+            f"- {item['name']}: {item['total']} finding(s), max risk {item['max_risk']}, gate {item['gate_decision']}"
+        )
     lines.extend(["", "## Recommended Follow-up", "", "- Validate Critical/High findings and send confirmed items to DFIR-IRIS as alerts/cases.", "- Assign remediation owners and perform retest after fixes.", "- Keep raw scanner reports as evidence for audit and closure."])
     return "\n".join(lines) + "\n"

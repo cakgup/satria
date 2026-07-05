@@ -26,14 +26,22 @@
         <a href="/tickets" class="{% if request.url.path.startswith('/tickets') or request.url.path.startswith('/soc-sop') %}active{% endif %}">Tickets</a>
         <a href="/vulnerability-summary" class="{% if request.url.path.startswith('/vulnerability-summary') %}active{% endif %}">Reports</a>
       </nav>
-      <nav class="nav-links nav-secondary">
+      <div class="topbar-utility-row">
+        {% if request.state.current_user and request.state.is_admin %}
+        <nav class="nav-links nav-admin">
+        <a href="/admin/service-accounts" class="{% if request.url.path.startswith('/admin/service-accounts') %}active{% endif %}">Admin Token</a>
+        <a href="/admin/gate-policy" class="{% if request.url.path.startswith('/admin/gate-policy') %}active{% endif %}">Gate Policy</a>
+        </nav>
+        {% endif %}
+        <nav class="nav-links nav-secondary">
         <a href="/docs" target="_blank" rel="noreferrer">API Docs</a>
         {% if request.state.current_user %}
         <form method="post" action="/logout" class="nav-logout-form">
           <button type="submit" class="nav-logout-button">Logout</button>
         </form>
         {% endif %}
-      </nav>
+        </nav>
+      </div>
     </div>
   </header>
   <main>

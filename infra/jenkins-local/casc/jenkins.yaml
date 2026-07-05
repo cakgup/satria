@@ -1,0 +1,17 @@
+jenkins:
+  systemMessage: "Jenkins lokal untuk uji interkoneksi pipeline ke SATRIA."
+  numExecutors: 2
+  mode: NORMAL
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "${JENKINS_ADMIN_ID}"
+          password: "${JENKINS_ADMIN_PASSWORD:-admin123!}"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+unclassified:
+  location:
+    url: "http://localhost:${JENKINS_HTTP_PORT}/"

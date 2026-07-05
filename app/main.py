@@ -1,6 +1,9 @@
+import hashlib
 from datetime import datetime
 import json
 from pathlib import Path
+import re
+import secrets
 from urllib.parse import quote_plus
 from fastapi import Depends, FastAPI, Form, Header, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response, PlainTextResponse
@@ -12,7 +15,7 @@ from sqlalchemy.orm import Session, joinedload
 from .database import get_db, init_db
 from .allowlist import configured_allowlist_rules, database_allowlist_entries
 from .config import get_settings
-from .models import Asset, AuditLog, Finding, ReleaseArtifact, ScanAllowlistEntry, ScanJob, TicketCase
+from .models import AppSetting, Asset, AuditLog, Finding, ReleaseArtifact, ScanAllowlistEntry, ScanJob, ServiceAccountCredential, TicketCase
 from .schemas import AssetCreate, AssetOut, FindingOut, PipelinePublishTicketOut, PipelinePublishTicketRequest, PipelineScanCreate, PipelineScanResultOut, PipelineScanStatusOut, PipelineSeveritySummary, ReleaseIntakeCreate, ReleaseIntakeOut, ScanCreate, ScanOut
 from .scanner_runner import SUPPORTED_PROFILES, scanners_for_profile
 from .tasks import run_scan_job
@@ -24,6 +27,47 @@ from .ticketing import add_ticket_activity, add_ticket_evidence, add_ticket_task
 app = FastAPI(title='SATRIA', version='0.1.0-mvp')
 app.mount('/static', StaticFiles(directory='app/static'), name='static')
 templates = Jinja2Templates(directory='app/templates')
+
+ADMIN_USERS = {'administrator', 'admin', 'cakgup1', 'top-management'}
+API_SCOPE_OPTIONS = [
+    {
+        'value': 'release:write',
+        'label': 'Release Intake',
+        'description': 'Mendaftarkan artefak release dari Jenkins, GitLab CI, atau pipeline lain.',
+    },
+    {
+        'value': 'scan:create',
+        'label': 'Create Scan',
+        'description': 'Membuat scan job SATRIA berdasarkan artefak atau aset yang sudah diintake.',
+    },
+    {
+        'value': 'scan:read',
+        'label': 'Read Scan Result',
+        'description': 'Membaca status, summary, dan hasil scan untuk keperluan gate pipeline.',
+    },
+    {
+        'value': 'ticket:publish',
+        'label': 'Publish Ticket',
+        'description': 'Mengirim temuan terpilih dari SATRIA ke IRIS bila dibutuhkan remediation formal.',
+    },
+]
+API_SCOPE_VALUES = {option['value'] for option in API_SCOPE_OPTIONS}
+GATE_DECISION_OPTIONS = [
+    {'value': 'allowed', 'label': 'Allowed'},
+    {'value': 'need_approval', 'label': 'Need Approval'},
+    {'value': 'blocked', 'label': 'Blocked'},
+]
+GATE_DECISION_VALUES = {option['value'] for option in GATE_DECISION_OPTIONS}
+GATE_SETTING_KEYS = (
+    'gate_policy_name',
+    'gate_block_on_critical',
+    'gate_high_threshold',
+    'gate_high_decision',
+    'gate_medium_threshold',
+    'gate_medium_decision',
+    'gate_low_threshold',
+    'gate_low_decision',
+)
 
 PUBLIC_PATH_PREFIXES = (
     '/static',
@@ -121,7 +165,7 @@ ASSET_TYPE_META = {
                         'Tim Keamanan Informasi menetapkan rule gate, severity threshold, mekanisme exception, risk acceptance, dan pola publish ke IRIS bila temuan memerlukan pelacakan resmi.',
                     ]},
                     {'title': 'Persiapan administrasi dan token integrasi', 'intro': [
-                        'Pada implementasi SATRIA saat ini, token pipeline dikelola oleh administrator aplikasi melalui konfigurasi environment backend, bukan dibuat mandiri melalui menu UI. Dengan demikian, proses awal yang perlu dilakukan pengembang adalah meminta pembuatan service account dan token integrasi kepada operator SATRIA atau administrator platform.',
+                        'Pada implementasi SATRIA saat ini, token pipeline sebaiknya dikelola melalui menu Admin Token pada SATRIA oleh administrator aplikasi. Dengan demikian, proses awal yang perlu dilakukan pengembang adalah meminta pembuatan service account dan token integrasi kepada operator SATRIA atau administrator platform.',
                         'Token ini sebaiknya berbeda untuk setiap pipeline utama atau minimal setiap lini aplikasi besar, agar audit trail tetap jelas dan rotasi credential lebih mudah dilakukan.'
                     ], 'items': [
                         'Administrator SATRIA menetapkan nama akun layanan, misalnya pipeline-sakti-api atau jenkins-prod-gate.',
@@ -138,7 +182,23 @@ ASSET_TYPE_META = {
                             'title': 'Header yang dipakai pipeline saat memanggil API SATRIA',
                             'code': 'Authorization: Bearer ${SATRIA_TOKEN}\nContent-Type: application/json'
                         },
-                    ], 'note': 'MVP SATRIA saat ini belum menyediakan self-service API key melalui UI. Karena itu, proses memperoleh token dilakukan melalui administrator SATRIA agar kontrol akses tetap terjaga.'},
+                    ], 'note': 'Pembuatan token tetap dikendalikan administrator SATRIA agar kontrol akses, audit trail, dan rotasi credential tetap terjaga.'},
+                    {'title': 'Langkah praktis mendapatkan API key atau token SATRIA', 'items': [
+                        'Ajukan permintaan service account integrasi kepada administrator SATRIA dengan menyebutkan nama aplikasi, nama pipeline, environment, dan PIC teknis yang bertanggung jawab.',
+                        'Sampaikan minimal data berikut dalam permintaan: asset_code, asset_name, jenis artefak yang akan dipindai, registry yang dipakai, serta environment target seperti staging atau production.',
+                        'Minta scope yang benar-benar diperlukan. Untuk pola gate minimum cukup gunakan release:write, scan:create, dan scan:read. Tambahkan ticket:publish hanya jika pipeline memang boleh mengirim tiket ke IRIS.',
+                        'Setelah token diberikan administrator, simpan token itu di credential store CI/CD. Jangan pernah meletakkan token dalam file Jenkinsfile, repository source code, atau channel komunikasi yang tidak terenkripsi.',
+                        'Lakukan uji koneksi awal menggunakan endpoint POST /api/v1/releases/intake. Bila respons berhasil, lanjutkan ke uji create scan dan polling hasil sebelum token dinyatakan siap operasional.',
+                    ], 'snippets': [
+                        {
+                            'title': 'Contoh format permintaan token ke administrator SATRIA',
+                            'code': 'Nama aplikasi      : SAKTI API\nNama pipeline      : jenkins-sakti-api-prod\nEnvironment        : production\nAsset code         : SAKTI-API\nJenis artefak      : container_image\nRegistry           : registry.internal/sakti-api\nScope dibutuhkan   : release:write,scan:create,scan:read,ticket:publish\nPIC teknis         : Tim DevOps DJPb\nKebutuhan publish  : hanya critical/high ke IRIS'
+                        },
+                        {
+                            'title': 'Uji koneksi minimal setelah token diterima',
+                            'code': 'curl -X POST "$SATRIA_URL/api/v1/releases/intake" \\\n  -H "Authorization: Bearer $SATRIA_TOKEN" \\\n  -H "Content-Type: application/json" \\\n  -d "{\\"asset_code\\":\\"TEST-CICD\\",\\"asset_name\\":\\"Test CICD\\",\\"release_version\\":\\"smoke-001\\",\\"image_ref\\":\\"nginx:latest\\",\\"build_number\\":\\"1\\",\\"environment_target\\":\\"staging\\"}"'
+                        },
+                    ], 'note': 'Prinsip sederhananya: token SATRIA diperlakukan sama seperti password teknis. Ia hanya boleh disimpan di secret manager atau credential store resmi dan harus bisa diputar sewaktu-waktu tanpa mengubah source code aplikasi.'},
                     {'title': 'Kebutuhan integrasi minimum yang perlu disiapkan', 'items': [
                         'SATRIA perlu menyediakan API atau CLI resmi untuk intake release, pembuatan scan job, pengecekan status, pengambilan hasil JSON, dan publish ticket bila diperlukan.',
                         'Pipeline sebaiknya menggunakan service account non-personal dengan autentikasi token, bearer token, API key, atau mekanisme sejenis yang dapat dibatasi scope-nya.',
@@ -242,27 +302,64 @@ RELEASE_RESPONSE=$(curl -s -X POST \\"$SATRIA_URL/api/v1/releases/intake\\" \\
   -H \\"Content-Type: application/json\\" \\
   -d @release-intake.json)
 echo "$RELEASE_RESPONSE" > release-response.json
+ASSET_ID=$(python3 -c 'import json; print(json.load(open("release-response.json"))["asset_id"])')
+RELEASE_ID=$(python3 -c 'import json; print(json.load(open("release-response.json"))["release_id"])')
 cat > scan-request.json <<EOF
 {
-  \\"asset_id\\": 1,
-  \\"release_id\\": 1,
+  \\"asset_id\\": ${ASSET_ID},
+  \\"release_id\\": ${RELEASE_ID},
   \\"image_ref\\": \\"${REGISTRY_IMAGE}\\",
   \\"scan_profile\\": \\"quick_container\\",
   \\"requested_by\\": \\"jenkins\\",
   \\"build_number\\": \\"${BUILD_NUMBER}\\"
 }
 EOF
-curl -s -X POST \\"$SATRIA_URL/api/v1/scans\\" \\
+SCAN_RESPONSE=$(curl -s -X POST \\"$SATRIA_URL/api/v1/scans\\" \\
   -H \\"Authorization: Bearer $SATRIA_TOKEN\\" \\
   -H \\"Content-Type: application/json\\" \\
-  -d @scan-request.json > scan-response.json
+  -d @scan-request.json)
+echo "$SCAN_RESPONSE" > scan-response.json
+SCAN_ID=$(python3 -c 'import json; print(json.load(open("scan-response.json"))["scan_id"])')
+echo "Scan job SATRIA berhasil dibuat: $SCAN_ID"
         \"\"\"
       }
     }
   }
 }"""
                         },
-                    ], 'note': 'Pada implementasi produksi, asset_id sebaiknya tidak di-hardcode. Gunakan hasil mapping aset yang telah disiapkan operator SATRIA atau sediakan endpoint lookup aset yang konsisten.'},
+                    ], 'note': 'Contoh di atas sudah mengambil asset_id dan release_id dari respons intake release. Pada implementasi produksi, pola ini lebih aman dibanding hardcode ID karena tetap konsisten walau aset baru ditambahkan atau dipetakan ulang.'},
+                    {'title': 'Konfigurasi Jenkins di UI yang disarankan', 'items': [
+                        'Masuk ke Jenkins sebagai administrator atau pengelola pipeline, lalu buka Manage Jenkins -> Credentials.',
+                        'Tambahkan credential baru pada domain yang sesuai menggunakan jenis Secret text. Isi secret dengan token SATRIA dan gunakan ID yang mudah dikenali, misalnya satria-api-token.',
+                        'Bila registry internal juga membutuhkan autentikasi, tambahkan credential registry secara terpisah agar build, push, dan scan tetap dapat ditelusuri dengan jelas.',
+                        'Pada job pipeline, aktifkan parameter yang relevan seperti IMAGE_REF, ASSET_CODE, ASSET_NAME, SCAN_PROFILE, ENVIRONMENT_TARGET, dan PUBLISH_TO_IRIS bila pola organisasinya menghendaki fleksibilitas per release.',
+                        'Jika organisasi menggunakan folder multibranch atau shared library, simpan fungsi pemanggil SATRIA sebagai shared step agar seluruh tim memakai pola integrasi yang sama.',
+                    ], 'snippets': [
+                        {
+                            'title': 'Nilai parameter yang umum pada Jenkins job',
+                            'code': 'IMAGE_REF=registry.internal/sakti-api:release-2026.07.04-201-a1b2c3d4\nASSET_CODE=SAKTI-API\nASSET_NAME=SAKTI API\nSCAN_PROFILE=quick_container\nENVIRONMENT_TARGET=production\nPUBLISH_TO_IRIS=false'
+                        },
+                        {
+                            'title': 'Konvensi credential yang direkomendasikan',
+                            'code': 'satria-api-token          -> Secret text\nregistry-internal-reader   -> Username with password / token\ngit-release-key            -> SSH key atau PAT untuk checkout'
+                        },
+                    ], 'note': 'Bila job akan dipakai oleh banyak aplikasi, gunakan parameter ASSET_CODE dan ASSET_NAME sebagai mandatory input agar setiap release tetap masuk ke aset SATRIA yang benar dan tidak tercampur.'},
+                    {'title': 'Contoh Jenkins Configuration as Code dan YAML pendukung', 'intro': [
+                        'Beberapa tim DevOps lebih nyaman mengelola Jenkins secara deklaratif. Contoh berikut dapat dipakai bila Jenkins dikelola dengan Jenkins Configuration as Code atau docker compose lokal untuk kebutuhan uji integrasi.'
+                    ], 'items': [
+                        'Tambahkan URL Jenkins dan konfigurasi credential secara deklaratif bila instans Jenkins dibangun ulang secara otomatis.',
+                        'Pastikan plugin dasar seperti Configuration as Code, Credentials Binding, Pipeline, dan Plain Credentials sudah terpasang.',
+                        'Simpan token SATRIA sebagai secret atau environment yang hanya diekspose ke Jenkins controller, lalu referensikan nilainya pada blok credentials.',
+                    ], 'snippets': [
+                        {
+                            'title': 'Contoh docker-compose.yml Jenkins lokal',
+                            'code': 'services:\n  jenkins:\n    build: .\n    container_name: jenkins-satria-local\n    ports:\n      - "8088:8080"\n    environment:\n      CASC_JENKINS_CONFIG: /var/jenkins_home/casc/jenkins.yaml\n      SATRIA_URL: http://host.docker.internal:8090\n      SATRIA_TOKEN: ${SATRIA_TOKEN}\n    volumes:\n      - jenkins_home:/var/jenkins_home\n      - ./casc:/var/jenkins_home/casc\n      - ./jobs:/var/jenkins_home/jobs'
+                        },
+                        {
+                            'title': 'Contoh jenkins.yaml (JCasC) minimum',
+                            'code': 'jenkins:\n  systemMessage: "Jenkins integrasi SATRIA"\ncredentials:\n  system:\n    domainCredentials:\n      - credentials:\n          - string:\n              id: "satria-api-token"\n              secret: "${SATRIA_TOKEN}"\n              scope: GLOBAL\n              description: "Bearer token integrasi SATRIA"'
+                        },
+                    ], 'note': 'Bila organisasi belum memakai JCasC, bagian ini tetap berguna sebagai referensi field apa saja yang perlu dimasukkan saat membangun Jenkins container atau saat menyiapkan bootstrap environment.'},
                     {'title': 'Contoh GitLab CI / YAML minimal', 'intro': [
                         'Untuk GitLab CI, prinsipnya sama: token SATRIA disimpan di CI/CD Variables dan dipanggil setelah image selesai dipush. Contoh berikut dapat dijadikan baseline awal lalu disesuaikan dengan runner dan registry internal yang digunakan.'
                     ], 'items': [
@@ -272,9 +369,57 @@ curl -s -X POST \\"$SATRIA_URL/api/v1/scans\\" \\
                     ], 'snippets': [
                         {
                             'title': 'Contoh .gitlab-ci.yml minimal',
-                            'code': 'stages:\n  - build\n  - push\n  - security_gate\n\nvariables:\n  SATRIA_URL: "http://10.216.208.249:8090"\n  SATRIA_ASSET_CODE: "SAKTI-API"\n  SATRIA_ASSET_NAME: "SAKTI API"\n\nsecurity_gate:\n  stage: security_gate\n  image: curlimages/curl:8.8.0\n  script:\n    - export RELEASE_VERSION=\"release-${CI_PIPELINE_ID}-${CI_COMMIT_SHORT_SHA}\"\n    - export IMAGE_REF=\"${CI_REGISTRY_IMAGE}:${RELEASE_VERSION}\"\n    - |\n      cat > release-intake.json <<EOF\n      {\n        \"asset_code\": \"${SATRIA_ASSET_CODE}\",\n        \"asset_name\": \"${SATRIA_ASSET_NAME}\",\n        \"release_version\": \"${RELEASE_VERSION}\",\n        \"image_ref\": \"${IMAGE_REF}\",\n        \"git_commit\": \"${CI_COMMIT_SHA}\",\n        \"build_number\": \"${CI_PIPELINE_ID}\",\n        \"environment_target\": \"production\"\n      }\n      EOF\n    - curl -s -X POST \"$SATRIA_URL/api/v1/releases/intake\" -H \"Authorization: Bearer $SATRIA_TOKEN\" -H \"Content-Type: application/json\" -d @release-intake.json -o release-response.json\n    - echo \"Lanjutkan dengan create scan, polling, dan evaluasi decision dari release-response.json / result endpoint\"\n'
+                            'code': """stages:
+  - build
+  - push
+  - security_gate
+
+variables:
+  SATRIA_URL: "http://10.216.208.249:8090"
+  SATRIA_ASSET_CODE: "SAKTI-API"
+  SATRIA_ASSET_NAME: "SAKTI API"
+
+security_gate:
+  stage: security_gate
+  image: python:3.12-alpine
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - export RELEASE_VERSION="release-${CI_PIPELINE_ID}-${CI_COMMIT_SHORT_SHA}"
+    - export IMAGE_REF="${CI_REGISTRY_IMAGE}:${RELEASE_VERSION}"
+    - |
+      cat > release-intake.json <<EOF
+      {
+        "asset_code": "${SATRIA_ASSET_CODE}",
+        "asset_name": "${SATRIA_ASSET_NAME}",
+        "release_version": "${RELEASE_VERSION}",
+        "image_ref": "${IMAGE_REF}",
+        "git_commit": "${CI_COMMIT_SHA}",
+        "build_number": "${CI_PIPELINE_ID}",
+        "environment_target": "production"
+      }
+      EOF
+    - curl -s -X POST "$SATRIA_URL/api/v1/releases/intake" -H "Authorization: Bearer $SATRIA_TOKEN" -H "Content-Type: application/json" -d @release-intake.json -o release-response.json
+    - export ASSET_ID=$(python3 -c "import json; print(json.load(open('release-response.json'))['asset_id'])")
+    - export RELEASE_ID=$(python3 -c "import json; print(json.load(open('release-response.json'))['release_id'])")
+    - |
+      cat > scan-request.json <<EOF
+      {
+        "asset_id": ${ASSET_ID},
+        "release_id": ${RELEASE_ID},
+        "image_ref": "${IMAGE_REF}",
+        "scan_profile": "quick_container",
+        "requested_by": "gitlab-ci",
+        "build_number": "${CI_PIPELINE_ID}"
+      }
+      EOF
+    - curl -s -X POST "$SATRIA_URL/api/v1/scans" -H "Authorization: Bearer $SATRIA_TOKEN" -H "Content-Type: application/json" -d @scan-request.json -o scan-response.json
+    - export SCAN_ID=$(python3 -c "import json; print(json.load(open('scan-response.json'))['scan_id'])")
+    - echo "Scan SATRIA terbentuk: ${SCAN_ID}"
+    - echo "Lanjutkan dengan polling /api/v1/scans/${SCAN_ID} lalu evaluasi /result sebelum deploy"
+"""
                         },
-                    ]},
+                    ], 'note': 'Jika organisasi memakai file pipeline lain seperti Helm values, Argo, atau Tekton, prinsip pemetaannya tetap sama: simpan token di secret manager, kirim metadata release yang konsisten, lalu baca decision dari SATRIA sebelum artefak dipromosikan.'},
                     {'title': 'Contoh stage gate dan logika keputusan pipeline', 'items': [
                         'Jika decision = allowed, stage gate selesai sukses dan pipeline dapat lanjut ke promote/deploy berikutnya.',
                         'Jika decision = blocked, pipeline harus berhenti dengan exit code non-zero dan release tidak boleh dipromosikan.',
@@ -286,6 +431,19 @@ curl -s -X POST \\"$SATRIA_URL/api/v1/scans\\" \\
                             'code': 'if result.status != "completed":\n    fail_pipeline("scan belum selesai normal")\n\nif result.decision == "allowed":\n    continue_deploy()\nelif result.decision == "need_approval":\n    wait_manual_approval()\nelse:\n    fail_pipeline("release diblokir oleh SATRIA")'
                         },
                     ]},
+                    {'title': 'Checklist implementasi sebelum dinyatakan siap produksi', 'items': [
+                        'Service account SATRIA sudah aktif dan token tersimpan di Jenkins Credentials atau CI/CD Variables.',
+                        'Registry internal dapat diakses dari server SATRIA dan image yang dipush pipeline dapat dipull ulang oleh worker SATRIA.',
+                        'Aset pada SATRIA sudah terdaftar dengan asset_code yang sama seperti yang dipakai pipeline.',
+                        'Profile scan yang digunakan pipeline sudah disetujui, misalnya quick_container untuk gate cepat atau full_container untuk release kritikal.',
+                        'Policy gate, threshold severity, dan aturan publish ke IRIS sudah disepakati tertulis antara DevOps, SecOps, dan approver perubahan.',
+                        'Smoke test integrasi minimal satu kali sudah berhasil: intake release sukses, scan sukses, result JSON terbaca, dan gate decision benar-benar memengaruhi hasil pipeline.',
+                    ], 'snippets': [
+                        {
+                            'title': 'Acceptance criteria singkat',
+                            'code': '1. Build dan push image berhasil\n2. SATRIA menerima intake release\n3. Scan job terbentuk otomatis\n4. Pipeline dapat membaca decision allowed/blocked/need_approval\n5. Release blocked benar-benar menghentikan promote\n6. Publish ke IRIS hanya dilakukan bila kebijakan menghendaki'
+                        },
+                    ], 'note': 'Dengan checklist ini, tim pengembang tidak hanya tahu cara memanggil API SATRIA, tetapi juga tahu indikator bahwa integrasi sudah layak dipakai sebagai security gate operasional.'},
                     {'title': 'Publish ticket ke IRIS dari pipeline atau operator', 'intro': [
                         'Tidak semua temuan harus langsung menjadi ticket IRIS. Praktik yang lebih aman adalah mempublish hanya temuan dengan severity tertentu, misalnya critical dan high, setelah hasil scan ditinjau cepat oleh tim yang berwenang.'
                     ], 'items': [
@@ -473,29 +631,281 @@ async def api_v1_error_handler(_: Request, exc: ApiV1Error):
     return JSONResponse(status_code=exc.status_code, content=payload)
 
 
-def _authorize_service_account(authorization: str | None, required_scope: str | None = None) -> str:
+def _current_user_name(request: Request) -> str:
+    return str(getattr(request.state, 'current_user', '') or '').strip()
+
+
+def _is_admin_user(username: str | None) -> bool:
+    normalized = (username or '').strip().lower()
+    return normalized in ADMIN_USERS
+
+
+def _require_admin_request(request: Request) -> str:
+    current_user = _current_user_name(request)
+    if not _is_admin_user(current_user):
+        raise HTTPException(status_code=403, detail='admin access required')
+    return current_user
+
+
+def _normalize_service_account_name(value: str) -> str:
+    normalized = re.sub(r'[^a-z0-9._-]+', '-', (value or '').strip().lower())
+    return normalized.strip('-.')
+
+
+def _normalize_scope_values(values: list[str] | tuple[str, ...] | set[str] | None) -> list[str]:
+    normalized = {
+        str(value).strip()
+        for value in (values or [])
+        if str(value).strip() in API_SCOPE_VALUES
+    }
+    return sorted(normalized)
+
+
+def _setting_value(db: Session, key: str) -> str | None:
+    row = db.get(AppSetting, key)
+    if not row:
+        return None
+    value = (row.value or '').strip()
+    return value or None
+
+
+def _set_setting(db: Session, key: str, value: str | None, *, updated_by: str | None = None):
+    row = db.get(AppSetting, key)
+    normalized_value = (value or '').strip() or None
+    if row:
+        row.value = normalized_value
+        row.updated_by = updated_by
+        row.updated_at = datetime.utcnow()
+        return row
+    row = AppSetting(
+        key=key,
+        value=normalized_value,
+        updated_by=updated_by,
+        updated_at=datetime.utcnow(),
+    )
+    db.add(row)
+    return row
+
+
+def _parse_setting_bool(value: str | None, fallback: bool) -> bool:
+    normalized = (value or '').strip().lower()
+    if normalized in {'1', 'true', 'yes', 'on'}:
+        return True
+    if normalized in {'0', 'false', 'no', 'off'}:
+        return False
+    return fallback
+
+
+def _parse_setting_int(value: str | None, fallback: int) -> int:
+    try:
+        return max(0, int((value or '').strip()))
+    except (TypeError, ValueError):
+        return fallback
+
+
+def _gate_runtime_config(db: Session) -> dict[str, object]:
     settings = get_settings()
-    expected_token = (settings.satria_api_token or '').strip()
-    if not expected_token:
-        _raise_api_error(503, 'API_AUTH_NOT_CONFIGURED', 'SATRIA API token is not configured')
+    policy_name = _setting_value(db, 'gate_policy_name') or settings.gate_policy_name
+    high_decision = _normalize_gate_decision(
+        _setting_value(db, 'gate_high_decision'),
+        _normalize_gate_decision(settings.gate_high_decision, 'need_approval'),
+    )
+    medium_decision = _normalize_gate_decision(
+        _setting_value(db, 'gate_medium_decision'),
+        _normalize_gate_decision(settings.gate_medium_decision, 'allowed'),
+    )
+    low_decision = _normalize_gate_decision(
+        _setting_value(db, 'gate_low_decision'),
+        _normalize_gate_decision(settings.gate_low_decision, 'allowed'),
+    )
+    return {
+        'gate_policy_name': policy_name,
+        'gate_block_on_critical': _parse_setting_bool(
+            _setting_value(db, 'gate_block_on_critical'),
+            settings.gate_block_on_critical,
+        ),
+        'gate_high_threshold': _parse_setting_int(
+            _setting_value(db, 'gate_high_threshold'),
+            settings.gate_high_threshold,
+        ),
+        'gate_high_decision': high_decision,
+        'gate_medium_threshold': _parse_setting_int(
+            _setting_value(db, 'gate_medium_threshold'),
+            settings.gate_medium_threshold,
+        ),
+        'gate_medium_decision': medium_decision,
+        'gate_low_threshold': _parse_setting_int(
+            _setting_value(db, 'gate_low_threshold'),
+            settings.gate_low_threshold,
+        ),
+        'gate_low_decision': low_decision,
+    }
+
+
+def _gate_policy_page_context(
+    request: Request,
+    db: Session,
+    *,
+    page_status: str | None = None,
+    page_message: str | None = None,
+) -> dict:
+    effective = _gate_runtime_config(db)
+    stored_values = {key: _setting_value(db, key) for key in GATE_SETTING_KEYS}
+    return {
+        'request': request,
+        'page_status': page_status,
+        'page_message': page_message,
+        'effective': effective,
+        'stored_values': stored_values,
+        'has_overrides': any(bool(value) for value in stored_values.values()),
+        'decision_options': GATE_DECISION_OPTIONS,
+    }
+
+
+def _serialize_scope_values(values: list[str] | tuple[str, ...] | set[str] | None) -> str:
+    return ','.join(_normalize_scope_values(values))
+
+
+def _parse_scope_values(raw_value: str | None) -> set[str]:
+    return {
+        item.strip()
+        for item in (raw_value or '').split(',')
+        if item.strip()
+    }
+
+
+def _scope_labels(raw_value: str | None) -> list[str]:
+    scope_map = {option['value']: option['label'] for option in API_SCOPE_OPTIONS}
+    labels: list[str] = []
+    for value in _normalize_scope_values(_parse_scope_values(raw_value)):
+        labels.append(scope_map.get(value, value))
+    return labels
+
+
+def _hash_api_token(token: str) -> str:
+    return hashlib.sha256(token.encode('utf-8')).hexdigest()
+
+
+def _mask_api_token(token: str) -> str:
+    cleaned = (token or '').strip()
+    if len(cleaned) <= 12:
+        return cleaned
+    return f'{cleaned[:6]}...{cleaned[-4:]}'
+
+
+def _generate_api_token() -> str:
+    return f"sat_{secrets.token_urlsafe(32)}"
+
+
+def _service_account_rows(db: Session) -> list[dict]:
+    accounts = (
+        db.query(ServiceAccountCredential)
+        .order_by(ServiceAccountCredential.created_at.desc(), ServiceAccountCredential.id.desc())
+        .all()
+    )
+    rows: list[dict] = []
+    for account in accounts:
+        rows.append({
+            'account': account,
+            'scope_values': _normalize_scope_values(_parse_scope_values(account.scopes)),
+            'scope_labels': _scope_labels(account.scopes),
+        })
+    return rows
+
+
+def _service_account_page_context(
+    request: Request,
+    db: Session,
+    *,
+    page_status: str | None = None,
+    page_message: str | None = None,
+    token_value: str | None = None,
+    token_label: str | None = None,
+    token_message: str | None = None,
+) -> dict:
+    settings = get_settings()
+    fallback_scopes = sorted(settings.api_scopes())
+    return {
+        'request': request,
+        'accounts': _service_account_rows(db),
+        'scope_options': API_SCOPE_OPTIONS,
+        'page_status': page_status,
+        'page_message': page_message,
+        'token_value': token_value,
+        'token_label': token_label,
+        'token_message': token_message,
+        'fallback_token_configured': bool((settings.satria_api_token or '').strip()),
+        'fallback_service_account': settings.satria_api_service_account,
+        'fallback_scopes': fallback_scopes,
+    }
+
+
+def _authorize_service_account(
+    authorization: str | None,
+    required_scope: str | None = None,
+    *,
+    db: Session | None = None,
+) -> str:
+    settings = get_settings()
     if not authorization or not authorization.startswith('Bearer '):
         _raise_api_error(401, 'API_AUTH_MISSING', 'Missing bearer token')
+
     provided_token = authorization.split(' ', 1)[1].strip()
-    if provided_token != expected_token:
-        _raise_api_error(401, 'API_AUTH_INVALID', 'Invalid bearer token')
-    if required_scope and required_scope not in settings.api_scopes():
-        _raise_api_error(
-            403,
-            'API_SCOPE_DENIED',
-            f'Service account does not have scope {required_scope}',
-            details={'required_scope': required_scope},
+    if not provided_token:
+        _raise_api_error(401, 'API_AUTH_MISSING', 'Missing bearer token')
+
+    if db is not None:
+        credential = (
+            db.query(ServiceAccountCredential)
+            .filter(
+                ServiceAccountCredential.is_active == True,  # noqa: E712
+                ServiceAccountCredential.token_hash == _hash_api_token(provided_token),
+            )
+            .first()
         )
-    return settings.satria_api_service_account
+        if credential:
+            scopes = _parse_scope_values(credential.scopes)
+            if required_scope and required_scope not in scopes:
+                _raise_api_error(
+                    403,
+                    'API_SCOPE_DENIED',
+                    f'Service account does not have scope {required_scope}',
+                    details={'required_scope': required_scope, 'service_account': credential.name},
+                )
+            return credential.name
+
+    expected_token = (settings.satria_api_token or '').strip()
+    if expected_token and secrets.compare_digest(provided_token, expected_token):
+        if required_scope and required_scope not in settings.api_scopes():
+            _raise_api_error(
+                403,
+                'API_SCOPE_DENIED',
+                f'Service account does not have scope {required_scope}',
+                details={'required_scope': required_scope, 'service_account': settings.satria_api_service_account},
+            )
+        return settings.satria_api_service_account
+
+    has_db_credential = False
+    if db is not None:
+        has_db_credential = (
+            db.query(ServiceAccountCredential.id)
+            .filter(ServiceAccountCredential.is_active == True)  # noqa: E712
+            .first()
+            is not None
+        )
+
+    if not has_db_credential and not expected_token:
+        _raise_api_error(503, 'API_AUTH_NOT_CONFIGURED', 'SATRIA API token is not configured')
+
+    _raise_api_error(401, 'API_AUTH_INVALID', 'Invalid bearer token')
 
 
 def _service_account_scope(required_scope: str):
-    def dependency(authorization: str | None = Header(default=None)) -> str:
-        return _authorize_service_account(authorization, required_scope)
+    def dependency(
+        authorization: str | None = Header(default=None),
+        db: Session = Depends(get_db),
+    ) -> str:
+        return _authorize_service_account(authorization, required_scope, db=db)
 
     return dependency
 
@@ -550,8 +960,8 @@ def _release_metadata(scan: ScanJob) -> dict[str, object]:
     return {}
 
 
-def _gate_decision_for_scan(scan: ScanJob, severity_summary: dict[str, int]) -> str:
-    settings = get_settings()
+def _gate_decision_for_scan(scan: ScanJob, severity_summary: dict[str, int], db: Session) -> str:
+    gate_config = _gate_runtime_config(db)
     if scan.status in {'queued', 'running'}:
         return 'pending'
     if scan.status != 'completed':
@@ -563,20 +973,20 @@ def _gate_decision_for_scan(scan: ScanJob, severity_summary: dict[str, int]) -> 
     )
     if override_decision:
         return override_decision
-    if settings.gate_block_on_critical and severity_summary.get('critical', 0) > 0:
+    if gate_config['gate_block_on_critical'] and severity_summary.get('critical', 0) > 0:
         return 'blocked'
-    if settings.gate_high_threshold > 0 and severity_summary.get('high', 0) >= settings.gate_high_threshold:
-        return _normalize_gate_decision(settings.gate_high_decision, 'need_approval')
-    if settings.gate_medium_threshold > 0 and severity_summary.get('medium', 0) >= settings.gate_medium_threshold:
-        return _normalize_gate_decision(settings.gate_medium_decision, 'allowed')
-    if settings.gate_low_threshold > 0 and severity_summary.get('low', 0) >= settings.gate_low_threshold:
-        return _normalize_gate_decision(settings.gate_low_decision, 'allowed')
+    if gate_config['gate_high_threshold'] > 0 and severity_summary.get('high', 0) >= gate_config['gate_high_threshold']:
+        return _normalize_gate_decision(str(gate_config['gate_high_decision']), 'need_approval')
+    if gate_config['gate_medium_threshold'] > 0 and severity_summary.get('medium', 0) >= gate_config['gate_medium_threshold']:
+        return _normalize_gate_decision(str(gate_config['gate_medium_decision']), 'allowed')
+    if gate_config['gate_low_threshold'] > 0 and severity_summary.get('low', 0) >= gate_config['gate_low_threshold']:
+        return _normalize_gate_decision(str(gate_config['gate_low_decision']), 'allowed')
     return 'allowed'
 
 
 def _pipeline_status_payload(scan: ScanJob, db: Session) -> dict:
     severity_summary = _severity_summary_for_scan(db, scan.id)
-    gate_decision = _gate_decision_for_scan(scan, severity_summary)
+    gate_decision = _gate_decision_for_scan(scan, severity_summary, db)
     requested_by = scan.release.requested_by if scan.release else None
     build_number = scan.release.build_number if scan.release else None
     return {
@@ -602,12 +1012,12 @@ def _pipeline_result_payload(scan: ScanJob, db: Session) -> dict:
     status_payload = _pipeline_status_payload(scan, db)
     mode_label, _ = _scan_mode(scan)
     release_metadata = _release_metadata(scan)
-    settings = get_settings()
+    gate_config = _gate_runtime_config(db)
     return {
         **status_payload,
         'mode': mode_label.lower().replace(' ', '_'),
         'decision': status_payload['gate_decision'],
-        'policy_name': settings.gate_policy_name,
+        'policy_name': str(gate_config['gate_policy_name']),
         'total_findings': status_payload['severity_summary']['total'],
         'report_path': scan.raw_report_path,
         'report_url': f'/scans/{scan.id}',
@@ -620,6 +1030,7 @@ def _pipeline_result_payload(scan: ScanJob, db: Session) -> dict:
 @app.middleware('http')
 async def require_login(request: Request, call_next):
     request.state.current_user = request.cookies.get('satria_user')
+    request.state.is_admin = _is_admin_user(request.state.current_user)
     path = request.url.path
     if any(path.startswith(prefix) for prefix in PUBLIC_PATH_PREFIXES):
         return await call_next(request)
@@ -834,6 +1245,296 @@ def logout(request: Request):
     response.delete_cookie('satria_user')
     return response
 
+
+@app.get('/admin/service-accounts', response_class=HTMLResponse)
+def service_accounts_page(
+    request: Request,
+    status: str | None = None,
+    message: str | None = None,
+    db: Session = Depends(get_db),
+):
+    _require_admin_request(request)
+    return templates.TemplateResponse(
+        'service_accounts.html',
+        _service_account_page_context(
+            request,
+            db,
+            page_status=(status or '').strip() or None,
+            page_message=(message or '').strip() or None,
+        ),
+    )
+
+
+@app.get('/admin/gate-policy', response_class=HTMLResponse)
+def gate_policy_page(
+    request: Request,
+    status: str | None = None,
+    message: str | None = None,
+    db: Session = Depends(get_db),
+):
+    _require_admin_request(request)
+    return templates.TemplateResponse(
+        'gate_policy.html',
+        _gate_policy_page_context(
+            request,
+            db,
+            page_status=(status or '').strip() or None,
+            page_message=(message or '').strip() or None,
+        ),
+    )
+
+
+@app.post('/admin/gate-policy', response_class=HTMLResponse)
+def save_gate_policy(
+    request: Request,
+    gate_policy_name: str = Form(''),
+    gate_block_on_critical: str | None = Form(None),
+    gate_high_threshold: int = Form(0),
+    gate_high_decision: str = Form('need_approval'),
+    gate_medium_threshold: int = Form(0),
+    gate_medium_decision: str = Form('allowed'),
+    gate_low_threshold: int = Form(0),
+    gate_low_decision: str = Form('allowed'),
+    db: Session = Depends(get_db),
+):
+    admin_user = _require_admin_request(request)
+
+    def _clean_threshold(value: int) -> int:
+        return max(0, int(value))
+
+    decision_values = {
+        'gate_high_decision': gate_high_decision,
+        'gate_medium_decision': gate_medium_decision,
+        'gate_low_decision': gate_low_decision,
+    }
+    invalid_decision = next((key for key, value in decision_values.items() if value not in GATE_DECISION_VALUES), None)
+    if invalid_decision:
+        return templates.TemplateResponse(
+            'gate_policy.html',
+            _gate_policy_page_context(
+                request,
+                db,
+                page_status='error',
+                page_message='Keputusan gate tidak valid. Pilih Allowed, Need Approval, atau Blocked.',
+            ),
+            status_code=400,
+        )
+
+    _set_setting(db, 'gate_policy_name', (gate_policy_name or '').strip(), updated_by=admin_user)
+    _set_setting(db, 'gate_block_on_critical', 'true' if gate_block_on_critical else 'false', updated_by=admin_user)
+    _set_setting(db, 'gate_high_threshold', str(_clean_threshold(gate_high_threshold)), updated_by=admin_user)
+    _set_setting(db, 'gate_high_decision', gate_high_decision, updated_by=admin_user)
+    _set_setting(db, 'gate_medium_threshold', str(_clean_threshold(gate_medium_threshold)), updated_by=admin_user)
+    _set_setting(db, 'gate_medium_decision', gate_medium_decision, updated_by=admin_user)
+    _set_setting(db, 'gate_low_threshold', str(_clean_threshold(gate_low_threshold)), updated_by=admin_user)
+    _set_setting(db, 'gate_low_decision', gate_low_decision, updated_by=admin_user)
+    db.add(AuditLog(
+        actor=admin_user,
+        action='gate_policy_updated',
+        object_type='app_setting',
+        object_id='gate_policy',
+        detail=(
+            f'policy={gate_policy_name}; block_critical={bool(gate_block_on_critical)}; '
+            f'high={gate_high_threshold}:{gate_high_decision}; '
+            f'medium={gate_medium_threshold}:{gate_medium_decision}; '
+            f'low={gate_low_threshold}:{gate_low_decision}'
+        ),
+    ))
+    db.commit()
+    return templates.TemplateResponse(
+        'gate_policy.html',
+        _gate_policy_page_context(
+            request,
+            db,
+            page_status='success',
+            page_message='Gate policy berhasil diperbarui. Evaluasi pipeline baru akan memakai konfigurasi ini.',
+        ),
+    )
+
+
+@app.post('/admin/service-accounts', response_class=HTMLResponse)
+def create_service_account(
+    request: Request,
+    name: str = Form(...),
+    display_name: str = Form(''),
+    description: str = Form(''),
+    scopes: list[str] = Form([]),
+    db: Session = Depends(get_db),
+):
+    admin_user = _require_admin_request(request)
+    normalized_name = _normalize_service_account_name(name)
+    normalized_scopes = _normalize_scope_values(scopes)
+
+    if not normalized_name:
+        return templates.TemplateResponse(
+            'service_accounts.html',
+            _service_account_page_context(
+                request,
+                db,
+                page_status='error',
+                page_message='Nama service account belum valid. Gunakan huruf, angka, titik, strip, atau underscore.',
+            ),
+            status_code=400,
+        )
+
+    if not normalized_scopes:
+        return templates.TemplateResponse(
+            'service_accounts.html',
+            _service_account_page_context(
+                request,
+                db,
+                page_status='error',
+                page_message='Pilih minimal satu scope API untuk service account ini.',
+            ),
+            status_code=400,
+        )
+
+    existing = (
+        db.query(ServiceAccountCredential)
+        .filter(ServiceAccountCredential.name == normalized_name)
+        .first()
+    )
+    if existing:
+        return templates.TemplateResponse(
+            'service_accounts.html',
+            _service_account_page_context(
+                request,
+                db,
+                page_status='error',
+                page_message=f'Service account {normalized_name} sudah ada. Gunakan nama lain atau rotasi token akun yang sudah ada.',
+            ),
+            status_code=409,
+        )
+
+    token_value = _generate_api_token()
+    account = ServiceAccountCredential(
+        name=normalized_name,
+        display_name=(display_name or '').strip() or normalized_name,
+        description=(description or '').strip() or None,
+        scopes=_serialize_scope_values(normalized_scopes),
+        token_hash=_hash_api_token(token_value),
+        token_hint=_mask_api_token(token_value),
+        is_active=True,
+        created_by=admin_user,
+        last_rotated_at=datetime.utcnow(),
+    )
+    db.add(account)
+    db.flush()
+    db.add(AuditLog(
+        actor=admin_user,
+        action='service_account_created',
+        object_type='service_account_credential',
+        object_id=str(account.id),
+        detail=f'name={account.name}; scopes={account.scopes}',
+    ))
+    db.commit()
+    return templates.TemplateResponse(
+        'service_accounts.html',
+        _service_account_page_context(
+            request,
+            db,
+            page_status='success',
+            page_message=f'Service account {account.name} berhasil dibuat.',
+            token_value=token_value,
+            token_label=f'Token baru untuk {account.name}',
+            token_message='Salin token ini sekarang juga. Demi keamanan, nilai token hanya ditampilkan sekali saat dibuat atau dirotasi.',
+        ),
+    )
+
+
+@app.post('/admin/service-accounts/{service_account_id}/rotate', response_class=HTMLResponse)
+def rotate_service_account_token(
+    service_account_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    admin_user = _require_admin_request(request)
+    account = db.get(ServiceAccountCredential, service_account_id)
+    if not account:
+        raise HTTPException(status_code=404, detail='service account not found')
+
+    token_value = _generate_api_token()
+    account.token_hash = _hash_api_token(token_value)
+    account.token_hint = _mask_api_token(token_value)
+    account.last_rotated_at = datetime.utcnow()
+    account.updated_at = datetime.utcnow()
+    db.add(AuditLog(
+        actor=admin_user,
+        action='service_account_rotated',
+        object_type='service_account_credential',
+        object_id=str(account.id),
+        detail=f'name={account.name}',
+    ))
+    db.commit()
+    return templates.TemplateResponse(
+        'service_accounts.html',
+        _service_account_page_context(
+            request,
+            db,
+            page_status='success',
+            page_message=f'Token untuk {account.name} berhasil dirotasi.',
+            token_value=token_value,
+            token_label=f'Token hasil rotasi untuk {account.name}',
+            token_message='Perbarui secret pada Jenkins, GitLab CI, atau secret manager lain sebelum pipeline dijalankan ulang.',
+        ),
+    )
+
+
+@app.post('/admin/service-accounts/{service_account_id}/toggle')
+def toggle_service_account_status(
+    service_account_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    admin_user = _require_admin_request(request)
+    account = db.get(ServiceAccountCredential, service_account_id)
+    if not account:
+        raise HTTPException(status_code=404, detail='service account not found')
+
+    account.is_active = not account.is_active
+    account.updated_at = datetime.utcnow()
+    action = 'service_account_activated' if account.is_active else 'service_account_deactivated'
+    status_label = 'diaktifkan' if account.is_active else 'dinonaktifkan'
+    db.add(AuditLog(
+        actor=admin_user,
+        action=action,
+        object_type='service_account_credential',
+        object_id=str(account.id),
+        detail=f'name={account.name}',
+    ))
+    db.commit()
+    return RedirectResponse(
+        url=f"/admin/service-accounts?status=success&message={quote_plus(f'Service account {account.name} berhasil {status_label}.')}",
+        status_code=303,
+    )
+
+
+@app.post('/admin/service-accounts/{service_account_id}/delete')
+def delete_service_account(
+    service_account_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    admin_user = _require_admin_request(request)
+    account = db.get(ServiceAccountCredential, service_account_id)
+    if not account:
+        raise HTTPException(status_code=404, detail='service account not found')
+
+    account_name = account.name
+    db.add(AuditLog(
+        actor=admin_user,
+        action='service_account_deleted',
+        object_type='service_account_credential',
+        object_id=str(account.id),
+        detail=f'name={account_name}; scopes={account.scopes}',
+    ))
+    db.delete(account)
+    db.commit()
+    return RedirectResponse(
+        url=f"/admin/service-accounts?status=success&message={quote_plus(f'Service account {account_name} berhasil dihapus.')}",
+        status_code=303,
+    )
+
 @app.get('/', response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(get_db)):
     summary = get_summary(db)
@@ -910,9 +1611,15 @@ def assets_page(
     cleanup_message: str | None = None,
     allowlist_status: str | None = None,
     allowlist_message: str | None = None,
+    edit_id: int | None = None,
     db: Session = Depends(get_db),
 ):
     assets = db.query(Asset).filter(Asset.is_active == True).order_by(Asset.id.desc()).all()  # noqa: E712
+    edit_asset = None
+    if edit_id is not None:
+        candidate = db.get(Asset, edit_id)
+        if candidate and candidate.is_active:
+            edit_asset = candidate
     return templates.TemplateResponse('assets.html', {
         'request': request,
         'assets': assets,
@@ -923,6 +1630,7 @@ def assets_page(
         'allowlist_message': allowlist_message,
         'allowlist_entries': database_allowlist_entries(db),
         'config_allowlist': configured_allowlist_rules(),
+        'edit_asset': edit_asset,
     })
 
 
@@ -966,6 +1674,40 @@ def create_asset_form(
     )
     db.add(asset)
     db.add(AuditLog(action='asset_created', object_type='asset', detail=name))
+    db.commit()
+    return RedirectResponse('/assets', status_code=303)
+
+
+@app.post('/assets/{asset_id}/edit')
+def update_asset_form(
+    asset_id: int,
+    name: str = Form(...),
+    asset_type: str = Form(...),
+    target: str = Form(...),
+    environment: str = Form('development'),
+    criticality: str = Form('medium'),
+    owner: str = Form(''),
+    technical_pic: str = Form(''),
+    db: Session = Depends(get_db),
+):
+    asset = db.get(Asset, asset_id)
+    if not asset or not asset.is_active:
+        raise HTTPException(status_code=404, detail='asset not found')
+
+    asset.name = name
+    asset.asset_type = asset_type
+    asset.target = target
+    asset.environment = environment
+    asset.criticality = criticality
+    asset.owner = owner or None
+    asset.technical_pic = technical_pic or None
+
+    db.add(AuditLog(
+        action='asset_updated',
+        object_type='asset',
+        object_id=str(asset.id),
+        detail=name,
+    ))
     db.commit()
     return RedirectResponse('/assets', status_code=303)
 

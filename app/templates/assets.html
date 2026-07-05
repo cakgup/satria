@@ -293,6 +293,7 @@
     <p>Urutan ini paling umum dipakai operator: definisikan target, tetapkan environment dan PIC, lalu baru pilih profile scan yang sesuai.</p>
   </div>
   <div class="hero-actions">
+    <a class="hero-button" href="/admin/service-accounts">API Key</a>
     <a class="hero-button primary" href="#asset-form">Tambah Asset</a>
     <a class="hero-button" href="/scan/new">Lanjut ke Scan</a>
   </div>
@@ -322,48 +323,66 @@
     <div class="panel-head">
       <div>
         <span class="section-kicker">Create Asset</span>
-        <h3>Tambah asset baru</h3>
-        <p class="helper-copy">Field disusun sesuai pola intake operasional: identitas aset, jenis target, lalu ownership.</p>
+        <h3>{% if edit_asset %}Edit asset{% else %}Tambah asset baru{% endif %}</h3>
+        <p class="helper-copy">
+          {% if edit_asset %}
+          Perbarui identitas, target, dan ownership asset yang sudah terdaftar tanpa perlu menghapus lalu membuat ulang.
+          {% else %}
+          Field disusun sesuai pola intake operasional: identitas aset, jenis target, lalu ownership.
+          {% endif %}
+        </p>
       </div>
     </div>
-    <form method="post" action="/assets" class="form-grid">
+    <form method="post" action="{% if edit_asset %}/assets/{{ edit_asset.id }}/edit{% else %}/assets{% endif %}" class="form-grid">
       <label class="field">
         <span>Nama asset</span>
-        <input name="name" required placeholder="SAKTI API Dev">
+        <input name="name" required placeholder="SAKTI API Dev" value="{{ edit_asset.name if edit_asset else '' }}">
       </label>
       <label class="field">
         <span>Jenis target</span>
         <select name="asset_type" id="asset-type-select">
-          <option value="container_image">Container image</option>
-          <option value="source_repository">Source repository</option>
-          <option value="filesystem">Filesystem</option>
-          <option value="server_ip">Server / IP</option>
-          <option value="web_application">Web application</option>
-          <option value="api_endpoint">API endpoint</option>
+          <option value="container_image" {% if edit_asset and edit_asset.asset_type == 'container_image' %}selected{% endif %}>Container image</option>
+          <option value="source_repository" {% if edit_asset and edit_asset.asset_type == 'source_repository' %}selected{% endif %}>Source repository</option>
+          <option value="filesystem" {% if edit_asset and edit_asset.asset_type == 'filesystem' %}selected{% endif %}>Filesystem</option>
+          <option value="server_ip" {% if edit_asset and edit_asset.asset_type == 'server_ip' %}selected{% endif %}>Server / IP</option>
+          <option value="web_application" {% if edit_asset and edit_asset.asset_type == 'web_application' %}selected{% endif %}>Web application</option>
+          <option value="api_endpoint" {% if edit_asset and edit_asset.asset_type == 'api_endpoint' %}selected{% endif %}>API endpoint</option>
         </select>
       </label>
       <label class="field field-wide">
         <span>Target</span>
-        <input id="asset-target-input" name="target" required placeholder="nginx:latest / https://example.com / 10.0.0.1">
+        <input id="asset-target-input" name="target" required placeholder="nginx:latest / https://example.com / 10.0.0.1" value="{{ edit_asset.target if edit_asset else '' }}">
       </label>
       <label class="field">
         <span>Environment</span>
-        <select name="environment"><option>development</option><option>staging</option><option>production</option></select>
+        <select name="environment">
+          <option {% if not edit_asset or edit_asset.environment == 'development' %}selected{% endif %}>development</option>
+          <option {% if edit_asset and edit_asset.environment == 'staging' %}selected{% endif %}>staging</option>
+          <option {% if edit_asset and edit_asset.environment == 'production' %}selected{% endif %}>production</option>
+        </select>
       </label>
       <label class="field">
         <span>Criticality</span>
-        <select name="criticality"><option>low</option><option selected>medium</option><option>high</option><option>critical</option></select>
+        <select name="criticality">
+          <option {% if edit_asset and edit_asset.criticality == 'low' %}selected{% endif %}>low</option>
+          <option {% if not edit_asset or edit_asset.criticality == 'medium' %}selected{% endif %}>medium</option>
+          <option {% if edit_asset and edit_asset.criticality == 'high' %}selected{% endif %}>high</option>
+          <option {% if edit_asset and edit_asset.criticality == 'critical' %}selected{% endif %}>critical</option>
+        </select>
       </label>
       <label class="field">
         <span>Owner</span>
-        <input name="owner" placeholder="Unit/Pemilik">
+        <input name="owner" placeholder="Unit/Pemilik" value="{{ edit_asset.owner if edit_asset and edit_asset.owner else '' }}">
       </label>
       <label class="field">
         <span>Technical PIC</span>
-        <input name="technical_pic" placeholder="PIC Teknis">
+        <input name="technical_pic" placeholder="PIC Teknis" value="{{ edit_asset.technical_pic if edit_asset and edit_asset.technical_pic else '' }}">
       </label>
       <div class="form-actions">
-        <button type="submit">Simpan Asset</button>
+        <button type="submit">{% if edit_asset %}Simpan Perubahan{% else %}Simpan Asset{% endif %}</button>
+        {% if edit_asset %}
+        <a class="table-action table-action-muted" href="/assets#asset-form">Batal Edit</a>
+        {% endif %}
       </div>
     </form>
   </div>
@@ -615,6 +634,7 @@
         <td>
           <div class="asset-actions">
             <a class="table-action" href="/scan/new?asset_id={{ a.id }}">Scan</a>
+            <a class="table-action table-action-muted" href="/assets?edit_id={{ a.id }}#asset-form">Edit</a>
             <form method="post" action="/assets/{{ a.id }}/delete" class="asset-delete-form">
               <button class="table-action table-action-danger" type="submit">Hapus</button>
             </form>

@@ -1,0 +1,8 @@
+{
+  "asset_code": "JENKINS-DEMO",
+  "asset_name": "Jenkins Demo Service",
+  "release_version": "smoke-test-001",
+  "image_ref": "nginx:latest",
+  "build_number": "1",
+  "environment_target": "staging"
+}

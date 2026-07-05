@@ -8,4 +8,6 @@ services:
       - "80:80"
     volumes:
       - ./index.html:/srv/index.html:ro
+      - ./sop-hulu-hilir-per-tim.html:/srv/sop-hulu-hilir-per-tim.html:ro
+      - ./favicon.ico:/srv/favicon.ico:ro
       - ./logo.png:/srv/logo.png:ro

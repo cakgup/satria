@@ -48,9 +48,41 @@
       grid-template-columns: 1.2fr 0.8fr;
       gap: 28px;
       padding: 34px 38px 28px;
+      position: relative;
       background:
         radial-gradient(circle at right top, rgba(245, 214, 96, 0.18), transparent 18%),
         linear-gradient(135deg, rgba(80, 120, 207, 0.12), rgba(255, 255, 255, 0.7));
+    }
+
+    .hero-info {
+      position: absolute;
+      top: 22px;
+      right: 24px;
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      display: inline-grid;
+      place-items: center;
+      text-decoration: none;
+      background: linear-gradient(180deg, #6c8fe0 0%, #4a74c5 100%);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      box-shadow: 0 10px 24px rgba(74, 116, 197, 0.28);
+      font-size: 17px;
+      font-weight: 800;
+      line-height: 1;
+      transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+    }
+
+    .hero-info:hover {
+      transform: translateY(-1px) scale(1.03);
+      box-shadow: 0 14px 28px rgba(74, 116, 197, 0.34);
+      filter: saturate(1.05);
+    }
+
+    .hero-info:focus-visible {
+      outline: 3px solid rgba(98, 139, 223, 0.26);
+      outline-offset: 2px;
     }
 
     .brand-bar {
@@ -375,6 +407,7 @@
 <body>
   <main class="flyer">
     <section class="hero">
+      <a class="hero-info" href="./sop-hulu-hilir-per-tim.html" aria-label="Buka SOP operasional hulu-ke-hilir" title="Buka SOP operasional">i</a>
       <div>
         <div class="brand-bar">
           <img class="brand-logo" src="../app/static/logo.png" alt="Logo SATRIA">

@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ekosistem Platform Keamanan Siber</title>
-  <link rel="icon" type="image/png" href="./logo.png">
-  <link rel="shortcut icon" type="image/png" href="./logo.png">
+  <link rel="icon" type="image/x-icon" href="./favicon.ico">
+  <link rel="shortcut icon" type="image/x-icon" href="./favicon.ico">
   <style>
     :root {
       --navy: #203358;
@@ -54,10 +54,37 @@
 
     .hero {
       display: block;
+      position: relative;
       padding: 34px 38px 28px;
       background:
         radial-gradient(circle at right top, rgba(245, 214, 96, 0.14), transparent 18%),
         linear-gradient(135deg, rgba(80, 120, 207, 0.18), rgba(255, 255, 255, 0.72));
+    }
+
+    .hero-info {
+      position: absolute;
+      top: 22px;
+      right: 22px;
+      width: 44px;
+      height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      text-decoration: none;
+      font-size: 20px;
+      font-weight: 900;
+      color: #ffffff;
+      background: linear-gradient(180deg, #6c8fdb 0%, var(--blue) 100%);
+      box-shadow: 0 12px 24px rgba(74, 116, 197, 0.22);
+      border: 2px solid rgba(255, 255, 255, 0.9);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      z-index: 2;
+    }
+
+    .hero-info:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 28px rgba(74, 116, 197, 0.28);
     }
 
     .brand {
@@ -261,6 +288,7 @@
 <body>
   <main class="page">
     <section class="hero">
+      <a class="hero-info" href="./sop-hulu-hilir-per-tim.html" aria-label="Buka SOP operasional hulu-ke-hilir" title="Buka SOP operasional">i</a>
       <div>
         <div class="brand">
           <img src="./logo.png" alt="Logo Ekosistem SITP">

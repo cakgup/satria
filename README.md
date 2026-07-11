@@ -170,7 +170,7 @@ Fitur integrasi yang sudah ada:
 - API key berbasis scope;
 - gate policy;
 - demo gate `passed` dan `failed`;
-- dokumentasi Jenkins lokal untuk uji koneksi ke SATRIA.
+- dokumentasi Jenkins server dan Jenkins lokal untuk uji koneksi ke SATRIA.
 
 Panduan rinci ada di:
 
@@ -191,6 +191,7 @@ Fungsi integrasi yang tersedia:
 - monitoring status case IRIS dari SATRIA;
 - refresh status remote dari IRIS;
 - sinkronisasi ticket manual IRIS agar tetap terpantau di SATRIA sesuai konfigurasi integrasi;
+- penerimaan alert Wazuh ke PERISAI/DFIR-IRIS melalui integration script Wazuh;
 - pembacaan statistik status case seperti `Open`, `Assigned`, `In Progress`, `Closed`, dan lainnya.
 
 Prinsip yang dipakai:
@@ -198,6 +199,8 @@ Prinsip yang dipakai:
 - workflow investigasi utama tetap berada di IRIS;
 - SATRIA dipakai untuk orkestrasi scan, prioritisasi, dan monitoring integrasi;
 - SATRIA bersifat read-only terhadap workflow case IRIS kecuali pada aksi publish ticket.
+
+Panduan integrasi Wazuh ke PERISAI tersedia di [docs/INTEGRASI-WAZUH-PERISAI.md](C:\Users\gufroni\Documents\GitHub\satria\docs\INTEGRASI-WAZUH-PERISAI.md).
 
 ---
 
@@ -279,14 +282,20 @@ docker compose logs -f
 
 ---
 
-## Jenkins Lokal Untuk Uji Pipeline
+## Jenkins Untuk Uji Pipeline
 
-Repository ini juga menyediakan Jenkins lokal berbasis Docker untuk simulasi interkoneksi ke SATRIA.
+Repository ini menyediakan dua pola uji Jenkins untuk simulasi interkoneksi ke SATRIA.
 
-Endpoint yang dipakai:
+Endpoint operasional yang disarankan:
 
-- Jenkins UI: [http://localhost:8088](http://localhost:8088)
-- job demo: `satria-security-gate`
+- Jenkins server: [http://10.216.83.114:8088](http://10.216.83.114:8088)
+- job utama: `satria-security-gate`
+- job demo lolos: `satria-gate-passed-demo`
+- job demo gagal: `satria-gate-failed-demo`
+
+Endpoint lokal untuk pengembangan:
+
+- Jenkins lokal: [http://localhost:8088](http://localhost:8088)
 
 Skenario yang sudah disiapkan:
 
@@ -305,6 +314,7 @@ Skenario yang sudah disiapkan:
 - [docs/SOP-HULU-HILIR-PER-TIM.md](C:\Users\gufroni\Documents\GitHub\satria\docs\SOP-HULU-HILIR-PER-TIM.md)
 - [docs/IRIS-TOP-MANAGEMENT-WALKTHROUGH.md](C:\Users\gufroni\Documents\GitHub\satria\docs\IRIS-TOP-MANAGEMENT-WALKTHROUGH.md)
 - [docs/soc-iris-demo.md](C:\Users\gufroni\Documents\GitHub\satria\docs\soc-iris-demo.md)
+- [docs/INTEGRASI-WAZUH-PERISAI.md](C:\Users\gufroni\Documents\GitHub\satria\docs\INTEGRASI-WAZUH-PERISAI.md)
 - [docs/SMOKE-TEST-RESULTS.md](C:\Users\gufroni\Documents\GitHub\satria\docs\SMOKE-TEST-RESULTS.md)
 - [docs/jenkins-local-satria-scenario.md](C:\Users\gufroni\Documents\GitHub\satria\docs\jenkins-local-satria-scenario.md)
 - [infra/jenkins-local/README.md](C:\Users\gufroni\Documents\GitHub\satria\infra\jenkins-local\README.md)

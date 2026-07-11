@@ -1,6 +1,6 @@
-# Jenkins Lokal untuk Uji Interkoneksi SATRIA
+# Jenkins untuk Uji Interkoneksi SATRIA
 
-Direktori ini menyiapkan Jenkins berbasis Docker untuk kebutuhan uji pipeline ke SATRIA. Tujuannya adalah memberi lingkungan uji yang cepat bagi tim pengembang dan DevOps sebelum integrasi dipindahkan ke Jenkins production.
+Direktori ini menyiapkan Jenkins berbasis Docker untuk kebutuhan uji pipeline ke SATRIA. Tujuannya adalah memberi lingkungan uji yang cepat bagi tim pengembang dan DevOps sebelum integrasi dipindahkan ke Jenkins production. Lingkungan lokal ini juga sudah diduplikasi ke Jenkins server untuk uji terpusat.
 
 ## Tujuan
 
@@ -13,6 +13,30 @@ Direktori ini menyiapkan Jenkins berbasis Docker untuk kebutuhan uji pipeline ke
 
 - Jenkins UI: `http://localhost:8088`
 - Jenkins agent port: `50088`
+
+## Jenkins Server Terpusat
+
+Jenkins hasil duplikasi lokal sudah tersedia pada server:
+
+- Jenkins UI: `http://10.216.83.114:8088`
+- service: `jenkins-satria.service`
+- job utama: `satria-security-gate`
+- job demo lolos: `satria-gate-passed-demo`
+- job demo gagal: `satria-gate-failed-demo`
+
+Deployment server berjalan native melalui `systemd` karena runtime Docker/Podman pada host target belum tersedia. Konfigurasi integrasi SATRIA tetap sama dengan Jenkins lokal:
+
+- `SATRIA_URL=http://10.216.208.249:8090`
+- `SATRIA_API_TOKEN=change-me-pipeline-token`
+- `SATRIA_ASSET_CODE=JENKINS-DEMO`
+- `SATRIA_ASSET_NAME=Jenkins Demo Service`
+
+Perintah operasional di server Jenkins:
+
+```bash
+sudo systemctl status jenkins-satria.service
+sudo journalctl -u jenkins-satria.service -f
+```
 
 ## File penting
 
@@ -119,6 +143,7 @@ Catatan penting:
 
 - Bila hasil akhir `blocked`, integrasi tetap dianggap berhasil.
 - `blocked` berarti policy gate bekerja dan release memang ditahan.
+- Pada Jenkins server, job `satria-gate-passed-demo` sudah tervalidasi `SUCCESS` dan `satria-gate-failed-demo` sudah tervalidasi `FAILURE`.
 
 ## Referensi lanjutan
 

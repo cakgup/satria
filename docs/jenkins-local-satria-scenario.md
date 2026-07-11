@@ -1,6 +1,6 @@
-# Skenario Pengembangan Jenkins Lokal ke SATRIA
+# Skenario Pengembangan Jenkins ke SATRIA
 
-Dokumen ini menjelaskan skenario uji pengembangan agar tim dapat mensimulasikan alur CI/CD yang terhubung ke SATRIA sebelum implementasi ke Jenkins production. Dokumen ini juga menjawab kebutuhan paling praktis dari tim pengembang: bagaimana mendapatkan token integrasi, apa yang harus diisi di Jenkins, apa yang harus ditambahkan di YAML, dan bagaimana membaca hasil gate dari SATRIA.
+Dokumen ini menjelaskan skenario uji pengembangan agar tim dapat mensimulasikan alur CI/CD yang terhubung ke SATRIA sebelum implementasi ke Jenkins production. Skenario utama saat ini menggunakan Jenkins server pada `10.216.83.114:8088`, sedangkan Jenkins lokal tetap dapat dipakai sebagai fallback pengembangan. Dokumen ini juga menjawab kebutuhan paling praktis dari tim pengembang: bagaimana mendapatkan token integrasi, apa yang harus diisi di Jenkins, apa yang harus ditambahkan di YAML, dan bagaimana membaca hasil gate dari SATRIA.
 
 ## Tujuan skenario
 
@@ -15,15 +15,22 @@ Skenario ini dipakai untuk memvalidasi bahwa pipeline:
 
 ## Topologi uji
 
-- Jenkins lokal berjalan di Docker pada host developer
-- Jenkins memanggil SATRIA lokal atau remote melalui HTTP API
+- Jenkins server berjalan pada host `10.216.83.114`
+- Jenkins memanggil SATRIA remote melalui HTTP API
 - SATRIA menjalankan scan melalui worker yang terhubung ke Trivy, Syft, Grype, ZAP, dan integrasi IRIS
 
-Contoh topologi lokal untuk pengujian:
+Topologi operasional untuk pengujian saat ini:
 
-- Jenkins UI: `http://localhost:8088`
-- SATRIA lokal: `http://localhost:8090`
+- Jenkins UI: `http://10.216.83.114:8088`
+- SATRIA: `http://10.216.208.249:8090`
 - Job contoh: `satria-security-gate`
+- Job demo lolos: `satria-gate-passed-demo`
+- Job demo gagal: `satria-gate-failed-demo`
+
+Topologi lokal masih tersedia untuk pengembangan:
+
+- Jenkins lokal: `http://localhost:8088`
+- SATRIA lokal: `http://localhost:8090`
 
 ## Cara mendapatkan API key atau token SATRIA
 
@@ -199,7 +206,7 @@ SATRIA_ASSET_NAME=Jenkins Demo Service
 
 ## Alur uji yang disarankan
 
-1. Developer membuka Jenkins lokal di `http://localhost:8088`
+1. Developer membuka Jenkins server di `http://10.216.83.114:8088`
 2. Login menggunakan akun admin lokal yang diset pada file `.env`
 3. Buka job `satria-security-gate`
 4. Jalankan build dengan parameter:
@@ -257,7 +264,7 @@ Jika hasil `blocked`, itu bukan berarti integrasi gagal. Justru itu berarti SATR
 
 ## Hasil smoke test yang sudah terbukti
 
-Build Jenkins lokal terbaru berhasil membuktikan:
+Build Jenkins server terbaru berhasil membuktikan:
 
 - intake release berhasil
 - create scan job berhasil

@@ -172,13 +172,6 @@ Fitur integrasi yang sudah ada:
 - demo gate `passed` dan `failed`;
 - dokumentasi Jenkins server dan Jenkins lokal untuk uji koneksi ke SATRIA.
 
-Panduan rinci ada di:
-
-- [docs/06-SKENARIO-JENKINS-LOKAL-KE-SATRIA.md](C:/Users/gufroni/Documents/GitHub/satria/docs/06-SKENARIO-JENKINS-LOKAL-KE-SATRIA.md)
-- [infra/jenkins-local/README.md](C:/Users/gufroni/Documents/GitHub/satria/infra/jenkins-local/README.md)
-- [docs/08-AUDIT-UR-CICD-SATRIA-2026-07-04.md](C:/Users/gufroni/Documents/GitHub/satria/docs/08-AUDIT-UR-CICD-SATRIA-2026-07-04.md)
-- [docs/02-SOP-HULU-HILIR-PER-TIM.md](C:/Users/gufroni/Documents/GitHub/satria/docs/02-SOP-HULU-HILIR-PER-TIM.md)
-
 ---
 
 ## Integrasi Dengan DFIR-IRIS
@@ -200,7 +193,7 @@ Prinsip yang dipakai:
 - SATRIA dipakai untuk orkestrasi scan, prioritisasi, dan monitoring integrasi;
 - SATRIA bersifat read-only terhadap workflow case IRIS kecuali pada aksi publish ticket.
 
-Panduan integrasi Wazuh ke PERISAI tersedia di [docs/07-INTEGRASI-WAZUH-KE-PERISAI.md](C:/Users/gufroni/Documents/GitHub/satria/docs/07-INTEGRASI-WAZUH-KE-PERISAI.md).
+Panduan integrasi Wazuh ke PERISAI tersedia di [docs/07-INTEGRASI-WAZUH-KE-PERISAI.md](GitHub/satria/tree/docs/05-INTEGRASI-WAZUH-KE-PERISAI.md).
 
 ---
 
@@ -316,16 +309,7 @@ Skenario yang sudah disiapkan:
 
 ## Dokumen Yang Disarankan Dibaca Tim
 
-- [Indeks dokumentasi SATRIA](C:/Users/gufroni/Documents/GitHub/satria/docs/README.md)
-
-- [docs/03-PANDUAN-OPERASIONAL-SOC.md](C:/Users/gufroni/Documents/GitHub/satria/docs/03-PANDUAN-OPERASIONAL-SOC.md)
-- [docs/02-SOP-HULU-HILIR-PER-TIM.md](C:/Users/gufroni/Documents/GitHub/satria/docs/02-SOP-HULU-HILIR-PER-TIM.md)
-- [docs/04-WALKTHROUGH-IRIS-TOP-MANAGEMENT.md](C:/Users/gufroni/Documents/GitHub/satria/docs/04-WALKTHROUGH-IRIS-TOP-MANAGEMENT.md)
-- [docs/05-DEMO-SATRIA-DFIR-IRIS.md](C:/Users/gufroni/Documents/GitHub/satria/docs/05-DEMO-SATRIA-DFIR-IRIS.md)
-- [docs/07-INTEGRASI-WAZUH-KE-PERISAI.md](C:/Users/gufroni/Documents/GitHub/satria/docs/07-INTEGRASI-WAZUH-KE-PERISAI.md)
-- [docs/09-HASIL-SMOKE-TEST-SATRIA.md](C:/Users/gufroni/Documents/GitHub/satria/docs/09-HASIL-SMOKE-TEST-SATRIA.md)
-- [docs/06-SKENARIO-JENKINS-LOKAL-KE-SATRIA.md](C:/Users/gufroni/Documents/GitHub/satria/docs/06-SKENARIO-JENKINS-LOKAL-KE-SATRIA.md)
-- [infra/jenkins-local/README.md](C:/Users/gufroni/Documents/GitHub/satria/infra/jenkins-local/README.md)
+- [Indeks dokumentasi SATRIA]([github.com/cakgup/satria/tree/main/docs])
 
 ---
 

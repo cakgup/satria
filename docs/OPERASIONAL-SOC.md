@@ -62,7 +62,12 @@ Gunakan bila yang ingin diperiksa adalah folder atau path lokal yang bisa diakse
 
 Gunakan untuk host, server, atau alamat IP yang akan diuji dengan Greenbone/OpenVAS.
 
-- Contoh target: `10.216.208.249`
+- Contoh target: `<server-ip>`
+
+Catatan keamanan:
+
+- gunakan placeholder pada SOP dan dokumentasi;
+- nilai IP aktual hanya dibaca dari inventaris aset atau CMDB internal.
 - Scanner yang umum: `infra_va`
 
 Catatan teknis:
@@ -171,4 +176,3 @@ Perilaku sistem saat ini:
 - ZAP container/runner tersedia
 - Greenbone/OpenVAS connector tersedia bila `infra_va` dipakai
 - Worker dapat mengakses Docker daemon bila scan container image dipakai
-

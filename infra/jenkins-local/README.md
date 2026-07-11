@@ -11,14 +11,14 @@ Direktori ini menyiapkan Jenkins berbasis Docker untuk kebutuhan uji pipeline ke
 
 ## Port bawaan
 
-- Jenkins UI: `http://localhost:8088`
+- Jenkins UI: `http://<JENKINS_LOCAL_HOST>:<JENKINS_LOCAL_PORT>`
 - Jenkins agent port: `50088`
 
 ## Jenkins Server Terpusat
 
 Jenkins hasil duplikasi lokal sudah tersedia pada server:
 
-- Jenkins UI: `http://10.216.83.114:8088`
+- Jenkins UI: `http://<JENKINS_SERVER_HOST>:<JENKINS_SERVER_PORT>`
 - service: `jenkins-satria.service`
 - job utama: `satria-security-gate`
 - job demo lolos: `satria-gate-passed-demo`
@@ -26,8 +26,8 @@ Jenkins hasil duplikasi lokal sudah tersedia pada server:
 
 Deployment server berjalan native melalui `systemd` karena runtime Docker/Podman pada host target belum tersedia. Konfigurasi integrasi SATRIA tetap sama dengan Jenkins lokal:
 
-- `SATRIA_URL=http://10.216.208.249:8090`
-- `SATRIA_API_TOKEN=change-me-pipeline-token`
+- `SATRIA_URL=http://<SATRIA_HOST>:<SATRIA_PORT>`
+- `SATRIA_API_TOKEN=<satria-api-token>`
 - `SATRIA_ASSET_CODE=JENKINS-DEMO`
 - `SATRIA_ASSET_NAME=Jenkins Demo Service`
 
@@ -63,10 +63,10 @@ Contoh:
 ```env
 JENKINS_HTTP_PORT=8088
 JENKINS_AGENT_PORT=50088
-JENKINS_ADMIN_ID=admin
-JENKINS_ADMIN_PASSWORD=admin123!
+JENKINS_ADMIN_ID=<jenkins-admin-username>
+JENKINS_ADMIN_PASSWORD=<jenkins-admin-password>
 SATRIA_URL=http://host.docker.internal:8090
-SATRIA_API_TOKEN=change-me-pipeline-token
+SATRIA_API_TOKEN=<satria-api-token>
 SATRIA_ASSET_CODE=JENKINS-DEMO
 SATRIA_ASSET_NAME=Jenkins Demo Service
 ```
@@ -81,7 +81,12 @@ docker compose up -d --build
 
 Lalu buka:
 
-- Jenkins: `http://localhost:8088`
+- Jenkins: `http://<JENKINS_LOCAL_HOST>:<JENKINS_LOCAL_PORT>`
+
+Catatan keamanan:
+
+- jangan simpan username admin, password admin, atau token SATRIA secara hardcode di repository;
+- gunakan `.env` lokal yang tidak dikomit, Jenkins Credentials, atau secret manager organisasi.
 
 ## Job uji yang tersedia
 

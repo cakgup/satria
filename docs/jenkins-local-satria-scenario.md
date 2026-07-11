@@ -1,6 +1,6 @@
 # Skenario Pengembangan Jenkins ke SATRIA
 
-Dokumen ini menjelaskan skenario uji pengembangan agar tim dapat mensimulasikan alur CI/CD yang terhubung ke SATRIA sebelum implementasi ke Jenkins production. Skenario utama saat ini menggunakan Jenkins server pada `10.216.83.114:8088`, sedangkan Jenkins lokal tetap dapat dipakai sebagai fallback pengembangan. Dokumen ini juga menjawab kebutuhan paling praktis dari tim pengembang: bagaimana mendapatkan token integrasi, apa yang harus diisi di Jenkins, apa yang harus ditambahkan di YAML, dan bagaimana membaca hasil gate dari SATRIA.
+Dokumen ini menjelaskan skenario uji pengembangan agar tim dapat mensimulasikan alur CI/CD yang terhubung ke SATRIA sebelum implementasi ke Jenkins production. Skenario utama saat ini menggunakan Jenkins server pada `http://<JENKINS_SERVER_HOST>:<JENKINS_SERVER_PORT>`, sedangkan Jenkins lokal tetap dapat dipakai sebagai fallback pengembangan. Dokumen ini juga menjawab kebutuhan paling praktis dari tim pengembang: bagaimana mendapatkan token integrasi, apa yang harus diisi di Jenkins, apa yang harus ditambahkan di YAML, dan bagaimana membaca hasil gate dari SATRIA.
 
 ## Tujuan skenario
 
@@ -15,22 +15,22 @@ Skenario ini dipakai untuk memvalidasi bahwa pipeline:
 
 ## Topologi uji
 
-- Jenkins server berjalan pada host `10.216.83.114`
+- Jenkins server berjalan pada host `<JENKINS_SERVER_HOST>`
 - Jenkins memanggil SATRIA remote melalui HTTP API
 - SATRIA menjalankan scan melalui worker yang terhubung ke Trivy, Syft, Grype, ZAP, dan integrasi IRIS
 
 Topologi operasional untuk pengujian saat ini:
 
-- Jenkins UI: `http://10.216.83.114:8088`
-- SATRIA: `http://10.216.208.249:8090`
+- Jenkins UI: `http://<JENKINS_SERVER_HOST>:<JENKINS_SERVER_PORT>`
+- SATRIA: `http://<SATRIA_HOST>:<SATRIA_PORT>`
 - Job contoh: `satria-security-gate`
 - Job demo lolos: `satria-gate-passed-demo`
 - Job demo gagal: `satria-gate-failed-demo`
 
 Topologi lokal masih tersedia untuk pengembangan:
 
-- Jenkins lokal: `http://localhost:8088`
-- SATRIA lokal: `http://localhost:8090`
+- Jenkins lokal: `http://<JENKINS_LOCAL_HOST>:<JENKINS_LOCAL_PORT>`
+- SATRIA lokal: `http://<SATRIA_LOCAL_HOST>:<SATRIA_PORT>`
 
 ## Cara mendapatkan API key atau token SATRIA
 
@@ -57,8 +57,8 @@ Pada implementasi SATRIA saat ini, token pipeline belum dibuat melalui menu UI. 
 Administrator SATRIA menyiapkan token melalui environment backend, misalnya:
 
 ```env
-SATRIA_API_SERVICE_ACCOUNT=pipeline-service
-SATRIA_API_TOKEN=replace-with-long-random-token
+SATRIA_API_SERVICE_ACCOUNT=<pipeline-service-account>
+SATRIA_API_TOKEN=<satria-api-token>
 SATRIA_API_SCOPES=release:write,scan:create,scan:read,ticket:publish
 ```
 
@@ -99,7 +99,7 @@ Pada Jenkins UI:
 
 ```groovy
 environment {
-  SATRIA_URL = "http://10.216.208.249:8090"
+  SATRIA_URL = "http://<SATRIA_HOST>:<SATRIA_PORT>"
   SATRIA_TOKEN = credentials("satria-api-token")
   SATRIA_ASSET_CODE = "SAKTI-API"
   SATRIA_ASSET_NAME = "SAKTI API"
@@ -120,7 +120,7 @@ stages:
   - security_gate
 
 variables:
-  SATRIA_URL: "http://10.216.208.249:8090"
+  SATRIA_URL: "http://<SATRIA_HOST>:<SATRIA_PORT>"
   SATRIA_ASSET_CODE: "SAKTI-API"
   SATRIA_ASSET_NAME: "SAKTI API"
 
@@ -166,10 +166,10 @@ security_gate:
 ```env
 JENKINS_HTTP_PORT=8088
 JENKINS_AGENT_PORT=50088
-JENKINS_ADMIN_ID=admin
-JENKINS_ADMIN_PASSWORD=admin123!
+JENKINS_ADMIN_ID=<jenkins-admin-username>
+JENKINS_ADMIN_PASSWORD=<jenkins-admin-password>
 SATRIA_URL=http://host.docker.internal:8090
-SATRIA_API_TOKEN=change-me-pipeline-token
+SATRIA_API_TOKEN=<satria-api-token>
 SATRIA_ASSET_CODE=JENKINS-DEMO
 SATRIA_ASSET_NAME=Jenkins Demo Service
 ```
@@ -206,7 +206,7 @@ SATRIA_ASSET_NAME=Jenkins Demo Service
 
 ## Alur uji yang disarankan
 
-1. Developer membuka Jenkins server di `http://10.216.83.114:8088`
+1. Developer membuka Jenkins server di `http://<JENKINS_SERVER_HOST>:<JENKINS_SERVER_PORT>`
 2. Login menggunakan akun admin lokal yang diset pada file `.env`
 3. Buka job `satria-security-gate`
 4. Jalankan build dengan parameter:
@@ -292,3 +292,9 @@ Contoh hasil riil:
 - Untuk uji internal, gunakan image yang memang dapat diakses dari server SATRIA.
 - SATRIA saat ini belum menyediakan self-service API key dari UI, sehingga koordinasi dengan administrator masih wajib untuk tahap awal integrasi.
 - Bila ingin publish ke IRIS secara otomatis, aktifkan hanya untuk severity yang memang perlu remediation formal agar case tidak berlebihan.
+
+## Catatan keamanan
+
+- semua URL, host, username, password, dan token pada dokumen ini sudah disamarkan;
+- isi nilai aktual hanya melalui Jenkins Credentials, environment variable runtime, atau secret manager yang disetujui;
+- jangan meletakkan kredensial integrasi pada `Jenkinsfile`, YAML, atau Markdown yang dikomit.

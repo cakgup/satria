@@ -265,8 +265,8 @@ docker compose up -d --build
 
 Setelah stack aktif:
 
-- aplikasi lokal: [http://localhost:8090](http://localhost:8090)
-- health check: [http://localhost:8090/health](http://localhost:8090/health)
+- aplikasi lokal: [http://<SATRIA_HOST>:<SATRIA_PORT>](http://<SATRIA_HOST>:<SATRIA_PORT>)
+- health check: [http://<SATRIA_HOST>:<SATRIA_PORT>/health](http://<SATRIA_HOST>:<SATRIA_PORT>/health)
 
 Untuk stop stack:
 
@@ -288,14 +288,20 @@ Repository ini menyediakan dua pola uji Jenkins untuk simulasi interkoneksi ke S
 
 Endpoint operasional yang disarankan:
 
-- Jenkins server: [http://10.216.83.114:8088](http://10.216.83.114:8088)
+- Jenkins server: [http://<JENKINS_SERVER_HOST>:<JENKINS_SERVER_PORT>](http://<JENKINS_SERVER_HOST>:<JENKINS_SERVER_PORT>)
 - job utama: `satria-security-gate`
 - job demo lolos: `satria-gate-passed-demo`
 - job demo gagal: `satria-gate-failed-demo`
 
 Endpoint lokal untuk pengembangan:
 
-- Jenkins lokal: [http://localhost:8088](http://localhost:8088)
+- Jenkins lokal: [http://<JENKINS_LOCAL_HOST>:<JENKINS_LOCAL_PORT>](http://<JENKINS_LOCAL_HOST>:<JENKINS_LOCAL_PORT>)
+
+Catatan keamanan:
+
+- seluruh hostname, IP, port, username, password, dan token pada README ini disamarkan;
+- gunakan environment variable, secret manager, atau credential store internal untuk nilai aktual;
+- jangan menuliskan kembali kredensial produksi pada dokumentasi proyek.
 
 Skenario yang sudah disiapkan:
 

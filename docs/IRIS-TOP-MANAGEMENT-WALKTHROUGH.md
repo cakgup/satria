@@ -57,8 +57,13 @@ Artinya:
 
 ## Akses Demo
 
-- SATRIA: `http://10.216.208.249:8090`
-- IRIS: `https://10.216.208.249:8092`
+- SATRIA: `http://<SATRIA_HOST>:<SATRIA_PORT>`
+- IRIS: `https://<PERISAI_HOST>:<PERISAI_PORT>`
+
+Catatan keamanan:
+
+- alamat host pada dokumen ini menggunakan placeholder;
+- gunakan URL operasional aktual dari inventaris infrastruktur atau secret portal internal.
 - Customer demo IRIS: `DJPb - Simulasi IRIS Top Management`
 
 Persona demo yang tampak di IRIS:

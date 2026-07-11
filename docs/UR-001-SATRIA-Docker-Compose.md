@@ -186,8 +186,8 @@ Bukan sebagai satu container tunggal yang berisi seluruh aplikasi dan scanner.
 | Source repository | Git repository aplikasi | Trivy | Syft |
 | Filesystem / folder build | `/scan/source/app` | Trivy | Syft, Grype |
 | SBOM | CycloneDX/SPDX/Syft JSON | Grype | Trivy |
-| IP/server | `10.100.244.90` | OpenVAS | - |
-| Network range | `10.100.244.0/24` | OpenVAS | - |
+| IP/server | `<server-ip>` | OpenVAS | - |
+| Network range | `<network-cidr>` | OpenVAS | - |
 | Web application | `https://app-dev.local` | OWASP ZAP | OpenVAS untuk host/IP bila diperlukan |
 | API endpoint | OpenAPI/Swagger URL | OWASP ZAP | Trivy repo/config bila ada source repo |
 | Kubernetes/cluster config | K8s manifest/cluster | Trivy | Pengembangan lanjutan |

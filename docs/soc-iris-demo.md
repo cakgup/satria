@@ -6,19 +6,24 @@
 
 ## Akses
 
-- SATRIA: `http://127.0.0.1:8090`
-- DFIR-IRIS: `https://127.0.0.1:8092`
+- SATRIA: `http://<SATRIA_LOCAL_HOST>:<SATRIA_PORT>`
+- DFIR-IRIS: `https://<PERISAI_LOCAL_HOST>:<PERISAI_PORT>`
 - IRIS admin:
-  - username: `administrator`
-  - password: `SATRIA-IRIS-Admin!2026`
+  - username: `<iris-admin-username>`
+  - password: `<iris-admin-password>`
 
 ## User Demo SOC
 
-- L1: `cakgup1` / `Cakgup1!2026`
-- L2: `cakgup2` / `Cakgup2!2026`
-- L3: `cakgup3` / `Cakgup3!2026`
+- L1: `<soc-l1-username>` / `<soc-l1-password>`
+- L2: `<soc-l2-username>` / `<soc-l2-password>`
+- L3: `<soc-l3-username>` / `<soc-l3-password>`
 
 Ketiga user sudah dibuat di DFIR-IRIS dan dimasukkan ke grup `Analysts`.
+
+Catatan keamanan:
+
+- semua identitas user demo, password, host, dan port pada dokumen ini sudah disamarkan;
+- simpan nilai aktual di password vault atau credential manager internal.
 
 ## Case Demo Yang Sudah Tersinkron
 

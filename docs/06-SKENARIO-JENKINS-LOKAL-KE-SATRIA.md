@@ -34,27 +34,30 @@ Topologi lokal masih tersedia untuk pengembangan:
 
 ## Cara mendapatkan API key atau token SATRIA
 
-Pada implementasi SATRIA saat ini, token pipeline belum dibuat melalui menu UI. Mekanismenya masih melalui administrator SATRIA.
+Pada implementasi SATRIA saat ini, token integrasi pipeline sudah dapat dikelola melalui menu UI `Admin Token`. Jika organisasi masih memakai pola transisi lama, administrator juga tetap dapat menyiapkannya dari sisi backend.
 
 ### Langkah yang harus dilakukan tim pengembang
 
-1. Ajukan permintaan service account integrasi ke administrator SATRIA.
+1. Ajukan permintaan service account integrasi ke administrator SATRIA, atau buka menu `Admin Token` bila akun Anda memang diberi hak administratif.
 2. Sertakan informasi minimal:
    - nama aplikasi
    - kode aset
    - nama pipeline atau nama project Jenkins/GitLab
    - kebutuhan scope
    - environment target yang akan memakai integrasi
-3. Minta minimal hak berikut:
+3. Buat service account khusus pipeline, misalnya:
+   - `jenkins-sakti-prod`
+   - `gitlab-release-gate`
+4. Minta atau pilih minimal hak berikut:
    - `release:write`
    - `scan:create`
    - `scan:read`
-4. Tambahkan `ticket:publish` hanya bila pipeline memang boleh membuat tiket ke IRIS.
-5. Setelah token diberikan, simpan token itu di credential manager CI/CD, bukan di repository.
+5. Tambahkan `ticket:publish` hanya bila pipeline memang boleh membuat tiket ke IRIS.
+6. Setelah token diterbitkan, simpan token itu di credential manager CI/CD, bukan di repository.
 
-### Contoh konfigurasi di backend SATRIA
+### Contoh konfigurasi fallback di backend SATRIA
 
-Administrator SATRIA menyiapkan token melalui environment backend, misalnya:
+Jika organisasi masih memakai fallback environment backend, administrator SATRIA dapat menyiapkan token melalui environment backend, misalnya:
 
 ```env
 SATRIA_API_SERVICE_ACCOUNT=<pipeline-service-account>

@@ -3,9 +3,9 @@
 ## Navigasi Dokumen Terkait
 
 - [Indeks dokumentasi SATRIA](C:/Users/gufroni/Documents/GitHub/satria/docs/README.md)
-- [Panduan Operasional SOC](C:/Users/gufroni/Documents/GitHub/satria/docs/OPERASIONAL-SOC.md)
-- [Walkthrough IRIS untuk Top Management](C:/Users/gufroni/Documents/GitHub/satria/docs/IRIS-TOP-MANAGEMENT-WALKTHROUGH.md)
-- [Demo SATRIA dan DFIR-IRIS](C:/Users/gufroni/Documents/GitHub/satria/docs/soc-iris-demo.md)
+- [Panduan Operasional SOC](C:/Users/gufroni/Documents/GitHub/satria/docs/03-PANDUAN-OPERASIONAL-SOC.md)
+- [Walkthrough IRIS untuk Top Management](C:/Users/gufroni/Documents/GitHub/satria/docs/04-WALKTHROUGH-IRIS-TOP-MANAGEMENT.md)
+- [Demo SATRIA dan DFIR-IRIS](C:/Users/gufroni/Documents/GitHub/satria/docs/05-DEMO-SATRIA-DFIR-IRIS.md)
 
 ## Ekosistem Operasional
 

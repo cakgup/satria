@@ -153,5 +153,5 @@ Catatan penting:
 ## Referensi lanjutan
 
 - [Indeks dokumentasi SATRIA](C:/Users/gufroni/Documents/GitHub/satria/docs/README.md)
-- [docs/jenkins-local-satria-scenario.md](C:/Users/gufroni/Documents/GitHub/satria/docs/jenkins-local-satria-scenario.md)
-- [docs/AUDIT-UR-CICD-SATRIA-2026-07-04.md](C:/Users/gufroni/Documents/GitHub/satria/docs/AUDIT-UR-CICD-SATRIA-2026-07-04.md)
+- [docs/06-SKENARIO-JENKINS-LOKAL-KE-SATRIA.md](C:/Users/gufroni/Documents/GitHub/satria/docs/06-SKENARIO-JENKINS-LOKAL-KE-SATRIA.md)
+- [docs/08-AUDIT-UR-CICD-SATRIA-2026-07-04.md](C:/Users/gufroni/Documents/GitHub/satria/docs/08-AUDIT-UR-CICD-SATRIA-2026-07-04.md)

@@ -3,9 +3,9 @@
 ## Navigasi Dokumen Terkait
 
 - [Indeks dokumentasi SATRIA](C:/Users/gufroni/Documents/GitHub/satria/docs/README.md)
-- [SOP Hulu-Hilir Per Tim](C:/Users/gufroni/Documents/GitHub/satria/docs/SOP-HULU-HILIR-PER-TIM.md)
-- [Panduan Operasional SOC](C:/Users/gufroni/Documents/GitHub/satria/docs/OPERASIONAL-SOC.md)
-- [Demo SATRIA dan DFIR-IRIS](C:/Users/gufroni/Documents/GitHub/satria/docs/soc-iris-demo.md)
+- [SOP Hulu-Hilir Per Tim](C:/Users/gufroni/Documents/GitHub/satria/docs/02-SOP-HULU-HILIR-PER-TIM.md)
+- [Panduan Operasional SOC](C:/Users/gufroni/Documents/GitHub/satria/docs/03-PANDUAN-OPERASIONAL-SOC.md)
+- [Demo SATRIA dan DFIR-IRIS](C:/Users/gufroni/Documents/GitHub/satria/docs/05-DEMO-SATRIA-DFIR-IRIS.md)
 
 Dokumen ini disusun untuk membantu pimpinan memahami dua jalur masuk kerja insiden ke DFIR-IRIS:
 

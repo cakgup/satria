@@ -3,13 +3,13 @@
 ## Navigasi Dokumen Terkait
 
 - [Indeks dokumentasi SATRIA](C:/Users/gufroni/Documents/GitHub/satria/docs/README.md)
-- [SOP Hulu-Hilir Per Tim](C:/Users/gufroni/Documents/GitHub/satria/docs/SOP-HULU-HILIR-PER-TIM.md)
-- [Walkthrough IRIS untuk Top Management](C:/Users/gufroni/Documents/GitHub/satria/docs/IRIS-TOP-MANAGEMENT-WALKTHROUGH.md)
-- [Panduan Operasional SOC](C:/Users/gufroni/Documents/GitHub/satria/docs/OPERASIONAL-SOC.md)
+- [SOP Hulu-Hilir Per Tim](C:/Users/gufroni/Documents/GitHub/satria/docs/02-SOP-HULU-HILIR-PER-TIM.md)
+- [Walkthrough IRIS untuk Top Management](C:/Users/gufroni/Documents/GitHub/satria/docs/04-WALKTHROUGH-IRIS-TOP-MANAGEMENT.md)
+- [Panduan Operasional SOC](C:/Users/gufroni/Documents/GitHub/satria/docs/03-PANDUAN-OPERASIONAL-SOC.md)
 
 ## Dokumen Pendamping
 
-- Walkthrough top management IRIS: [IRIS-TOP-MANAGEMENT-WALKTHROUGH.md](C:/Users/gufroni/Documents/GitHub/satria/docs/IRIS-TOP-MANAGEMENT-WALKTHROUGH.md)
+- Walkthrough top management IRIS: [04-WALKTHROUGH-IRIS-TOP-MANAGEMENT.md](C:/Users/gufroni/Documents/GitHub/satria/docs/04-WALKTHROUGH-IRIS-TOP-MANAGEMENT.md)
 
 ## Akses
 

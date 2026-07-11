@@ -3,8 +3,8 @@
 ## Navigasi Dokumen Terkait
 
 - [Indeks dokumentasi SATRIA](C:/Users/gufroni/Documents/GitHub/satria/docs/README.md)
-- [Panduan Operasional SOC](C:/Users/gufroni/Documents/GitHub/satria/docs/OPERASIONAL-SOC.md)
-- [Walkthrough IRIS untuk Top Management](C:/Users/gufroni/Documents/GitHub/satria/docs/IRIS-TOP-MANAGEMENT-WALKTHROUGH.md)
+- [Panduan Operasional SOC](C:/Users/gufroni/Documents/GitHub/satria/docs/03-PANDUAN-OPERASIONAL-SOC.md)
+- [Walkthrough IRIS untuk Top Management](C:/Users/gufroni/Documents/GitHub/satria/docs/04-WALKTHROUGH-IRIS-TOP-MANAGEMENT.md)
 
 Dokumen ini menjelaskan konfigurasi integrasi Wazuh Manager ke PERISAI berbasis DFIR-IRIS agar alert dari Wazuh dapat diteruskan ke sistem ticketing dan investigasi insiden.
 

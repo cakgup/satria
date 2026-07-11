@@ -193,7 +193,7 @@ Prinsip yang dipakai:
 - SATRIA dipakai untuk orkestrasi scan, prioritisasi, dan monitoring integrasi;
 - SATRIA bersifat read-only terhadap workflow case IRIS kecuali pada aksi publish ticket.
 
-Panduan integrasi Wazuh ke PERISAI tersedia di [docs/07-INTEGRASI-WAZUH-KE-PERISAI.md](GitHub/satria/tree/docs/05-INTEGRASI-WAZUH-KE-PERISAI.md).
+Panduan integrasi Wazuh ke PERISAI tersedia di [docs/05-INTEGRASI-WAZUH-KE-PERISAI.md](docs/05-INTEGRASI-WAZUH-KE-PERISAI.md).
 
 ---
 

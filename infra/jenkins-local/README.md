@@ -147,5 +147,5 @@ Catatan penting:
 
 ## Referensi lanjutan
 
-- [docs/jenkins-local-satria-scenario.md](C:\Users\gufroni\Documents\GitHub\satria\docs\jenkins-local-satria-scenario.md)
-- [docs/AUDIT-UR-CICD-SATRIA-2026-07-04.md](C:\Users\gufroni\Documents\GitHub\satria\docs\AUDIT-UR-CICD-SATRIA-2026-07-04.md)
+- [docs/jenkins-local-satria-scenario.md](C:/Users/gufroni/Documents/GitHub/satria/docs/jenkins-local-satria-scenario.md)
+- [docs/AUDIT-UR-CICD-SATRIA-2026-07-04.md](C:/Users/gufroni/Documents/GitHub/satria/docs/AUDIT-UR-CICD-SATRIA-2026-07-04.md)

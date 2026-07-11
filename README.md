@@ -174,10 +174,10 @@ Fitur integrasi yang sudah ada:
 
 Panduan rinci ada di:
 
-- [docs/jenkins-local-satria-scenario.md](C:\Users\gufroni\Documents\GitHub\satria\docs\jenkins-local-satria-scenario.md)
-- [infra/jenkins-local/README.md](C:\Users\gufroni\Documents\GitHub\satria\infra\jenkins-local\README.md)
-- [docs/AUDIT-UR-CICD-SATRIA-2026-07-04.md](C:\Users\gufroni\Documents\GitHub\satria\docs\AUDIT-UR-CICD-SATRIA-2026-07-04.md)
-- [docs/SOP-HULU-HILIR-PER-TIM.md](C:\Users\gufroni\Documents\GitHub\satria\docs\SOP-HULU-HILIR-PER-TIM.md)
+- [docs/jenkins-local-satria-scenario.md](C:/Users/gufroni/Documents/GitHub/satria/docs/jenkins-local-satria-scenario.md)
+- [infra/jenkins-local/README.md](C:/Users/gufroni/Documents/GitHub/satria/infra/jenkins-local/README.md)
+- [docs/AUDIT-UR-CICD-SATRIA-2026-07-04.md](C:/Users/gufroni/Documents/GitHub/satria/docs/AUDIT-UR-CICD-SATRIA-2026-07-04.md)
+- [docs/SOP-HULU-HILIR-PER-TIM.md](C:/Users/gufroni/Documents/GitHub/satria/docs/SOP-HULU-HILIR-PER-TIM.md)
 
 ---
 
@@ -200,7 +200,7 @@ Prinsip yang dipakai:
 - SATRIA dipakai untuk orkestrasi scan, prioritisasi, dan monitoring integrasi;
 - SATRIA bersifat read-only terhadap workflow case IRIS kecuali pada aksi publish ticket.
 
-Panduan integrasi Wazuh ke PERISAI tersedia di [docs/INTEGRASI-WAZUH-PERISAI.md](C:\Users\gufroni\Documents\GitHub\satria\docs\INTEGRASI-WAZUH-PERISAI.md).
+Panduan integrasi Wazuh ke PERISAI tersedia di [docs/INTEGRASI-WAZUH-PERISAI.md](C:/Users/gufroni/Documents/GitHub/satria/docs/INTEGRASI-WAZUH-PERISAI.md).
 
 ---
 
@@ -310,14 +310,14 @@ Skenario yang sudah disiapkan:
 
 ## Dokumen Yang Disarankan Dibaca Tim
 
-- [docs/OPERASIONAL-SOC.md](C:\Users\gufroni\Documents\GitHub\satria\docs\OPERASIONAL-SOC.md)
-- [docs/SOP-HULU-HILIR-PER-TIM.md](C:\Users\gufroni\Documents\GitHub\satria\docs\SOP-HULU-HILIR-PER-TIM.md)
-- [docs/IRIS-TOP-MANAGEMENT-WALKTHROUGH.md](C:\Users\gufroni\Documents\GitHub\satria\docs\IRIS-TOP-MANAGEMENT-WALKTHROUGH.md)
-- [docs/soc-iris-demo.md](C:\Users\gufroni\Documents\GitHub\satria\docs\soc-iris-demo.md)
-- [docs/INTEGRASI-WAZUH-PERISAI.md](C:\Users\gufroni\Documents\GitHub\satria\docs\INTEGRASI-WAZUH-PERISAI.md)
-- [docs/SMOKE-TEST-RESULTS.md](C:\Users\gufroni\Documents\GitHub\satria\docs\SMOKE-TEST-RESULTS.md)
-- [docs/jenkins-local-satria-scenario.md](C:\Users\gufroni\Documents\GitHub\satria\docs\jenkins-local-satria-scenario.md)
-- [infra/jenkins-local/README.md](C:\Users\gufroni\Documents\GitHub\satria\infra\jenkins-local\README.md)
+- [docs/OPERASIONAL-SOC.md](C:/Users/gufroni/Documents/GitHub/satria/docs/OPERASIONAL-SOC.md)
+- [docs/SOP-HULU-HILIR-PER-TIM.md](C:/Users/gufroni/Documents/GitHub/satria/docs/SOP-HULU-HILIR-PER-TIM.md)
+- [docs/IRIS-TOP-MANAGEMENT-WALKTHROUGH.md](C:/Users/gufroni/Documents/GitHub/satria/docs/IRIS-TOP-MANAGEMENT-WALKTHROUGH.md)
+- [docs/soc-iris-demo.md](C:/Users/gufroni/Documents/GitHub/satria/docs/soc-iris-demo.md)
+- [docs/INTEGRASI-WAZUH-PERISAI.md](C:/Users/gufroni/Documents/GitHub/satria/docs/INTEGRASI-WAZUH-PERISAI.md)
+- [docs/SMOKE-TEST-RESULTS.md](C:/Users/gufroni/Documents/GitHub/satria/docs/SMOKE-TEST-RESULTS.md)
+- [docs/jenkins-local-satria-scenario.md](C:/Users/gufroni/Documents/GitHub/satria/docs/jenkins-local-satria-scenario.md)
+- [infra/jenkins-local/README.md](C:/Users/gufroni/Documents/GitHub/satria/infra/jenkins-local/README.md)
 
 ---
 

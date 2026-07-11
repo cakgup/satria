@@ -1,5 +1,11 @@
 # Integrasi Wazuh ke PERISAI / DFIR-IRIS
 
+## Navigasi Dokumen Terkait
+
+- [Indeks dokumentasi SATRIA](C:/Users/gufroni/Documents/GitHub/satria/docs/README.md)
+- [Panduan Operasional SOC](C:/Users/gufroni/Documents/GitHub/satria/docs/OPERASIONAL-SOC.md)
+- [Walkthrough IRIS untuk Top Management](C:/Users/gufroni/Documents/GitHub/satria/docs/IRIS-TOP-MANAGEMENT-WALKTHROUGH.md)
+
 Dokumen ini menjelaskan konfigurasi integrasi Wazuh Manager ke PERISAI berbasis DFIR-IRIS agar alert dari Wazuh dapat diteruskan ke sistem ticketing dan investigasi insiden.
 
 PERISAI diposisikan sebagai sistem utama untuk pengelolaan alert, case, task, evidence, dan tindak lanjut insiden. Wazuh tetap menjadi sumber deteksi keamanan, sedangkan PERISAI menjadi tempat triase dan investigasi lanjutan.

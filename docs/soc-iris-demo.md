@@ -1,5 +1,12 @@
 # SATRIA + DFIR-IRIS Demo SOP
 
+## Navigasi Dokumen Terkait
+
+- [Indeks dokumentasi SATRIA](C:/Users/gufroni/Documents/GitHub/satria/docs/README.md)
+- [SOP Hulu-Hilir Per Tim](C:/Users/gufroni/Documents/GitHub/satria/docs/SOP-HULU-HILIR-PER-TIM.md)
+- [Walkthrough IRIS untuk Top Management](C:/Users/gufroni/Documents/GitHub/satria/docs/IRIS-TOP-MANAGEMENT-WALKTHROUGH.md)
+- [Panduan Operasional SOC](C:/Users/gufroni/Documents/GitHub/satria/docs/OPERASIONAL-SOC.md)
+
 ## Dokumen Pendamping
 
 - Walkthrough top management IRIS: [IRIS-TOP-MANAGEMENT-WALKTHROUGH.md](C:/Users/gufroni/Documents/GitHub/satria/docs/IRIS-TOP-MANAGEMENT-WALKTHROUGH.md)

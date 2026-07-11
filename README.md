@@ -316,6 +316,8 @@ Skenario yang sudah disiapkan:
 
 ## Dokumen Yang Disarankan Dibaca Tim
 
+- [Indeks dokumentasi SATRIA](C:/Users/gufroni/Documents/GitHub/satria/docs/README.md)
+
 - [docs/OPERASIONAL-SOC.md](C:/Users/gufroni/Documents/GitHub/satria/docs/OPERASIONAL-SOC.md)
 - [docs/SOP-HULU-HILIR-PER-TIM.md](C:/Users/gufroni/Documents/GitHub/satria/docs/SOP-HULU-HILIR-PER-TIM.md)
 - [docs/IRIS-TOP-MANAGEMENT-WALKTHROUGH.md](C:/Users/gufroni/Documents/GitHub/satria/docs/IRIS-TOP-MANAGEMENT-WALKTHROUGH.md)

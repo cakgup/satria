@@ -65,7 +65,7 @@ JENKINS_HTTP_PORT=8088
 JENKINS_AGENT_PORT=50088
 JENKINS_ADMIN_ID=<jenkins-admin-username>
 JENKINS_ADMIN_PASSWORD=<jenkins-admin-password>
-SATRIA_URL=http://host.docker.internal:8090
+SATRIA_URL=http://<SATRIA_HOST>:<SATRIA_PORT>
 SATRIA_API_TOKEN=<satria-api-token>
 SATRIA_ASSET_CODE=JENKINS-DEMO
 SATRIA_ASSET_NAME=Jenkins Demo Service
@@ -152,5 +152,6 @@ Catatan penting:
 
 ## Referensi lanjutan
 
+- [Indeks dokumentasi SATRIA](C:/Users/gufroni/Documents/GitHub/satria/docs/README.md)
 - [docs/jenkins-local-satria-scenario.md](C:/Users/gufroni/Documents/GitHub/satria/docs/jenkins-local-satria-scenario.md)
 - [docs/AUDIT-UR-CICD-SATRIA-2026-07-04.md](C:/Users/gufroni/Documents/GitHub/satria/docs/AUDIT-UR-CICD-SATRIA-2026-07-04.md)

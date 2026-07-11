@@ -1,5 +1,12 @@
 # SATRIA Operasional Teknis dan SOC
 
+## Navigasi Dokumen Terkait
+
+- [Indeks dokumentasi SATRIA](C:/Users/gufroni/Documents/GitHub/satria/docs/README.md)
+- [SOP Hulu-Hilir Per Tim](C:/Users/gufroni/Documents/GitHub/satria/docs/SOP-HULU-HILIR-PER-TIM.md)
+- [Walkthrough IRIS untuk Top Management](C:/Users/gufroni/Documents/GitHub/satria/docs/IRIS-TOP-MANAGEMENT-WALKTHROUGH.md)
+- [Integrasi Wazuh ke PERISAI](C:/Users/gufroni/Documents/GitHub/satria/docs/INTEGRASI-WAZUH-PERISAI.md)
+
 Dokumen ini menjelaskan alur kerja SATRIA dari sisi operator teknis dan tim SOC agar penggunaan harian konsisten, mudah dipahami, dan tidak salah memilih jenis asset atau profile scan.
 
 ## Prinsip Utama

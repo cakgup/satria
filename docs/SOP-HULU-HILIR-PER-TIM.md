@@ -1,5 +1,12 @@
 # SOP Hulu-ke-Hilir Per Tim
 
+## Navigasi Dokumen Terkait
+
+- [Indeks dokumentasi SATRIA](C:/Users/gufroni/Documents/GitHub/satria/docs/README.md)
+- [Panduan Operasional SOC](C:/Users/gufroni/Documents/GitHub/satria/docs/OPERASIONAL-SOC.md)
+- [Walkthrough IRIS untuk Top Management](C:/Users/gufroni/Documents/GitHub/satria/docs/IRIS-TOP-MANAGEMENT-WALKTHROUGH.md)
+- [Demo SATRIA dan DFIR-IRIS](C:/Users/gufroni/Documents/GitHub/satria/docs/soc-iris-demo.md)
+
 ## Ekosistem Operasional
 
 Dokumen ini menjelaskan alur kerja terpadu antara:
@@ -485,4 +492,3 @@ Case dapat ditutup bila:
 3. PERISAI dipakai sebagai workflow case utama setelah tiket formal terbentuk.
 4. PANAH dipakai untuk assessment teknis yang membutuhkan simulasi dan evidence awal.
 5. Seluruh keputusan penting harus tercatat, bukan hanya disampaikan lisan.
-

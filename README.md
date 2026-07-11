@@ -309,7 +309,7 @@ Skenario yang sudah disiapkan:
 
 ## Dokumen Yang Disarankan Dibaca Tim
 
-- [Index Dokumentasi SATRIA](docs))
+- [Index Dokumentasi SATRIA](docs)
 
 ---
 

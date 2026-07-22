@@ -1,0 +1,21 @@
+services:
+  aisocwazuh:
+    build:
+      context: ${AISOCWAZUH_SOURCE_DIR:-../../../aisocwazuh}
+    container_name: aisocwazuh
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - aisocwazuh-workspace:/app/workspace
+      - ${WAZUH_ALERTS_EXPORT_DIR:-./wazuh-alerts}:/input/wazuh-alerts:ro
+    command: ["sh", "-lc", "tail -f /dev/null"]
+    networks:
+      - aisocwazuh-net
+
+volumes:
+  aisocwazuh-workspace:
+
+networks:
+  aisocwazuh-net:
+    name: aisocwazuh-net

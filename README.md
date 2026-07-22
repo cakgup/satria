@@ -53,8 +53,9 @@ Dalam ekosistem kerja SITP saat ini:
 - `PANAH` berfokus pada assessment teknis, simulasi eksekusi, dan review evidence.
 - `SATRIA` berfokus pada registrasi aset, orkestrasi scan, pembacaan hasil, dan keputusan operasional.
 - `PERISAI` atau DFIR-IRIS berfokus pada case management, task, activity log, evidence, dan investigasi insiden lanjutan.
+- `AI SOC Wazuh` diposisikan sebagai service enrichment dan korelasi alert sebelum diteruskan ke SATRIA atau PERISAI.
 
-Dengan pola ini, SATRIA menjadi jembatan antara assessment teknis dan ticketing formal.
+Dengan pola ini, SATRIA menjadi jembatan antara assessment teknis, enrichment alert, dan ticketing formal.
 
 ---
 
@@ -70,6 +71,7 @@ Dengan pola ini, SATRIA menjadi jembatan antara assessment teknis dan ticketing 
 - SOP kontekstual pada menu Assets, termasuk panduan pipeline CI/CD.
 - Admin token / service account untuk integrasi pipeline.
 - Gate policy untuk keputusan `allowed`, `need_approval`, dan `blocked`.
+- Template integrasi AI SOC Wazuh untuk enrichment alert, deduplikasi, risk scoring, dan routing ke SATRIA/PERISAI.
 
 ---
 
@@ -197,6 +199,23 @@ Panduan integrasi Wazuh ke PERISAI tersedia di [INTEGRASI-WAZUH-KE-PERISAI.md](d
 
 ---
 
+## Integrasi AI SOC Wazuh
+
+SATRIA menyediakan rancangan awal untuk menghubungkan Wazuh, AI SOC Wazuh, dan PERISAI dalam satu alur operasional.
+
+Rekomendasi penempatan awal:
+
+- AI SOC Wazuh dijalankan sebagai companion service di server SATRIA/PUSAKA agar dekat dengan API SATRIA dan PERISAI.
+- Wazuh Manager tetap difokuskan untuk fungsi SIEM, agent management, rule, decoder, dan alerting.
+- Jika volume alert dan proses AI meningkat, AI SOC Wazuh dapat dipindahkan ke node analitik khusus tanpa mengubah peran SATRIA dan PERISAI.
+
+Dokumen dan template runtime tersedia di:
+
+- [Integrasi AI SOC Wazuh dengan SATRIA dan PERISAI](docs/07-INTEGRASI-AI-SOC-WAZUH-SATRIA-PERISAI.md)
+- [Template runtime AI SOC Wazuh](infra/aisocwazuh/README.md)
+
+---
+
 ## Struktur Repository
 
 ```text
@@ -209,6 +228,7 @@ satria/
 |   `-- ...
 |-- docs/
 |-- infra/
+|   |-- aisocwazuh/
 |   |-- dfir-iris/
 |   |-- greenbone/
 |   `-- jenkins-local/
@@ -225,6 +245,7 @@ Ringkasnya:
 
 - `app/` memuat backend, template, static asset, scanner orchestration, dan integrasi utama SATRIA.
 - `docs/` memuat SOP, walkthrough top management, skenario IRIS, audit UR, dan panduan operasional.
+- `infra/aisocwazuh/` memuat template runtime companion service AI SOC Wazuh.
 - `infra/dfir-iris/` memuat komponen integrasi dan deployment DFIR-IRIS.
 - `infra/greenbone/` memuat komponen terkait OpenVAS/Greenbone.
 - `infra/jenkins-local/` memuat Jenkins lokal untuk uji pipeline.

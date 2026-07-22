@@ -2,9 +2,10 @@
 
 ## Navigasi Dokumen Terkait
 
-- [Indeks dokumentasi SATRIA](C:/Users/gufroni/Documents/GitHub/satria/docs/README.md)
-- [Panduan Operasional SOC](C:/Users/gufroni/Documents/GitHub/satria/docs/03-PANDUAN-OPERASIONAL-SOC.md)
-- [Walkthrough IRIS untuk Top Management](C:/Users/gufroni/Documents/GitHub/satria/docs/04-WALKTHROUGH-IRIS-TOP-MANAGEMENT.md)
+- [Indeks dokumentasi SATRIA](README.md)
+- [Panduan Operasional SOC](03-PANDUAN-OPERASIONAL-SOC.md)
+- [Walkthrough IRIS untuk Top Management](04-WALKTHROUGH-IRIS-TOP-MANAGEMENT.md)
+- [Integrasi AI SOC Wazuh](07-INTEGRASI-AI-SOC-WAZUH-SATRIA-PERISAI.md)
 
 Dokumen ini menjelaskan konfigurasi integrasi Wazuh Manager ke PERISAI berbasis DFIR-IRIS agar alert dari Wazuh dapat diteruskan ke sistem ticketing dan investigasi insiden.
 
@@ -337,6 +338,21 @@ Opsinya:
 - Naikkan level menjadi `7` atau `10`.
 - Tambahkan filter rule/group di script.
 - Buat allowlist rule tertentu yang boleh dikirim ke PERISAI.
+
+---
+
+## Opsi Jalur Enrichment Dengan AI SOC Wazuh
+
+Untuk pengembangan berikutnya, alert Wazuh tidak harus langsung dibuat menjadi case. Alert dapat lebih dulu melewati service AI SOC Wazuh agar data yang masuk ke PERISAI lebih bersih dan bernilai operasional.
+
+Rekomendasi alur:
+
+1. Wazuh menghasilkan alert.
+2. AI SOC Wazuh melakukan enrichment, deduplikasi, dan risk scoring.
+3. Alert yang memenuhi policy dikirim ke SATRIA untuk monitoring atau ke PERISAI sebagai case.
+4. PERISAI tetap menjadi sistem utama untuk investigasi, task, evidence, dan penutupan case.
+
+Detail pengembangan tersedia di [Integrasi AI SOC Wazuh dengan SATRIA dan PERISAI](07-INTEGRASI-AI-SOC-WAZUH-SATRIA-PERISAI.md).
 
 ---
 

@@ -293,7 +293,7 @@ Contoh hasil riil:
 
 - Untuk uji awal, gunakan image publik agar worker SATRIA dapat langsung menarik image.
 - Untuk uji internal, gunakan image yang memang dapat diakses dari server SATRIA.
-- SATRIA saat ini belum menyediakan self-service API key dari UI, sehingga koordinasi dengan administrator masih wajib untuk tahap awal integrasi.
+- SATRIA sudah menyediakan menu `Admin Token` untuk service account pipeline; koordinasikan dengan administrator untuk scope, rotasi token, dan approval produksi.
 - Bila ingin publish ke IRIS secara otomatis, aktifkan hanya untuk severity yang memang perlu remediation formal agar case tidak berlebihan.
 
 ## Catatan keamanan

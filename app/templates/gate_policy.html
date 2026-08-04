@@ -5,7 +5,7 @@
   <div class="hero-copy">
     <span class="eyebrow">Admin Pipeline Gate</span>
     <h2>Atur kebijakan allowed, need approval, dan blocked langsung dari UI SATRIA.</h2>
-    <p>Halaman ini dipakai administrator untuk menyesuaikan ambang severity yang menentukan apakah artefak release boleh lanjut, harus meminta approval, atau diblokir sebelum menuju staging dan production.</p>
+    <p>Halaman ini digunakan administrator untuk menyesuaikan ambang severity yang menentukan apakah artefak release dapat dilanjutkan, memerlukan approval, atau diblokir sebelum menuju staging dan production.</p>
   </div>
   <div class="hero-actions">
     <a class="hero-button" href="/admin/service-accounts">Buka Admin Token</a>
@@ -27,7 +27,7 @@
       <div>
         <span class="section-kicker">Gate Policy</span>
         <h3>Konfigurasi ambang severity</h3>
-        <p class="helper-copy">Nilai yang disimpan di halaman ini akan dipakai lebih dulu. Jika belum pernah diubah, SATRIA tetap memakai fallback dari environment backend.</p>
+        <p class="helper-copy">Nilai yang disimpan pada halaman ini menjadi prioritas utama. Jika belum pernah diperbarui, SATRIA akan menggunakan nilai fallback dari environment backend.</p>
       </div>
     </div>
     <form method="post" action="/admin/gate-policy" class="form-grid">

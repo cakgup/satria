@@ -169,13 +169,13 @@
 </style>
 <section class="hero">
   <div class="hero-copy">
-    <span class="eyebrow">Step 3</span>
-    <h2>Pantau scan yang benar-benar relevan untuk operasi SOC.</h2>
-    <p>Riwayat ini difokuskan untuk job yang masih aktif atau masih perlu ditindaklanjuti. Job lama, simulasi, dan kegagalan validasi bisa dikeluarkan dari antrean operasional.</p>
+    <span class="eyebrow">Langkah 3</span>
+    <h2>Pantau pemindaian yang relevan bagi operasi SOC.</h2>
+    <p>Riwayat pemindaian difokuskan pada pekerjaan yang masih aktif atau memerlukan tindak lanjut. Data historis, simulasi, dan kegagalan validasi dapat dikeluarkan dari antrean operasional.</p>
   </div>
   <div class="hero-actions">
-    <a class="hero-button primary" href="/scan/new">Jalankan Scan Baru</a>
-    <a class="hero-button" href="/findings">Buka Findings</a>
+    <a class="hero-button primary" href="/scan/new">Jalankan Pemindaian Baru</a>
+    <a class="hero-button" href="/findings">Buka Temuan</a>
     <form method="post" action="/scans/archive-operational">
       <button class="hero-button subtle" type="submit">Bersihkan Non-Operasional</button>
     </form>
@@ -183,10 +183,10 @@
 </section>
 
 <section class="cards compact-cards">
-  <div class="card"><span class="label">Total Scan</span><strong>{{ summary.scans }}</strong></div>
-  <div class="card"><span class="label">Completed</span><strong>{{ summary.completed_scans }}</strong></div>
-  <div class="card"><span class="label">Failed</span><strong>{{ summary.failed_scans }}</strong></div>
-  <div class="card"><span class="label">Open Findings</span><strong>{{ summary.open_findings }}</strong></div>
+  <div class="card"><span class="label">Total Pemindaian</span><strong>{{ summary.scans }}</strong></div>
+  <div class="card"><span class="label">Selesai</span><strong>{{ summary.completed_scans }}</strong></div>
+  <div class="card"><span class="label">Gagal</span><strong>{{ summary.failed_scans }}</strong></div>
+  <div class="card"><span class="label">Temuan Terbuka</span><strong>{{ summary.open_findings }}</strong></div>
 </section>
 
 <section class="filter-bar panel">
@@ -208,7 +208,7 @@
       </select>
     </label>
     <div class="filter-actions">
-      <span class="helper-copy">Filter berjalan otomatis saat pilihan diubah.</span>
+      <span class="helper-copy">Filter diterapkan secara otomatis saat pilihan diubah.</span>
       <a class="text-link reset-link" href="/scans">Reset</a>
     </div>
   </form>
@@ -217,10 +217,10 @@
 <section class="panel">
   <div class="panel-head">
     <div>
-      <span class="section-kicker">Execution History</span>
-      <h3>Riwayat scan</h3>
+      <span class="section-kicker">Riwayat Eksekusi</span>
+      <h3>Riwayat pemindaian</h3>
     </div>
-    <span class="helper-copy">Status menunjukkan hasil job. Gunakan tombol hasil scan untuk langsung membuka findings dari job yang dipilih.</span>
+    <span class="helper-copy">Status menunjukkan hasil pekerjaan pemindaian. Gunakan tombol hasil pemindaian untuk membuka daftar temuan dari pekerjaan yang dipilih.</span>
   </div>
   <div class="table-wrap">
     <table>
@@ -237,7 +237,7 @@
         <td class="message-cell">
           <div class="message-stack">
             <a class="scan-link message-summary" href="/scans/{{ s.id }}"><small>{{ s.message_summary }}</small></a>
-            <a class="table-action" href="/findings?scan_job_id={{ s.id }}">Hasil scan{% if s.findings_count %} ({{ s.findings_count }}){% endif %}</a>
+            <a class="table-action" href="/findings?scan_job_id={{ s.id }}">Hasil pemindaian{% if s.findings_count %} ({{ s.findings_count }}){% endif %}</a>
           </div>
         </td>
         <td><a class="scan-link" href="/scans/{{ s.id }}">{{ s.created_at }}</a></td>
@@ -253,7 +253,7 @@
             <button
               class="delete-action js-delete-trigger"
               type="button"
-              title="Hapus scan dan seluruh data turunannya"
+              title="Hapus pemindaian dan seluruh data turunannya"
               data-scan-label="{{ s.asset_name }} / {{ s.profile }}"
               data-delete-url="/scans/{{ s.id }}/delete"
               data-delete-iris-url="/scans/{{ s.id }}/delete-with-iris"
@@ -274,13 +274,13 @@
 
 <dialog class="delete-dialog" id="scan-delete-dialog">
   <div class="delete-dialog-card">
-    <span class="section-kicker">Konfirmasi Hapus</span>
-    <h3 id="scan-delete-title">Hapus scan ini?</h3>
-    <p id="scan-delete-description">Pilih apakah penghapusan dilakukan di SATRIA saja, atau sekalian membersihkan case remote di IRIS bila tersedia.</p>
+    <span class="section-kicker">Konfirmasi Penghapusan</span>
+    <h3 id="scan-delete-title">Hapus pemindaian ini?</h3>
+    <p id="scan-delete-description">Pilih cakupan penghapusan data pemindaian. Penghapusan dapat dibatasi pada SATRIA atau disertai pembersihan case remote di IRIS apabila tersedia.</p>
     <div class="delete-dialog-actions">
       <form id="scan-delete-local-form" method="post" action="/scans/0/delete">
         <input type="hidden" name="next_url" value="/scans">
-        <button class="hero-button subtle" type="submit">Hapus di SATRIA saja</button>
+        <button class="hero-button subtle" type="submit">Hapus dari SATRIA</button>
       </form>
       <form id="scan-delete-iris-form" method="post" action="/scans/0/delete-with-iris">
         <input type="hidden" name="next_url" value="/scans">
@@ -291,9 +291,9 @@
     </div>
     <div class="delete-dialog-warning" id="scan-delete-warning" hidden>
       <strong>Peringatan</strong>
-      IRIS akan ikut dibersihkan bila Anda memilih opsi kedua, supaya operator makin yakin sebelum menekan tombol.
+      Data terkait pada IRIS akan ikut dibersihkan apabila opsi penghapusan SATRIA + IRIS dipilih.
     </div>
-    <p class="delete-dialog-note" id="scan-delete-note">Data lokal scan, findings, dan ticket turunan di SATRIA akan dihapus permanen.</p>
+    <p class="delete-dialog-note" id="scan-delete-note">Data lokal pemindaian, temuan, dan tiket turunan di SATRIA akan dihapus permanen.</p>
   </div>
 </dialog>
 
@@ -311,7 +311,7 @@
     const cancelBtn = document.getElementById("scan-delete-cancel");
 
     const openDialog = (button) => {
-      const label = button.dataset.scanLabel || "scan ini";
+      const label = button.dataset.scanLabel || "pemindaian ini";
       const deleteUrl = button.dataset.deleteUrl;
       const deleteIrisUrl = button.dataset.deleteIrisUrl;
       const nextUrl = button.dataset.nextUrl || "/scans";
@@ -320,11 +320,11 @@
 
       title.textContent = `Hapus ${label}?`;
       description.textContent = hasRemoteCleanup
-        ? "Anda bisa menghapus data scan di SATRIA saja, atau sekalian meminta cleanup case remote di IRIS."
-        : "Scan ini tidak memiliki sinkronisasi IRIS yang perlu dibersihkan, jadi penghapusan akan dilakukan di SATRIA saja.";
+        ? "Data pemindaian dapat dihapus dari SATRIA saja atau disertai pembersihan case remote di IRIS."
+        : "Pemindaian ini tidak memiliki sinkronisasi IRIS yang perlu dibersihkan. Penghapusan akan dilakukan hanya pada SATRIA.";
       note.textContent = hasRemoteCleanup
-        ? "Jika memilih SATRIA + IRIS, sistem akan mencoba menghapus case remote lebih dulu sebelum menghapus data lokal."
-        : "Data lokal scan, findings, dan ticket turunan di SATRIA akan dihapus permanen.";
+        ? "Jika memilih SATRIA + IRIS, sistem akan menghapus case remote terlebih dahulu sebelum menghapus data lokal."
+        : "Data lokal pemindaian, temuan, dan tiket turunan di SATRIA akan dihapus permanen.";
 
       localForm.action = deleteUrl;
       localForm.querySelector('input[name=\"next_url\"]').value = nextUrl;

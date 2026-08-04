@@ -204,12 +204,12 @@
 <section class="hero">
   <div class="hero-copy">
     <span class="eyebrow">Scan Detail</span>
-    <h2>Hasil scan {{ scan.asset.name }}</h2>
-    <p>Halaman ini menampilkan hasil eksekusi satu scan tertentu, termasuk mode, message worker, report path, dan findings yang dihasilkan.</p>
+    <h2>Hasil pemindaian {{ scan.asset.name }}</h2>
+    <p>Halaman ini menampilkan hasil eksekusi pemindaian, termasuk mode, pesan sistem, lokasi laporan, dan temuan yang dihasilkan.</p>
   </div>
   <div class="hero-actions">
     <a class="hero-button" href="/scans">Kembali ke Riwayat</a>
-    <a class="hero-button subtle" href="/findings">Buka Findings</a>
+    <a class="hero-button subtle" href="/findings">Buka Temuan</a>
     {% if scan_row.can_retry %}
     <form method="post" action="/scans/{{ scan.id }}/rerun">
       <input type="hidden" name="next_url" value="/scans/{{ scan.id }}">
@@ -243,14 +243,14 @@
       <h3>Hapus remote IRIS belum berhasil</h3>
     </div>
   </div>
-  <p>Data lokal belum dihapus agar operator masih bisa retry dengan aman. Detail: {{ cleanup_message or 'remote cleanup failed' }}</p>
+  <p>Data lokal belum dihapus karena proses pembersihan remote belum berhasil. Detail: {{ cleanup_message or 'remote cleanup failed' }}</p>
 </section>
 {% endif %}
 
 <section class="scan-summary">
   <div class="detail-card"><span>Status</span><strong>{{ scan.status }}</strong><small>{{ scan_row.mode_label }}</small></div>
   <div class="detail-card"><span>Asset</span><strong>{{ scan.asset.name }}</strong><small>{{ scan.asset.target }}</small></div>
-  <div class="detail-card"><span>Findings</span><strong>{{ findings|length }}</strong><small>{{ scan.profile }} / {{ scan.scanner }}</small></div>
+  <div class="detail-card"><span>Temuan</span><strong>{{ findings|length }}</strong><small>{{ scan.profile }} / {{ scan.scanner }}</small></div>
 </section>
 
 <section class="detail-grid">
@@ -309,7 +309,7 @@
       {% endfor %}
     </table>
     {% if not findings %}
-    <p class="empty-note">Scan ini belum menghasilkan finding yang tersimpan.</p>
+    <p class="empty-note">Pemindaian ini belum menghasilkan temuan yang tersimpan.</p>
     {% endif %}
   </div>
 </section>
@@ -318,11 +318,11 @@
   <div class="delete-dialog-card">
     <span class="section-kicker">Konfirmasi Hapus</span>
     <h3 id="scan-detail-delete-title">Hapus scan ini?</h3>
-    <p id="scan-detail-delete-description">Pilih apakah penghapusan dilakukan di SATRIA saja, atau sekalian membersihkan case remote di IRIS bila tersedia.</p>
+    <p id="scan-detail-delete-description">Pilih cakupan penghapusan data pemindaian. Penghapusan dapat dibatasi pada SATRIA atau disertai pembersihan case remote di IRIS apabila tersedia.</p>
     <div class="delete-dialog-actions">
       <form id="scan-detail-delete-local-form" method="post" action="/scans/0/delete">
         <input type="hidden" name="next_url" value="/scans">
-        <button class="hero-button subtle" type="submit">Hapus di SATRIA saja</button>
+        <button class="hero-button subtle" type="submit">Hapus dari SATRIA</button>
       </form>
       <form id="scan-detail-delete-iris-form" method="post" action="/scans/0/delete-with-iris">
         <input type="hidden" name="next_url" value="/scans">
@@ -333,9 +333,9 @@
     </div>
     <div class="delete-dialog-warning" id="scan-detail-delete-warning" hidden>
       <strong>Peringatan</strong>
-      IRIS akan ikut dibersihkan bila Anda memilih opsi kedua, supaya operator makin yakin sebelum menekan tombol.
+      Data terkait pada IRIS akan ikut dibersihkan apabila opsi penghapusan SATRIA + IRIS dipilih.
     </div>
-    <p class="delete-dialog-note" id="scan-detail-delete-note">Data lokal scan, findings, dan ticket turunan di SATRIA akan dihapus permanen.</p>
+    <p class="delete-dialog-note" id="scan-detail-delete-note">Data lokal pemindaian, temuan, dan tiket turunan di SATRIA akan dihapus permanen.</p>
   </div>
 </dialog>
 
@@ -363,11 +363,11 @@
 
       title.textContent = `Hapus ${label}?`;
       description.textContent = hasRemoteCleanup
-        ? "Anda bisa menghapus data scan di SATRIA saja, atau sekalian meminta cleanup case remote di IRIS."
-        : "Scan ini tidak memiliki sinkronisasi IRIS yang perlu dibersihkan, jadi penghapusan akan dilakukan di SATRIA saja.";
+        ? "Data pemindaian dapat dihapus dari SATRIA saja atau disertai pembersihan case remote di IRIS."
+        : "Pemindaian ini tidak memiliki sinkronisasi IRIS yang perlu dibersihkan. Penghapusan akan dilakukan hanya pada SATRIA.";
       note.textContent = hasRemoteCleanup
-        ? "Jika memilih SATRIA + IRIS, sistem akan mencoba menghapus case remote lebih dulu sebelum menghapus data lokal."
-        : "Data lokal scan, findings, dan ticket turunan di SATRIA akan dihapus permanen.";
+        ? "Jika memilih SATRIA + IRIS, sistem akan menghapus case remote terlebih dahulu sebelum menghapus data lokal."
+        : "Data lokal pemindaian, temuan, dan tiket turunan di SATRIA akan dihapus permanen.";
 
       localForm.action = deleteUrl;
       localForm.querySelector('input[name="next_url"]').value = nextUrl;

@@ -3,11 +3,11 @@
 <section class="hero">
   <div class="hero-copy">
     <span class="eyebrow">Finding Detail</span>
-    <h2>Finding #{{ finding.id }}</h2>
+    <h2>Temuan #{{ finding.id }}</h2>
     <p>{{ finding.title }}</p>
   </div>
   <div class="hero-actions">
-    <a class="hero-button" href="/findings">Kembali ke Findings</a>
+    <a class="hero-button" href="/findings">Kembali ke Temuan</a>
     <a class="hero-button subtle" href="/vulnerability-summary">Bulk Actions</a>
   </div>
 </section>
@@ -19,7 +19,7 @@
     </div>
   </div>
   <dl>
-    <dt>Asset</dt><dd>{{ finding.asset.name }} - <code>{{ finding.asset.target }}</code></dd>
+    <dt>Aset</dt><dd>{{ finding.asset.name }} - <code>{{ finding.asset.target }}</code></dd>
     <dt>Scanner</dt><dd>{{ finding.scanner }}</dd>
     <dt>Type</dt><dd>{{ finding.finding_type }}</dd>
     <dt>Severity</dt><dd><span class="sev {{ finding.severity_normalized|lower }}">{{ finding.severity_normalized }}</span></dd>
@@ -33,7 +33,7 @@
     <dt>Recommendation</dt><dd>{{ finding.recommendation or '-' }}</dd>
     <dt>Status</dt><dd>{{ finding.status }}</dd>
     {% if finding.ticket_case %}
-    <dt>Workflow Ticket</dt><dd>{{ finding.ticket_case.status }}</dd>
+    <dt>Status Tiket</dt><dd>{{ finding.ticket_case.status }}</dd>
     {% endif %}
     <dt>Ticketing</dt>
     <dd>
@@ -60,7 +60,7 @@
     </form>
   </div>
   {% if finding.ticket_case and finding.ticket_case.remote_case_id %}
-  <p class="helper-copy">SATRIA hanya menampilkan hasil sinkronisasi dan status ticket dari IRIS. Perubahan workflow case dilakukan langsung di IRIS agar alur operasional tetap terpusat pada sistem ticketing utama.</p>
+  <p class="helper-copy">SATRIA menampilkan hasil sinkronisasi dan status tiket dari IRIS. Perubahan alur kerja case dilakukan langsung di IRIS agar proses operasional tetap terpusat pada sistem ticketing utama.</p>
   {% endif %}
 </section>
 {% endblock %}

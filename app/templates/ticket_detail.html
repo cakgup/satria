@@ -2,17 +2,17 @@
 {% block content %}
 <section class="hero">
   <div class="hero-copy">
-    <span class="eyebrow">Ticket Detail</span>
+    <span class="eyebrow">Detail Tiket</span>
     <h2>Case #{{ ticket.id }}</h2>
-    <p>Monitoring case IRIS untuk {{ ticket_view.remote_name }}</p>
+    <p>Pemantauan case IRIS untuk {{ ticket_view.remote_name }}</p>
   </div>
   <div class="hero-actions">
-    <a class="hero-button" href="/tickets">Kembali ke Tickets</a>
+    <a class="hero-button" href="/tickets">Kembali ke Tiket</a>
     {% if iris_login_url %}
     <a class="hero-button" href="{{ iris_login_url }}" target="_blank" rel="noopener">Buka Login IRIS</a>
     {% endif %}
     {% if ticket.finding %}
-    <a class="hero-button subtle" href="/findings/{{ ticket.finding.id }}">Lihat Finding</a>
+    <a class="hero-button subtle" href="/findings/{{ ticket.finding.id }}">Lihat Temuan</a>
     {% endif %}
     {% if ticket.remote_case_id %}
     <form method="post" action="/tickets/{{ ticket.id }}/refresh">
@@ -20,7 +20,7 @@
     </form>
     {% else %}
     <form method="post" action="/tickets/{{ ticket.id }}/sync">
-      <button class="hero-button subtle" type="submit">Publish ke IRIS</button>
+      <button class="hero-button subtle" type="submit">Publikasikan ke IRIS</button>
     </form>
     {% endif %}
   </div>
@@ -29,13 +29,13 @@
 <section class="panel detail">
   <div class="panel-head">
     <div>
-      <span class="section-kicker">IRIS Summary</span>
-      <h3>Ringkasan monitor case</h3>
+      <span class="section-kicker">Ringkasan IRIS</span>
+      <h3>Ringkasan pemantauan case</h3>
     </div>
   </div>
   <dl>
     <dt>Jenis Case</dt><dd>{{ ticket.case_kind }} / {{ ticket.incident_type or '-' }}</dd>
-    <dt>Workflow Status</dt><dd>{{ ticket_view.workflow_status }}</dd>
+    <dt>Status Alur Kerja</dt><dd>{{ ticket_view.workflow_status }}</dd>
     <dt>Remote State</dt><dd>{{ ticket_view.remote_state }}</dd>
     <dt>Priority</dt><dd>{{ ticket.priority }}</dd>
     <dt>Classification</dt><dd>{{ ticket_view.classification }}</dd>
@@ -50,8 +50,8 @@
     <dt>Source</dt><dd>{{ ticket.source_channel or '-' }}</dd>
     <dt>Playbook</dt><dd>{{ ticket.playbook or '-' }}</dd>
     <dt>Tags</dt><dd>{{ ticket_view.tags|join(', ') if ticket_view.tags else '-' }}</dd>
-    <dt>Asset</dt><dd>{{ ticket.asset.name }} - <code>{{ ticket.asset.target }}</code></dd>
-    <dt>Finding</dt><dd>{% if ticket.finding %}<a href="/findings/{{ ticket.finding.id }}">Finding #{{ ticket.finding.id }}</a> / {{ ticket.finding.title }}{% else %}-{% endif %}</dd>
+    <dt>Aset</dt><dd>{{ ticket.asset.name }} - <code>{{ ticket.asset.target }}</code></dd>
+    <dt>Temuan</dt><dd>{% if ticket.finding %}<a href="/findings/{{ ticket.finding.id }}">Temuan #{{ ticket.finding.id }}</a> / {{ ticket.finding.title }}{% else %}-{% endif %}</dd>
     <dt>Remote Case</dt><dd>{{ ticket.remote_case_id or '-' }}</dd>
     <dt>Remote Alert</dt><dd>{{ ticket.remote_alert_id or '-' }}</dd>
     <dt>Notes Directory</dt><dd>{{ ticket.remote_notes_directory_id or '-' }}</dd>
@@ -60,25 +60,25 @@
     <dt>Resolution Summary</dt><dd>{{ ticket.resolution_summary or '-' }}</dd>
     <dt>Sync Error</dt><dd>{{ ticket.last_sync_error or '-' }}</dd>
   </dl>
-  <p class="helper-copy">SATRIA berfungsi sebagai panel monitoring dan sinkronisasi ticket. Status operasional case tetap mengikuti IRIS sebagai sistem ticketing utama.</p>
+  <p class="helper-copy">SATRIA berfungsi sebagai panel pemantauan dan sinkronisasi tiket. Status operasional case tetap mengikuti IRIS sebagai sistem ticketing utama.</p>
 </section>
 
 {% if not ticket.remote_case_id %}
 <section class="panel">
   <div class="panel-head">
     <div>
-      <span class="section-kicker">Publish Required</span>
+      <span class="section-kicker">Publikasi Diperlukan</span>
       <h3>Case belum tersedia di IRIS</h3>
     </div>
   </div>
-  <p class="empty-note">Case ini masih berupa mirror lokal dan belum memiliki `remote_case_id`. Gunakan tombol `Publish ke IRIS` di atas agar setelah itu SATRIA hanya memantau status remote-nya.</p>
+  <p class="empty-note">Case ini masih berupa mirror lokal dan belum memiliki <code>remote_case_id</code>. Gunakan tombol publikasi ke IRIS agar SATRIA dapat memantau status remote setelah sinkronisasi berhasil.</p>
 </section>
 {% endif %}
 
 <section class="panel">
   <div class="panel-head">
     <div>
-      <span class="section-kicker">IRIS Tasks</span>
+      <span class="section-kicker">Task IRIS</span>
       <h3>Task dari case remote</h3>
     </div>
   </div>
@@ -97,7 +97,7 @@
       {% endfor %}
     </table>
     {% if not remote_bundle or not remote_bundle.tasks %}
-    <p class="empty-note">Belum ada data task remote yang bisa ditampilkan.</p>
+    <p class="empty-note">Belum terdapat data task remote yang dapat ditampilkan.</p>
     {% endif %}
   </div>
 </section>
@@ -105,8 +105,8 @@
 <section class="panel">
   <div class="panel-head">
     <div>
-      <span class="section-kicker">Local Mirror</span>
-      <h3>Timeline monitoring SATRIA</h3>
+      <span class="section-kicker">Mirror Lokal</span>
+      <h3>Linimasa pemantauan SATRIA</h3>
     </div>
   </div>
   <div class="table-wrap">
@@ -124,7 +124,7 @@
       {% endfor %}
     </table>
     {% if not ticket.activities %}
-    <p class="empty-note">Belum ada catatan monitoring lokal.</p>
+    <p class="empty-note">Belum terdapat catatan pemantauan lokal.</p>
     {% endif %}
   </div>
 </section>
@@ -132,8 +132,8 @@
 <section class="panel">
   <div class="panel-head">
     <div>
-      <span class="section-kicker">IRIS Evidence</span>
-      <h3>Evidence yang tersedia di case remote</h3>
+      <span class="section-kicker">Bukti IRIS</span>
+      <h3>Bukti yang tersedia pada case remote</h3>
     </div>
   </div>
   <div class="table-wrap">

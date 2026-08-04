@@ -306,9 +306,9 @@
 </style>
 <section class="hero">
   <div class="hero-copy">
-    <span class="eyebrow">Step 5</span>
-    <h2>Pantau case DFIR-IRIS dari SATRIA tanpa menduplikasi workflow ticket.</h2>
-    <p>IRIS menjadi sistem ticketing utama. Halaman ini dipakai untuk monitoring case yang sudah sinkron, sekaligus melihat item yang masih pending atau gagal publish agar operator bisa segera retry.</p>
+    <span class="eyebrow">Langkah 5</span>
+    <h2>Pantau case DFIR-IRIS melalui SATRIA tanpa menduplikasi alur kerja tiket.</h2>
+    <p>IRIS berfungsi sebagai sistem ticketing utama. Halaman ini digunakan untuk memantau case yang telah tersinkronisasi serta mengidentifikasi item yang masih tertunda atau gagal dipublikasikan agar dapat ditindaklanjuti secara terukur.</p>
   </div>
   <div class="hero-actions">
     <form method="post" action="/tickets/refresh">
@@ -318,7 +318,7 @@
     <a class="hero-button" href="{{ iris_login_url }}" target="_blank" rel="noopener">Buka Login IRIS</a>
     {% endif %}
     <a class="hero-button" href="/soc-sop">SOC SOP</a>
-    <a class="hero-button subtle" href="/vulnerability-summary">Reports & Bulk Action</a>
+    <a class="hero-button subtle" href="/vulnerability-summary">Laporan dan Aksi Massal</a>
   </div>
 </section>
 
@@ -348,7 +348,7 @@
       </select>
     </label>
     <div class="filter-actions">
-      <span class="helper-copy">Filter berjalan otomatis saat pilihan diubah.</span>
+      <span class="helper-copy">Filter diterapkan secara otomatis saat pilihan diubah.</span>
       <a class="text-link reset-link" href="/tickets">Reset</a>
     </div>
   </form>
@@ -358,27 +358,27 @@
   <div class="ticket-kpi">
     <span class="label">Total Case</span>
     <strong>{{ ticket_summary.total }}</strong>
-    <small>Seluruh case yang tampil pada monitor tiket</small>
+    <small>Seluruh case yang ditampilkan pada monitor tiket</small>
   </div>
   <div class="ticket-kpi">
     <span class="label">Dari Finding</span>
     <strong>{{ ticket_summary.finding }}</strong>
-    <small>Tiket hasil publish dari temuan SATRIA</small>
+    <small>Tiket yang dipublikasikan dari temuan SATRIA</small>
   </div>
   <div class="ticket-kpi">
     <span class="label">Input Manual</span>
     <strong>{{ ticket_summary.manual }}</strong>
-    <small>Insiden atau case yang dibuat manual</small>
+    <small>Insiden atau case yang dicatat secara manual</small>
   </div>
   <div class="ticket-kpi">
     <span class="label">Synced IRIS</span>
     <strong>{{ ticket_summary.synced }}</strong>
-    <small>Sudah memiliki case remote aktif di IRIS</small>
+    <small>Telah memiliki case remote aktif di IRIS</small>
   </div>
   <div class="ticket-kpi">
     <span class="label">Perlu Tinjau</span>
     <strong>{{ ticket_summary.pending }}</strong>
-    <small>Belum sinkron penuh atau masih perlu refresh</small>
+    <small>Belum tersinkronisasi penuh atau memerlukan pembaruan status</small>
   </div>
 </section>
 
@@ -386,7 +386,7 @@
   <section class="panel ticket-analytics-panel">
     <div class="panel-head">
       <div>
-        <span class="section-kicker">IRIS State</span>
+        <span class="section-kicker">Status IRIS</span>
         <h3>Distribusi status case IRIS</h3>
       </div>
     </div>
@@ -433,21 +433,21 @@
     <div class="panel-head">
       <div>
         <span class="section-kicker">Interpretasi</span>
-        <h3>Membaca status ticket IRIS</h3>
+        <h3>Interpretasi status tiket IRIS</h3>
       </div>
     </div>
     <div class="ticket-note-list">
       <div class="ticket-note-item">
         <strong>Open</strong>
-        <p>Case sudah terbentuk di IRIS dan masih aktif untuk triage, analisis, atau tindak lanjut lanjutan.</p>
+        <p>Case telah terbentuk di IRIS dan masih aktif untuk triage, analisis, atau tindak lanjut.</p>
       </div>
       <div class="ticket-note-item">
         <strong>Assigned / In Progress</strong>
-        <p>Case sudah mulai ditangani oleh analis atau pemilik tertentu di IRIS.</p>
+        <p>Case telah ditugaskan kepada analis atau pemilik tertentu di IRIS.</p>
       </div>
       <div class="ticket-note-item">
         <strong>Closed / Remediated</strong>
-        <p>Case telah selesai atau dinyatakan ditutup di workflow IRIS, sementara SATRIA tetap hanya memonitor hasilnya.</p>
+        <p>Case telah diselesaikan atau ditutup pada alur kerja IRIS. SATRIA tetap menampilkan status sebagai referensi pemantauan.</p>
       </div>
     </div>
   </section>
@@ -456,10 +456,10 @@
 <section class="panel">
   <div class="panel-head">
     <div>
-      <span class="section-kicker">IRIS Monitor</span>
-      <h3>Daftar case yang termonitor dari IRIS</h3>
+      <span class="section-kicker">Monitor IRIS</span>
+      <h3>Daftar case yang dipantau dari IRIS</h3>
     </div>
-    <span class="helper-copy">Tabel ini menampilkan dua sumber sekaligus: tiket dari hasil finding SATRIA dan tiket input manual yang kemudian dipantau statusnya dari IRIS.</span>
+    <span class="helper-copy">Tabel ini menampilkan tiket yang berasal dari temuan SATRIA serta tiket input manual yang statusnya dipantau melalui IRIS.</span>
   </div>
   <div class="table-wrap">
     <table>
@@ -511,7 +511,7 @@
       {% endfor %}
     </table>
     {% if not tickets %}
-    <p class="empty-note">Belum ada case IRIS yang berhasil termonitor. Publish dari findings atau refresh ulang koneksi IRIS.</p>
+    <p class="empty-note">Belum terdapat case IRIS yang berhasil dipantau. Publikasikan tiket dari temuan atau perbarui koneksi IRIS.</p>
     {% endif %}
   </div>
 </section>

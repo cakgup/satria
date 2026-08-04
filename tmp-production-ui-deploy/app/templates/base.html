@@ -23,31 +23,31 @@
   {% set current_path = request.url.path %}
   {% if current_path == '/' %}
     {% set page_title = 'Beranda' %}
-    {% set page_caption = 'Ringkasan pemantauan keamanan dan tindak lanjut operasional SATRIA.' %}
+    {% set page_caption = 'Ringkasan operasional keamanan SATRIA.' %}
   {% elif current_path.startswith('/assets') %}
     {% set page_title = 'Assets' %}
-    {% set page_caption = 'Pengelolaan aset, allowlist, dan target pemindaian keamanan.' %}
+    {% set page_caption = 'Kelola aset, allowlist, dan target pemindaian.' %}
   {% elif current_path.startswith('/scans') %}
     {% set page_title = 'Scans' %}
-    {% set page_caption = 'Pemantauan dan pelaksanaan pekerjaan pemindaian keamanan.' %}
+    {% set page_caption = 'Pantau dan jalankan pekerjaan pemindaian.' %}
   {% elif current_path.startswith('/findings') %}
     {% set page_title = 'Findings' %}
-    {% set page_caption = 'Prioritisasi temuan berdasarkan tingkat risiko dan status tindak lanjut.' %}
+    {% set page_caption = 'Prioritaskan temuan berdasarkan risiko.' %}
   {% elif current_path.startswith('/tickets') or current_path.startswith('/soc-sop') %}
     {% set page_title = 'Tickets' %}
-    {% set page_caption = 'Pemantauan tiket, status penanganan, dan sinkronisasi tindak lanjut.' %}
+    {% set page_caption = 'Pantau workflow ticket dan tindak lanjut.' %}
   {% elif current_path.startswith('/vulnerability-summary') %}
     {% set page_title = 'Reports' %}
-    {% set page_caption = 'Analisis, ekspor, dan pelaporan kerentanan keamanan.' %}
+    {% set page_caption = 'Ringkasan, ekspor, dan laporan kerentanan.' %}
   {% elif current_path.startswith('/admin/service-accounts') %}
     {% set page_title = 'Admin Token' %}
-    {% set page_caption = 'Pengelolaan akses integrasi dan kredensial service account.' %}
+    {% set page_caption = 'Kelola akses integrasi dan service account.' %}
   {% elif current_path.startswith('/admin/gate-policy') %}
     {% set page_title = 'Gate Policy' %}
-    {% set page_caption = 'Pengaturan kebijakan security gate pada pipeline.' %}
+    {% set page_caption = 'Atur kebijakan security gate pipeline.' %}
   {% else %}
     {% set page_title = 'SATRIA' %}
-    {% set page_caption = 'Ruang kerja operasional keamanan terintegrasi.' %}
+    {% set page_caption = 'Security operations workspace.' %}
   {% endif %}
   <aside class="sidebar" aria-label="Menu utama SATRIA">
     <div class="sidebar-brand">

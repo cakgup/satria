@@ -635,8 +635,13 @@
           <div class="asset-actions">
             <a class="table-action" href="/scan/new?asset_id={{ a.id }}">Pindai</a>
             <a class="table-action table-action-muted" href="/assets?edit_id={{ a.id }}#asset-form">Edit</a>
-            <form method="post" action="/assets/{{ a.id }}/delete" class="asset-delete-form">
-              <button class="table-action table-action-danger" type="submit">Hapus</button>
+            <form
+              method="post"
+              action="/assets/{{ a.id }}/delete"
+              class="asset-delete-form"
+              onsubmit="return confirm('Arsipkan aset {{ a.name }} dan bersihkan image lokal bila tersedia? Riwayat pemindaian, temuan, tiket, dan report tetap disimpan.');"
+            >
+              <button class="table-action table-action-danger" type="submit">Arsipkan</button>
             </form>
           </div>
         </td>

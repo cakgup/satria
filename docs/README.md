@@ -13,6 +13,7 @@ Dokumentasi ini disusun berurutan agar operator, pengembang, SOC, dan pimpinan d
 | 05 | [Integrasi Wazuh ke PERISAI](05-INTEGRASI-WAZUH-KE-PERISAI.md) | Jalur alert Wazuh ke PERISAI / DFIR-IRIS. |
 | 06 | [UR SATRIA Docker Compose](06-UR-001-SATRIA-DOCKER-COMPOSE.md) | Requirement dan catatan deployment Docker Compose. |
 | 07 | [Integrasi AI SOC Wazuh, SATRIA, dan PERISAI](07-INTEGRASI-AI-SOC-WAZUH-SATRIA-PERISAI.md) | Rekomendasi penempatan AI SOC Wazuh, arsitektur, dan SOP integrasi. |
+| 08 | [Manual Book Operasional SATRIA](08-MANUAL-BOOK-SATRIA.md) | Panduan komprehensif operasional SATRIA dari akses awal, asset, scan, findings, ticketing, laporan, CI/CD, integrasi, sampai troubleshooting. |
 
 ## Template Infrastruktur
 

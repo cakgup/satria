@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 import re
 import secrets
+import shutil
+import subprocess
 from urllib.parse import quote_plus
 from fastapi import Depends, FastAPI, Form, Header, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response, PlainTextResponse
@@ -1124,6 +1126,48 @@ def _remove_report_file(raw_report_path: str | None):
         report_path.unlink(missing_ok=True)
 
 
+def _cleanup_container_image_for_asset(db: Session, asset: Asset) -> dict[str, str]:
+    result = {'status': 'skipped', 'message': 'not a container image asset'}
+    if asset.asset_type != 'container_image':
+        return result
+
+    image_ref = (asset.target or '').strip()
+    if not image_ref:
+        return {'status': 'skipped', 'message': 'empty image reference'}
+
+    unsupported_prefixes = ('docker:', 'registry:', 'oci-archive:', 'dir:', 'http://', 'https://')
+    if image_ref.startswith(unsupported_prefixes):
+        return {'status': 'skipped', 'message': f'image reference uses scanner-specific prefix: {image_ref}'}
+
+    reused_by_other_asset = (
+        db.query(Asset.id)
+        .filter(
+            Asset.id != asset.id,
+            Asset.is_active.is_(True),
+            Asset.asset_type == 'container_image',
+            Asset.target == image_ref,
+        )
+        .first()
+    )
+    if reused_by_other_asset:
+        return {'status': 'skipped', 'message': f'image still referenced by another active asset: {image_ref}'}
+
+    if not shutil.which('docker'):
+        return {'status': 'skipped', 'message': 'docker CLI is not available'}
+
+    completed = subprocess.run(
+        ['docker', 'image', 'rm', image_ref],
+        text=True,
+        capture_output=True,
+        timeout=120,
+        check=False,
+    )
+    output = (completed.stdout or completed.stderr or '').strip()
+    if completed.returncode == 0:
+        return {'status': 'removed', 'message': output or f'image removed: {image_ref}'}
+    return {'status': 'skipped', 'message': output or f'image removal failed: {image_ref}'}
+
+
 def _delete_scan_payload(db: Session, scan: ScanJob) -> dict[str, int]:
     finding_ids = [item.id for item in db.query(Finding.id).filter(Finding.scan_job_id == scan.id).all()]
     tickets_deleted = 0
@@ -1794,36 +1838,22 @@ def delete_asset(asset_id: int, db: Session = Depends(get_db)):
     asset = db.get(Asset, asset_id)
     if not asset or not asset.is_active:
         raise HTTPException(status_code=404, detail='asset not found')
-    remote_tickets = _remote_tickets_for_asset(asset)
-    remote_messages: list[str] = []
-    remote_deleted = 0
-    remote_skipped = 0
-
-    for ticket in remote_tickets:
-        result = delete_remote_ticket_case(ticket)
-        if result.get('ok'):
-            if result.get('status') == 'skipped':
-                remote_skipped += 1
-            else:
-                remote_deleted += 1
-            continue
-        remote_messages.append(str(result.get('message') or 'remote cleanup failed'))
-
-    if remote_messages:
-        detail = quote_plus('; '.join(remote_messages))
-        return RedirectResponse(
-            f'/assets?cleanup_status=remote-failed&cleanup_message={detail}',
-            status_code=303,
-        )
-
-    counts = _delete_asset_payload(db, asset)
+    image_cleanup = _cleanup_container_image_for_asset(db, asset)
+    history_counts = {
+        'scans_preserved': len(asset.scans),
+        'findings_preserved': len(asset.findings),
+        'tickets_preserved': len(asset.ticket_cases),
+    }
+    asset.is_active = False
     db.add(AuditLog(
-        action='asset_deleted',
+        action='asset_archived',
         object_type='asset',
         object_id=str(asset_id),
         detail=(
-            f"name={asset.name}; scans={counts['scans_deleted']}; findings={counts['findings_deleted']}; "
-            f"tickets={counts['tickets_deleted']}; remote_deleted={remote_deleted}; remote_skipped={remote_skipped}"
+            f"name={asset.name}; scans_preserved={history_counts['scans_preserved']}; "
+            f"findings_preserved={history_counts['findings_preserved']}; "
+            f"tickets_preserved={history_counts['tickets_preserved']}; "
+            f"image_cleanup={image_cleanup['status']}: {image_cleanup['message']}"
         ),
     ))
     db.commit()

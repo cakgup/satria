@@ -236,6 +236,137 @@ Perilaku praktis:
 
 Untuk efisiensi storage, pastikan tag image tidak menumpuk tanpa kebijakan cleanup.
 
+#### 6.4.1 Scanning Image dari Server OpenShift / RHEL
+
+Pada lingkungan OpenShift, image aplikasi umumnya berada di registry OpenShift atau registry enterprise yang diakses melalui `podman`, `skopeo`, atau `oc`. SATRIA tidak perlu menjalankan scan langsung di node OpenShift. Pola yang disarankan adalah membuat image dapat diakses dari server SATRIA, lalu SATRIA melakukan scan dari sana.
+
+Ada dua opsi operasional.
+
+**Opsi A - Scan dari registry yang dapat diakses SATRIA**
+
+Gunakan opsi ini jika server SATRIA dapat mengakses registry OpenShift atau registry internal.
+
+1. Pastikan image sudah dipush ke registry.
+
+   ```bash
+   oc get is -n <namespace>
+   oc get istag -n <namespace>
+   ```
+
+2. Ambil referensi image yang akan dipindai.
+
+   ```bash
+   oc get istag <image-stream>:<tag> -n <namespace> -o jsonpath='{.image.dockerImageReference}'
+   ```
+
+   Contoh hasil:
+
+   ```text
+   image-registry.openshift-image-registry.svc:5000/namespace/app:release-2026.08.07
+   ```
+
+3. Pastikan server SATRIA dapat login ke registry tersebut.
+
+   ```bash
+   podman login <registry-host>:<port>
+   ```
+
+   Jika SATRIA menggunakan Docker, gunakan:
+
+   ```bash
+   docker login <registry-host>:<port>
+   ```
+
+4. Dari server SATRIA, uji akses image.
+
+   ```bash
+   docker pull <registry-host>:<port>/<namespace>/<image>:<tag>
+   ```
+
+   atau jika menggunakan Podman untuk uji manual:
+
+   ```bash
+   podman pull <registry-host>:<port>/<namespace>/<image>:<tag>
+   ```
+
+5. Di SATRIA, buat atau edit asset:
+
+   ```text
+   Jenis target : container_image
+   Target       : <registry-host>:<port>/<namespace>/<image>:<tag>
+   Environment  : development / staging / production
+   Owner        : unit pemilik aplikasi
+   Technical PIC: PIC teknis
+   ```
+
+6. Jalankan scan dari menu `Scans` atau dari tombol `Pindai` pada menu `Assets`.
+
+Catatan:
+
+- Untuk registry OpenShift internal, pastikan routing, DNS, firewall, certificate trust, dan credential pull-only sudah tersedia dari server SATRIA.
+- Untuk production, gunakan tag immutable atau digest image agar hasil scan dapat diaudit ulang.
+- Contoh target berbasis digest:
+
+  ```text
+  registry.example.go.id/namespace/app@sha256:<digest>
+  ```
+
+**Opsi B - Export image dari OpenShift/RHEL lalu import ke SATRIA**
+
+Gunakan opsi ini jika registry OpenShift tidak dapat diakses langsung dari server SATRIA.
+
+1. Pada server RHEL/OpenShift utility host yang dapat mengakses image, login ke registry.
+
+   ```bash
+   podman login <registry-host>:<port>
+   ```
+
+2. Pull image menggunakan Podman.
+
+   ```bash
+   podman pull <registry-host>:<port>/<namespace>/<image>:<tag>
+   ```
+
+3. Simpan image menjadi file archive.
+
+   ```bash
+   podman save -o app-release-2026.08.07.tar <registry-host>:<port>/<namespace>/<image>:<tag>
+   ```
+
+4. Pindahkan file archive ke server SATRIA.
+
+   ```bash
+   scp app-release-2026.08.07.tar <user-satria>@<ip-satria>:/tmp/
+   ```
+
+5. Di server SATRIA, load image ke Docker host yang digunakan SATRIA.
+
+   ```bash
+   docker load -i /tmp/app-release-2026.08.07.tar
+   docker images | grep <image>
+   ```
+
+6. Jika diperlukan, beri tag lokal yang mudah dipakai.
+
+   ```bash
+   docker tag <image-id-or-source-ref> app:release-2026.08.07
+   ```
+
+7. Di SATRIA, buat atau edit asset:
+
+   ```text
+   Jenis target : container_image
+   Target       : app:release-2026.08.07
+   ```
+
+8. Jalankan scan melalui menu `Scans` atau tombol `Pindai`.
+
+Catatan cleanup:
+
+- Setelah scan selesai dan image tidak diperlukan lagi, gunakan `Arsipkan` pada asset bila asset tersebut memang sudah tidak aktif.
+- Tombol `Arsipkan` dapat membersihkan image lokal tanpa menghapus riwayat scan, findings, tickets, dan report.
+- Jika image masih dipakai asset aktif lain atau container berjalan, cleanup tidak akan dipaksakan.
+
 ### 6.5 Arsipkan Asset dan Cleanup Image
 
 Tombol `Arsipkan` pada menu Assets digunakan untuk mengeluarkan asset dari daftar aktif.

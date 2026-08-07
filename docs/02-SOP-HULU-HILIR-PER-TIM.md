@@ -4,8 +4,8 @@
 
 - [Indeks dokumentasi SATRIA](C:/Users/gufroni/Documents/GitHub/satria/docs/README.md)
 - [Panduan Operasional SOC](C:/Users/gufroni/Documents/GitHub/satria/docs/03-PANDUAN-OPERASIONAL-SOC.md)
-- [Walkthrough IRIS untuk Top Management](C:/Users/gufroni/Documents/GitHub/satria/docs/04-WALKTHROUGH-IRIS-TOP-MANAGEMENT.md)
-- [Demo SATRIA dan DFIR-IRIS](C:/Users/gufroni/Documents/GitHub/satria/docs/05-DEMO-SATRIA-DFIR-IRIS.md)
+- [Manual Book SATRIA](08-MANUAL-BOOK-SATRIA.md)
+- [Integrasi Wazuh ke PERISAI](05-INTEGRASI-WAZUH-KE-PERISAI.md)
 
 ## Ekosistem Operasional
 

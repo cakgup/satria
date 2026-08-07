@@ -169,23 +169,23 @@
 </style>
 <section class="hero">
   <div class="hero-copy">
-    <span class="eyebrow">Langkah 3</span>
-    <h2>Pantau pemindaian yang relevan bagi operasi SOC.</h2>
-    <p>Riwayat pemindaian difokuskan pada pekerjaan yang masih aktif atau memerlukan tindak lanjut. Data historis, simulasi, dan kegagalan validasi dapat dikeluarkan dari antrean operasional.</p>
+    <span class="eyebrow">Step 2</span>
+    <h2>Pemindaian Keamanan.</h2>
+    <p>Difokuskan pada aset yang masih aktif atau memerlukan tindak lanjut.</p>
   </div>
   <div class="hero-actions">
-    <a class="hero-button primary" href="/scan/new">Jalankan Pemindaian Baru</a>
-    <a class="hero-button" href="/findings">Buka Temuan</a>
+    <a class="hero-button primary" href="/scan/new">Jalankan Scan Baru</a>
+    <a class="hero-button" href="/findings">Buka Findings</a>
     <form method="post" action="/scans/archive-operational">
-      <button class="hero-button subtle" type="submit">Bersihkan Non-Operasional</button>
+      <button class="hero-button subtle" type="submit">Arsipkan Non-Operasional</button>
     </form>
   </div>
 </section>
 
 <section class="cards compact-cards">
   <div class="card"><span class="label">Total Pemindaian</span><strong>{{ summary.scans }}</strong></div>
-  <div class="card"><span class="label">Selesai</span><strong>{{ summary.completed_scans }}</strong></div>
-  <div class="card"><span class="label">Gagal</span><strong>{{ summary.failed_scans }}</strong></div>
+  <div class="card"><span class="label">Completed</span><strong>{{ summary.completed_scans }}</strong></div>
+  <div class="card"><span class="label">Failed</span><strong>{{ summary.failed_scans }}</strong></div>
   <div class="card"><span class="label">Temuan Terbuka</span><strong>{{ summary.open_findings }}</strong></div>
 </section>
 
@@ -220,7 +220,7 @@
       <span class="section-kicker">Riwayat Eksekusi</span>
       <h3>Riwayat pemindaian</h3>
     </div>
-    <span class="helper-copy">Status menunjukkan hasil pekerjaan pemindaian. Gunakan tombol hasil pemindaian untuk membuka daftar temuan dari pekerjaan yang dipilih.</span>
+    <span class="helper-copy">Status indicates scan job results. Use the scan result button to open findings for the selected job.</span>
   </div>
   <div class="table-wrap">
     <table>
@@ -237,7 +237,7 @@
         <td class="message-cell">
           <div class="message-stack">
             <a class="scan-link message-summary" href="/scans/{{ s.id }}"><small>{{ s.message_summary }}</small></a>
-            <a class="table-action" href="/findings?scan_job_id={{ s.id }}">Hasil pemindaian{% if s.findings_count %} ({{ s.findings_count }}){% endif %}</a>
+            <a class="table-action" href="/findings?scan_job_id={{ s.id }}">Hasil scan{% if s.findings_count %} ({{ s.findings_count }}){% endif %}</a>
           </div>
         </td>
         <td><a class="scan-link" href="/scans/{{ s.id }}">{{ s.created_at }}</a></td>

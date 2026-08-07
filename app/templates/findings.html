@@ -139,15 +139,22 @@
 </style>
 <section class="hero">
   <div class="hero-copy">
-    <span class="eyebrow">Langkah 4</span>
-    <h2>Tindak lanjut temuan berdasarkan tingkat risiko tertinggi.</h2>
-    <p>Halaman ini disusun untuk mendukung prioritisasi temuan, penyaringan data, dan akses terarah ke detail temuan. Penanganan awal direkomendasikan dimulai dari temuan berstatus <strong>Critical</strong> dan <strong>High</strong> yang masih terbuka.</p>
+    <span class="eyebrow">Langkah 3</span>
+    <h2>Tindak Lanjut Temuan.</h2>
+    <p>Penanganan awal direkomendasikan dimulai dari temuan berstatus <strong>Critical</strong> dan <strong>High</strong> yang masih <strong>Open</strong>.</p>
   </div>
   <div class="hero-actions">
     <a class="hero-button primary" href="/findings?severity=Critical">Critical</a>
     <a class="hero-button" href="/findings?severity=High">High</a>
-    <a class="hero-button subtle" href="/vulnerability-summary">Bulk IRIS & Reports</a>
+    <a class="hero-button subtle" href="/vulnerability-summary">Bulk PERISAI & Reports</a>
   </div>
+</section>
+
+<section class="cards compact-cards">
+  <div class="card"><span class="label">Temuan Terbuka</span><strong>{{ summary.open_findings }}</strong></div>
+  <div class="card"><span class="label">Critical + High</span><strong>{{ summary.critical_high }}</strong></div>
+  <div class="card"><span class="label">Total Findings</span><strong>{{ summary.findings }}</strong></div>
+  <div class="card"><span class="label">Assets Terdampak</span><strong>{{ summary.assets }}</strong></div>
 </section>
 
 {% if active_filters %}
@@ -206,13 +213,6 @@
       <a class="text-link reset-link" href="/findings">Reset</a>
     </div>
   </form>
-</section>
-
-<section class="cards compact-cards">
-  <div class="card"><span class="label">Open Findings</span><strong>{{ summary.open_findings }}</strong></div>
-  <div class="card"><span class="label">Critical + High</span><strong>{{ summary.critical_high }}</strong></div>
-  <div class="card"><span class="label">Total Findings</span><strong>{{ summary.findings }}</strong></div>
-  <div class="card"><span class="label">Assets Terdampak</span><strong>{{ summary.assets }}</strong></div>
 </section>
 
 <section class="panel">

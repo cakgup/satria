@@ -28,7 +28,7 @@
     {% set page_title = 'Assets' %}
     {% set page_caption = 'Pengelolaan aset, allowlist, dan target pemindaian keamanan.' %}
   {% elif current_path.startswith('/scans') %}
-    {% set page_title = 'Scans' %}
+    {% set page_title = 'Pemindaian' %}
     {% set page_caption = 'Pemantauan dan pelaksanaan pekerjaan pemindaian keamanan.' %}
   {% elif current_path.startswith('/findings') %}
     {% set page_title = 'Findings' %}
@@ -37,7 +37,7 @@
     {% set page_title = 'Tickets' %}
     {% set page_caption = 'Pemantauan tiket, status penanganan, dan sinkronisasi tindak lanjut.' %}
   {% elif current_path.startswith('/vulnerability-summary') %}
-    {% set page_title = 'Reports' %}
+    {% set page_title = 'Laporan' %}
     {% set page_caption = 'Analisis, ekspor, dan pelaporan kerentanan keamanan.' %}
   {% elif current_path.startswith('/admin/service-accounts') %}
     {% set page_title = 'Admin Token' %}
@@ -53,7 +53,6 @@
     <div class="sidebar-brand">
       <a class="sidebar-logo-link" href="/" aria-label="SATRIA Overview">
         <img class="brand-logo" src="/static/logo.png" alt="Logo SATRIA">
-        <span class="sidebar-brand-text">SATRIA</span>
       </a>
       <button class="sidebar-toggle" type="button" aria-label="Sembunyikan menu" aria-expanded="true" title="Hide / unhide menu">
         <span class="toggle-open">&laquo;</span>
@@ -61,30 +60,30 @@
       </button>
     </div>
     <nav class="sidebar-nav">
-      <a href="/" class="{% if request.url.path == '/' %}active{% endif %}" title="Beranda">
-        <span class="nav-icon">B</span><span class="nav-label">Beranda</span>
+      <a href="/" class="{% if request.url.path == '/' %}active{% endif %}" title="Home">
+        <span class="nav-icon">H</span><span class="nav-label">Home</span>
       </a>
-      <div class="nav-section">Operasional</div>
+      <div class="nav-section">Operations</div>
       <a href="/assets" class="{% if request.url.path.startswith('/assets') %}active{% endif %}" title="Assets">
         <span class="nav-icon">A</span><span class="nav-label">Assets</span>
       </a>
-      <a href="/scans" class="{% if request.url.path.startswith('/scans') %}active{% endif %}" title="Pemindaian">
-        <span class="nav-icon">P</span><span class="nav-label">Pemindaian</span>
+      <a href="/scans" class="{% if request.url.path.startswith('/scans') %}active{% endif %}" title="Scans">
+        <span class="nav-icon">S</span><span class="nav-label">Scans</span>
       </a>
       <a href="/findings" class="{% if request.url.path.startswith('/findings') %}active{% endif %}" title="Findings">
         <span class="nav-icon">F</span><span class="nav-label">Findings</span>
       </a>
-      <div class="nav-section">Transaksi</div>
+      <div class="nav-section">Workflow</div>
       <a href="/tickets" class="{% if request.url.path.startswith('/tickets') or request.url.path.startswith('/soc-sop') %}active{% endif %}" title="Tickets">
         <span class="nav-icon">T</span><span class="nav-label">Tickets</span>
       </a>
-      <a href="/vulnerability-summary" class="{% if request.url.path.startswith('/vulnerability-summary') %}active{% endif %}" title="Laporan">
-        <span class="nav-icon">L</span><span class="nav-label">Laporan</span>
+      <a href="/vulnerability-summary" class="{% if request.url.path.startswith('/vulnerability-summary') %}active{% endif %}" title="Report">
+        <span class="nav-icon">R</span><span class="nav-label">Report</span>
       </a>
       {% if request.state.current_user and request.state.is_admin %}
       <div class="nav-section">Admin</div>
-      <a href="/admin/service-accounts" class="{% if request.url.path.startswith('/admin/service-accounts') %}active{% endif %}" title="Admin Token">
-        <span class="nav-icon">K</span><span class="nav-label">Admin Token</span>
+      <a href="/admin/service-accounts" class="{% if request.url.path.startswith('/admin/service-accounts') %}active{% endif %}" title="API Tokens">
+        <span class="nav-icon">K</span><span class="nav-label">API Tokens</span>
       </a>
       <a href="/admin/gate-policy" class="{% if request.url.path.startswith('/admin/gate-policy') %}active{% endif %}" title="Gate Policy">
         <span class="nav-icon">G</span><span class="nav-label">Gate Policy</span>

@@ -4,8 +4,8 @@
 
 - [Indeks dokumentasi SATRIA](C:/Users/gufroni/Documents/GitHub/satria/docs/README.md)
 - [SOP Hulu-Hilir Per Tim](C:/Users/gufroni/Documents/GitHub/satria/docs/02-SOP-HULU-HILIR-PER-TIM.md)
-- [Walkthrough IRIS untuk Top Management](C:/Users/gufroni/Documents/GitHub/satria/docs/04-WALKTHROUGH-IRIS-TOP-MANAGEMENT.md)
-- [Integrasi Wazuh ke PERISAI](C:/Users/gufroni/Documents/GitHub/satria/docs/07-INTEGRASI-WAZUH-KE-PERISAI.md)
+- [Manual Book SATRIA](08-MANUAL-BOOK-SATRIA.md)
+- [Integrasi Wazuh ke PERISAI](05-INTEGRASI-WAZUH-KE-PERISAI.md)
 
 Dokumen ini menjelaskan alur kerja SATRIA dari sisi operator teknis dan tim SOC agar penggunaan harian konsisten, mudah dipahami, dan tidak salah memilih jenis asset atau profile scan.
 
@@ -27,12 +27,12 @@ Dokumen ini menjelaskan alur kerja SATRIA dari sisi operator teknis dan tim SOC 
 
 ## Pemetaan Menu
 
-- `Overview`: ringkasan singkat kondisi asset, scan, finding, dan antrian kerja.
+- `Home`: ringkasan singkat kondisi asset, scan, finding, chart risiko/status/sumber temuan, dan antrian kerja.
 - `Assets`: inventory target scan aktif.
 - `Scans`: riwayat job scan dan status eksekusinya.
 - `Findings`: daftar temuan yang sudah dinormalisasi dan diprioritaskan.
 - `Tickets`: monitoring case DFIR-IRIS, termasuk case yang gagal publish agar bisa diretry.
-- `Reports`: ringkasan eksekutif, export CSV/Excel, dan bulk action Critical/High.
+- `Report`: ringkasan eksekutif, export CSV/Excel, dan bulk action Critical/High.
 - `New Scan`: shortcut untuk membuat scan job baru.
 
 ## Cara Memilih Jenis Asset
@@ -124,7 +124,7 @@ Alur:
 
 Alur:
 
-1. Buka menu `Reports`.
+1. Buka menu `Report`.
 2. Jalankan bulk send Critical/High ke IRIS.
 3. SATRIA hanya mengirim finding yang belum punya ticket.
 4. Setiap finding menghasilkan case monitoring yang dapat direfresh dari IRIS.

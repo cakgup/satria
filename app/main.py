@@ -1587,9 +1587,14 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         'scans': summary['scans'],
         'findings': summary['findings'],
         'open': summary['open_findings'],
+        'critical_high': summary['critical_high'],
+        'ticket_pending': db.query(TicketCase).filter(
+            (TicketCase.remote_case_id.is_(None)) |
+            (~TicketCase.last_sync_status.in_(['synced', 'monitored', 'partial-synced']))
+        ).count(),
     }
-    latest_findings = active_findings_query(db).order_by(Finding.risk_score.desc(), Finding.id.desc()).limit(10).all()
-    latest_scans = db.query(ScanJob).filter(ScanJob.is_visible == True).order_by(ScanJob.id.desc()).limit(10).all()  # noqa: E712
+    latest_findings = active_findings_query(db).order_by(Finding.risk_score.desc(), Finding.id.desc()).limit(5).all()
+    latest_scans = db.query(ScanJob).filter(ScanJob.is_visible == True).order_by(ScanJob.id.desc()).limit(5).all()  # noqa: E712
     return templates.TemplateResponse('dashboard.html', {
         'request': request,
         'counts': counts,
@@ -1597,6 +1602,34 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         'summary': summary,
         'pie_style': severity_pie_style(summary['severity']),
         'pie_segments': severity_pie_segments(summary['severity']),
+        'severity_pie_segments': severity_pie_segments(summary['severity']),
+        'status_pie_segments': count_pie_segments(
+            summary['status'],
+            list(summary['status'].keys()),
+            {
+                'Open': '#2f86c7',
+                'Assigned': '#7c3aed',
+                'In Progress': '#f97316',
+                'Remediated': '#14b8a6',
+                'Retest': '#facc15',
+                'Closed': '#22c55e',
+                'False Positive': '#94a3b8',
+                'Accepted Risk': '#64748b',
+            },
+            lambda key: f'/findings?status={quote_plus(key)}',
+        ),
+        'scanner_pie_segments': count_pie_segments(
+            summary['scanner'],
+            list(summary['scanner'].keys()),
+            {
+                'trivy': '#2f86c7',
+                'syft': '#14b8a6',
+                'grype': '#f97316',
+                'zap': '#7c3aed',
+                'openvas': '#ef4444',
+            },
+            lambda key: f'/findings?scanner={quote_plus(key)}',
+        ),
         'latest_findings': latest_findings,
         'latest_scans': latest_scans,
     })
@@ -1621,7 +1654,7 @@ def vulnerability_summary(request: Request, db: Session = Depends(get_db)):
             summary['status'],
             list(summary['status'].keys()),
             {
-                'Open': '#2563eb',
+                'Open': '#2f86c7',
                 'Assigned': '#7c3aed',
                 'In Progress': '#f97316',
                 'Remediated': '#14b8a6',
@@ -1636,7 +1669,7 @@ def vulnerability_summary(request: Request, db: Session = Depends(get_db)):
             summary['scanner'],
             list(summary['scanner'].keys()),
             {
-                'trivy': '#2563eb',
+                'trivy': '#2f86c7',
                 'syft': '#14b8a6',
                 'grype': '#f97316',
                 'zap': '#7c3aed',
@@ -2168,7 +2201,21 @@ def tickets_page(
             continue
         monitored_tickets.append(ticket)
 
-    iris_state_order = ['Open', 'Assigned', 'In Progress', 'Remediated', 'Retest', 'Closed', 'False Positive', 'Accepted Risk']
+    iris_state_order = [
+        'Open',
+        'Assigned',
+        'In Progress',
+        'Remediated',
+        'Retest',
+        'Closed',
+        'False Positive',
+        'Accepted Risk',
+        'Recovery',
+        'Containment',
+        'Reporting',
+        'Eradication',
+        'Post-Incident',
+    ]
     iris_state_colors = {
         'Open': '#4f5ed9',
         'Assigned': '#7c3aed',
@@ -2178,6 +2225,11 @@ def tickets_page(
         'Closed': '#5ec865',
         'False Positive': '#94a3b8',
         'Accepted Risk': '#64748b',
+        'Recovery': '#0ea5e9',
+        'Containment': '#a855f7',
+        'Reporting': '#ec4899',
+        'Eradication': '#10b981',
+        'Post-Incident': '#f59e0b',
     }
     iris_state_counts: dict[str, int] = {key: 0 for key in iris_state_order}
     for ticket in monitored_tickets:

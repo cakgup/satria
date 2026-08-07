@@ -70,13 +70,13 @@ Menu utama SATRIA berada di sidebar kiri:
 
 | Menu | Fungsi |
 |---|---|
-| Beranda | Dashboard operasional dan ringkasan risiko. |
+| Home | Dashboard operasional dan ringkasan risiko. |
 | Assets | Pengelolaan aset, target scan, allowlist, dan panduan aset. |
-| Pemindaian | Pembuatan, pemantauan, pengulangan, dan penghapusan scan. |
+| Scans | Pembuatan, pemantauan, pengulangan, dan penghapusan scan. |
 | Findings | Daftar temuan, filter risiko, dan prioritas tindak lanjut. |
 | Tickets | Monitoring ticket / case dan koordinasi tindak lanjut. |
-| Laporan | Ringkasan kerentanan dan laporan eksekutif. |
-| Admin Token | Service account dan token API untuk pipeline/integrasi. |
+| Report | Ringkasan kerentanan dan laporan eksekutif. |
+| API Tokens | Service account dan token API untuk pipeline/integrasi. |
 | Gate Policy | Pengaturan keputusan allowed, need approval, dan blocked. |
 | API Docs | Dokumentasi endpoint API otomatis. |
 
@@ -158,28 +158,25 @@ Alur ini dapat dilakukan manual melalui UI atau otomatis melalui API pipeline.
 
 ---
 
-## 5. Menu Beranda
+## 5. Menu Home
 
-Menu `Beranda` menampilkan ringkasan kondisi operasional.
+Menu `Home` menampilkan ringkasan kondisi operasional.
 
 Informasi yang biasanya ditampilkan:
 
-- Jumlah asset.
-- Jumlah scan.
-- Jumlah finding.
-- Jumlah ticket.
-- Tren severity.
+- Alur kerja operasional dari registrasi aset sampai remediasi dan tiket.
+- Kartu metrik utama: total aset aktif, pemindaian aktif, critical/high, dan ticket pending.
+- Donut chart komposisi risiko, status temuan, dan distribusi scanner.
+- Finding prioritas untuk ditinjau.
 - Pemindaian terbaru.
-- Finding prioritas.
-- Ringkasan status gate.
 
 Gunakan halaman ini untuk membaca kondisi umum sebelum masuk ke analisis detail.
 
 ### Cara Menggunakan
 
-1. Buka menu `Beranda`.
-2. Lihat ringkasan jumlah finding dan status scan.
-3. Klik area terkait untuk masuk ke halaman detail seperti `Findings` atau `Pemindaian`.
+1. Buka menu `Home`.
+2. Lihat kartu metrik, chart donut, finding prioritas, dan pemindaian terbaru.
+3. Klik area terkait untuk masuk ke halaman detail seperti `Findings` atau `Scans`.
 4. Gunakan dashboard sebagai titik awal briefing harian SOC.
 
 ---
@@ -292,14 +289,14 @@ Gunakan allowlist untuk mencegah pemindaian target yang tidak disetujui.
 
 ---
 
-## 7. Menu Pemindaian
+## 7. Menu Scans
 
-Menu `Pemindaian` digunakan untuk membuat scan job, memantau status, melihat riwayat, mengulang scan, dan menghapus riwayat scan tertentu.
+Menu `Scans` digunakan untuk membuat scan job, memantau status, melihat riwayat, mengulang scan, dan menghapus riwayat scan tertentu.
 
 ### 7.1 Menjalankan Scan Baru
 
-1. Buka `Pemindaian`.
-2. Klik `Jalankan Pemindaian Baru`.
+1. Buka `Scans`.
+2. Klik `Jalankan Scan Baru`.
 3. Pilih asset.
 4. Pilih profile scan.
 5. Klik jalankan.
@@ -320,7 +317,7 @@ Profile yang muncul dapat disesuaikan berdasarkan konfigurasi sistem.
 
 ### 7.3 Memantau Status Scan
 
-Di halaman `Pemindaian`, operator dapat melihat:
+Di halaman `Scans`, operator dapat melihat:
 
 - Asset.
 - Profile.
@@ -328,6 +325,7 @@ Di halaman `Pemindaian`, operator dapat melihat:
 - Status.
 - Mode.
 - Report path.
+- Tombol `Hasil scan` untuk membuka temuan hasil pemindaian.
 - Message.
 - Tanggal pembuatan.
 - Jumlah findings.
@@ -438,6 +436,17 @@ Gunakan publish jika:
 - Perlu assignment, task, evidence, dan audit trail.
 - Perlu pelaporan remediation lintas tim.
 
+### 8.6 Layout Ringkasan dan Filter
+
+Pada menu `Findings`, kartu ringkasan berada tepat di bawah hero agar operator langsung melihat:
+
+- Temuan terbuka.
+- Critical + High.
+- Total findings.
+- Assets terdampak.
+
+Filter severity, aset, status, dan scanner berada setelah kartu ringkasan. Urutan ini membantu operator membaca kondisi prioritas terlebih dahulu sebelum mempersempit daftar temuan.
+
 ---
 
 ## 9. Menu Tickets
@@ -454,6 +463,8 @@ Halaman Tickets menampilkan:
 - Jumlah case.
 - Case yang perlu ditinjau.
 - Distribusi status case.
+
+Chart distribusi status case PERISAI menggunakan donut chart. Legend hanya menampilkan status dengan jumlah lebih dari nol. Status umum seperti `Open`, `In Progress`, dan `Closed` memiliki warna berbeda; status PERISAI tambahan seperti `Recovery`, `Containment`, `Reporting`, `Eradication`, dan `Post-Incident` juga dibedakan warnanya agar mudah dibaca.
 
 ### 9.2 Membuat Ticket Manual
 
@@ -498,9 +509,9 @@ Gunakan fitur ini untuk menjaga jejak audit.
 
 ---
 
-## 10. Menu Laporan
+## 10. Menu Report
 
-Menu laporan menampilkan ringkasan kerentanan dan performa operasional.
+Menu `Report` menampilkan ringkasan kerentanan dan performa operasional.
 
 Laporan yang tersedia:
 
@@ -530,9 +541,9 @@ Gunakan laporan untuk:
 
 ---
 
-## 11. Admin Token
+## 11. API Tokens
 
-Menu `Admin Token` digunakan untuk membuat dan mengelola service account API.
+Menu `API Tokens` digunakan untuk membuat dan mengelola service account API.
 
 ### 11.1 Kapan Service Account Dibutuhkan
 
@@ -557,7 +568,7 @@ Gunakan prinsip least privilege. Jangan memberikan scope yang tidak diperlukan.
 
 ### 11.3 Membuat Token
 
-1. Buka `Admin Token`.
+1. Buka `API Tokens`.
 2. Isi nama service account.
 3. Pilih scope.
 4. Simpan.
@@ -777,7 +788,7 @@ Detail integrasi Wazuh tersedia pada:
 ### 16.1 Checklist Awal Hari
 
 - [ ] Login ke SATRIA.
-- [ ] Buka dashboard Beranda.
+- [ ] Buka dashboard Home.
 - [ ] Cek jumlah scan gagal.
 - [ ] Cek findings critical dan high.
 - [ ] Cek ticket yang perlu ditinjau.
@@ -947,6 +958,8 @@ Risk acceptance harus memiliki:
 
 ## 19. Backup dan Retensi
 
+Catatan operasional terkini: file rollback sementara dari perubahan UI tidak disimpan di repository maupun server production. Jika membutuhkan rollback di masa depan, buat backup baru secara eksplisit sebelum deployment dan hapus kembali setelah perubahan dinyatakan stabil.
+
 ### 19.1 Data Yang Perlu Dibackup
 
 - Database SATRIA.
@@ -999,7 +1012,7 @@ PIC Teknis : DevOps SAKTI
 5. Klik `Pindai`.
 6. Pilih profile `quick_container`.
 7. Jalankan scan.
-8. Pantau status di `Pemindaian`.
+8. Pantau status di `Scans`.
 9. Buka findings.
 10. Publish critical/high ke IRIS jika perlu.
 

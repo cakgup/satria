@@ -20,7 +20,7 @@
 
 ---
 
-## Overview
+## Ringkasan
 
 Repository ini dibuat sebagai panel orkestrasi keamanan untuk tim operasional yang perlu:
 
@@ -67,7 +67,7 @@ Dengan pola ini, SATRIA menjadi jembatan antara assessment teknis, enrichment al
 - Scan history, retry job, cleanup lokal, dan detail eksekusi per scan.
 - Findings view dengan filter otomatis, severity donut, risk summary, dan prioritas temuan.
 - Ticket publish ke DFIR-IRIS untuk temuan prioritas, plus monitoring status case dari SATRIA.
-- Reports dan analytics untuk ringkasan scan, exposure aset, severity, status finding, dan status case IRIS.
+- Report dan analytics untuk ringkasan scan, exposure aset, severity, status finding, dan status case IRIS.
 - SOP kontekstual pada menu Assets, termasuk panduan pipeline CI/CD.
 - Admin token / service account untuk integrasi pipeline.
 - Gate policy untuk keputusan `allowed`, `need_approval`, dan `blocked`.
@@ -77,8 +77,8 @@ Dengan pola ini, SATRIA menjadi jembatan antara assessment teknis, enrichment al
 
 ## Menu Operasional
 
-- `Overview`
-  Menampilkan ringkasan aset aktif, scan jobs, findings, exposure aset, dan jalur kerja operator.
+- `Home`
+  Menampilkan ringkasan aset aktif, scan jobs, findings, exposure aset, alur kerja operasional, chart komposisi risiko/status/sumber temuan, temuan prioritas, dan pemindaian terbaru.
 
 - `Assets`
   Digunakan untuk menambah, mengubah, dan menghapus aset; membuka SOP tambah aset; membuka panduan interkoneksi CI/CD; serta mengelola allowlist atau gate terkait jenis target.
@@ -87,18 +87,18 @@ Dengan pola ini, SATRIA menjadi jembatan antara assessment teknis, enrichment al
   Digunakan untuk menjalankan scan, melihat riwayat job, membuka detail eksekusi, retry scan, dan membersihkan data lokal yang sudah tidak relevan.
 
 - `Findings`
-  Menampilkan daftar temuan berdasarkan severity, aset, scanner, status, dan prioritas risiko. Dari sini operator dapat membuka detail temuan dan mempublish tiket ke IRIS.
+  Menampilkan kartu ringkasan temuan di bagian atas, filter severity/aset/status/scanner, dan daftar temuan berdasarkan prioritas risiko. Dari sini operator dapat membuka detail temuan dan mempublish tiket ke IRIS.
 
 - `Tickets`
-  Menjadi panel monitoring case DFIR-IRIS dari SATRIA, baik yang berasal dari temuan SATRIA maupun sinkronisasi ticket manual dari IRIS sesuai konfigurasi integrasi.
+  Menjadi panel monitoring case DFIR-IRIS dari SATRIA, baik yang berasal dari temuan SATRIA maupun sinkronisasi ticket manual dari IRIS. Chart status PERISAI memakai donut chart dengan legend hanya untuk status bernilai lebih dari nol.
 
-- `Reports`
+- `Report`
   Menyediakan ringkasan analitik, export CSV/Excel, dan representasi visual exposure, severity, serta distribusi status case di IRIS.
 
 - `API Docs`
   Menyediakan referensi endpoint untuk interkoneksi automation, pipeline, dan service account.
 
-- `Admin Token`
+- `API Tokens`
   Menyediakan pengelolaan service account pipeline untuk API key dan scope integrasi.
 
 - `Gate Policy`

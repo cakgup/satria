@@ -250,6 +250,98 @@ button {
   display: none;
 }
 
+.topbar,
+.hero,
+.panel,
+.card,
+.helper-card,
+.helper-tile,
+.context-card,
+.allowlist-card,
+.asset-sop-cards .card,
+.asset-sop-top > .panel,
+.detail-card,
+.severity-tile,
+.analytics-panel,
+.dark-card,
+.dark-panel,
+.scope-option,
+.token-reveal-box,
+.field-checkbox-line {
+  border: 1px solid rgba(79, 107, 194, 0.12) !important;
+  border-radius: 22px !important;
+  background:
+    radial-gradient(circle at 92% 12%, rgba(105, 131, 214, 0.11), transparent 26%),
+    radial-gradient(circle at 12% 100%, rgba(47, 134, 199, 0.07), transparent 30%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(246, 249, 255, 0.93)) !important;
+  box-shadow:
+    0 18px 42px rgba(42, 58, 128, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+}
+
+.panel:hover,
+.card:hover,
+.helper-card:hover,
+.context-card:hover,
+.allowlist-card:hover,
+.detail-card:hover,
+.severity-tile:hover,
+.analytics-panel:hover {
+  transform: translateY(-1px);
+  border-color: rgba(79, 107, 194, 0.18) !important;
+  box-shadow:
+    0 24px 54px rgba(42, 58, 128, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.panel,
+.card,
+.helper-card,
+.context-card,
+.allowlist-card,
+.detail-card,
+.severity-tile,
+.analytics-panel {
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.panel-head,
+.table-title-row {
+  position: relative;
+  z-index: 1;
+}
+
+.cards .card:nth-child(4n + 2),
+.summary-cards .dark-card:nth-child(4n + 2),
+.helper-stack .helper-card:nth-child(4n + 2) {
+  background:
+    radial-gradient(circle at 92% 12%, rgba(20, 184, 166, 0.1), transparent 26%),
+    radial-gradient(circle at 12% 100%, rgba(47, 134, 199, 0.06), transparent 30%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(241, 250, 248, 0.92)) !important;
+}
+
+.cards .card:nth-child(4n + 3),
+.summary-cards .dark-card:nth-child(4n + 3),
+.helper-stack .helper-card:nth-child(4n + 3) {
+  background:
+    radial-gradient(circle at 92% 12%, rgba(250, 204, 21, 0.13), transparent 26%),
+    radial-gradient(circle at 12% 100%, rgba(47, 134, 199, 0.06), transparent 30%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(255, 251, 235, 0.9)) !important;
+}
+
+.cards .card:nth-child(4n),
+.summary-cards .dark-card:nth-child(4n),
+.helper-stack .helper-card:nth-child(4n) {
+  background:
+    radial-gradient(circle at 92% 12%, rgba(225, 29, 72, 0.09), transparent 26%),
+    radial-gradient(circle at 12% 100%, rgba(47, 134, 199, 0.06), transparent 30%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(255, 247, 247, 0.92)) !important;
+}
+
 .sidebar-collapsed .sidebar-toggle {
   transform: none;
 }
@@ -1654,8 +1746,8 @@ footer {
   --line-strong: #d8dee8;
   --text: #172033;
   --muted: #667085;
-  --primary: #2563eb;
-  --primary-strong: #1d4ed8;
+  --primary: #2f86c7;
+  --primary-strong: #1e4f91;
   --accent: #f59e0b;
   --success: #059669;
   --danger: #dc2626;
@@ -2224,7 +2316,7 @@ footer {
   border-color: rgba(76, 118, 196, 0.28) !important;
   background:
     linear-gradient(180deg, rgba(226, 239, 255, 1), rgba(191, 219, 254, 1)) !important;
-  color: #1d4ed8 !important;
+  color: var(--primary-strong) !important;
   box-shadow: 0 10px 20px rgba(51, 92, 167, 0.12) !important;
 }
 
@@ -2425,4 +2517,123 @@ th {
 code,
 pre {
   font-size: 0.9em;
+}
+
+.sidebar-brand {
+  min-height: 58px;
+}
+
+.sidebar-logo-link {
+  flex: 1;
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.sidebar .brand-logo {
+  width: 118px;
+  height: 46px;
+  max-width: 118px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.sidebar-brand-text {
+  display: none;
+}
+
+.sidebar-collapsed .sidebar-logo-link {
+  display: none;
+}
+
+/* SATRIA unified premium card system */
+.topbar,
+.hero,
+.panel,
+.card,
+.helper-card,
+.helper-tile,
+.context-card,
+.allowlist-card,
+.asset-sop-cards .card,
+.asset-sop-top > .panel,
+.detail-card,
+.severity-tile,
+.analytics-panel,
+.dark-card,
+.dark-panel,
+.scope-option,
+.token-reveal-box,
+.field-checkbox-line {
+  border: 1px solid rgba(79, 107, 194, 0.12) !important;
+  border-radius: 22px !important;
+  background:
+    radial-gradient(circle at 92% 12%, rgba(105, 131, 214, 0.11), transparent 26%),
+    radial-gradient(circle at 12% 100%, rgba(47, 134, 199, 0.07), transparent 30%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(246, 249, 255, 0.93)) !important;
+  box-shadow:
+    0 18px 42px rgba(42, 58, 128, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+}
+
+.panel:hover,
+.card:hover,
+.helper-card:hover,
+.context-card:hover,
+.allowlist-card:hover,
+.detail-card:hover,
+.severity-tile:hover,
+.analytics-panel:hover {
+  transform: translateY(-1px);
+  border-color: rgba(79, 107, 194, 0.18) !important;
+  box-shadow:
+    0 24px 54px rgba(42, 58, 128, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.panel,
+.card,
+.helper-card,
+.context-card,
+.allowlist-card,
+.detail-card,
+.severity-tile,
+.analytics-panel {
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.panel-head,
+.table-title-row {
+  position: relative;
+  z-index: 1;
+}
+
+.cards .card:nth-child(4n + 2),
+.summary-cards .dark-card:nth-child(4n + 2),
+.helper-stack .helper-card:nth-child(4n + 2) {
+  background:
+    radial-gradient(circle at 92% 12%, rgba(20, 184, 166, 0.1), transparent 26%),
+    radial-gradient(circle at 12% 100%, rgba(47, 134, 199, 0.06), transparent 30%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(241, 250, 248, 0.92)) !important;
+}
+
+.cards .card:nth-child(4n + 3),
+.summary-cards .dark-card:nth-child(4n + 3),
+.helper-stack .helper-card:nth-child(4n + 3) {
+  background:
+    radial-gradient(circle at 92% 12%, rgba(250, 204, 21, 0.13), transparent 26%),
+    radial-gradient(circle at 12% 100%, rgba(47, 134, 199, 0.06), transparent 30%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(255, 251, 235, 0.9)) !important;
+}
+
+.cards .card:nth-child(4n),
+.summary-cards .dark-card:nth-child(4n),
+.helper-stack .helper-card:nth-child(4n) {
+  background:
+    radial-gradient(circle at 92% 12%, rgba(225, 29, 72, 0.09), transparent 26%),
+    radial-gradient(circle at 12% 100%, rgba(47, 134, 199, 0.06), transparent 30%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(255, 247, 247, 0.92)) !important;
 }

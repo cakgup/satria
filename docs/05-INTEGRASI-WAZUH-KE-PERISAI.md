@@ -4,7 +4,7 @@
 
 - [Indeks dokumentasi SATRIA](README.md)
 - [Panduan Operasional SOC](03-PANDUAN-OPERASIONAL-SOC.md)
-- [Walkthrough IRIS untuk Top Management](04-WALKTHROUGH-IRIS-TOP-MANAGEMENT.md)
+- [Manual Book SATRIA](08-MANUAL-BOOK-SATRIA.md)
 - [Integrasi AI SOC Wazuh](07-INTEGRASI-AI-SOC-WAZUH-SATRIA-PERISAI.md)
 
 Dokumen ini menjelaskan konfigurasi integrasi Wazuh Manager ke PERISAI berbasis DFIR-IRIS agar alert dari Wazuh dapat diteruskan ke sistem ticketing dan investigasi insiden.

@@ -34,11 +34,11 @@ Topologi lokal masih tersedia untuk pengembangan:
 
 ## Cara mendapatkan API key atau token SATRIA
 
-Pada implementasi SATRIA saat ini, token integrasi pipeline sudah dapat dikelola melalui menu UI `Admin Token`. Jika organisasi masih memakai pola transisi lama, administrator juga tetap dapat menyiapkannya dari sisi backend.
+Pada implementasi SATRIA saat ini, token integrasi pipeline sudah dapat dikelola melalui menu UI `API Tokens`. Jika organisasi masih memakai pola transisi lama, administrator juga tetap dapat menyiapkannya dari sisi backend.
 
 ### Langkah yang harus dilakukan tim pengembang
 
-1. Ajukan permintaan service account integrasi ke administrator SATRIA, atau buka menu `Admin Token` bila akun Anda memang diberi hak administratif.
+1. Ajukan permintaan service account integrasi ke administrator SATRIA, atau buka menu `API Tokens` bila akun Anda memang diberi hak administratif.
 2. Sertakan informasi minimal:
    - nama aplikasi
    - kode aset
@@ -293,7 +293,7 @@ Contoh hasil riil:
 
 - Untuk uji awal, gunakan image publik agar worker SATRIA dapat langsung menarik image.
 - Untuk uji internal, gunakan image yang memang dapat diakses dari server SATRIA.
-- SATRIA sudah menyediakan menu `Admin Token` untuk service account pipeline; koordinasikan dengan administrator untuk scope, rotasi token, dan approval produksi.
+- SATRIA sudah menyediakan menu `API Tokens` untuk service account pipeline; koordinasikan dengan administrator untuk scope, rotasi token, dan approval produksi.
 - Bila ingin publish ke IRIS secara otomatis, aktifkan hanya untuk severity yang memang perlu remediation formal agar case tidak berlebihan.
 
 ## Catatan keamanan

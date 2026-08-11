@@ -75,6 +75,12 @@
     fill: currentColor;
   }
 
+  .hero-button.cancel {
+    background: linear-gradient(180deg, #fff8ec, #f8e1bc);
+    color: #8a5a13;
+    border-color: rgba(221, 151, 42, 0.18);
+  }
+
   .warning-panel {
     margin-bottom: 20px;
     border: 1px solid rgba(180, 98, 74, 0.18);
@@ -214,6 +220,12 @@
     <form method="post" action="/scans/{{ scan.id }}/rerun">
       <input type="hidden" name="next_url" value="/scans/{{ scan.id }}">
       <button class="hero-button primary" type="submit">Ulang Scan</button>
+    </form>
+    {% endif %}
+    {% if scan_row.can_cancel %}
+    <form method="post" action="/scans/{{ scan.id }}/cancel">
+      <input type="hidden" name="next_url" value="/scans/{{ scan.id }}">
+      <button class="hero-button cancel" type="submit">Cancel Scan</button>
     </form>
     {% endif %}
     {% if scan.status != 'running' %}

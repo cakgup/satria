@@ -117,6 +117,57 @@
     display: none;
   }
 
+  .source-host-field {
+    transition: opacity 160ms ease;
+  }
+
+  .openshift-auth-panel {
+    grid-column: 1 / -1;
+    display: none;
+    gap: 14px;
+    padding: 16px;
+    border-radius: 18px;
+    border: 1px solid rgba(70, 121, 191, 0.14);
+    background: linear-gradient(135deg, rgba(227, 240, 255, 0.72), rgba(255, 255, 255, 0.82));
+  }
+
+  .openshift-auth-panel.is-visible {
+    display: grid;
+  }
+
+  .openshift-auth-header h4 {
+    margin: 0 0 5px;
+    color: var(--text);
+    font-size: 1rem;
+  }
+
+  .openshift-auth-header p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .openshift-auth-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .openshift-token-note {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.86rem;
+    line-height: 1.45;
+  }
+
+  .asset-source-meta {
+    display: block;
+    margin-top: 7px;
+    color: var(--muted);
+    font-size: 0.82rem;
+    line-height: 1.35;
+  }
+
   @media (max-width: 860px) {
     .guidance-head {
       align-items: flex-start;
@@ -131,6 +182,10 @@
 
     .sop-toggle {
       width: 100%;
+    }
+
+    .openshift-auth-fields {
+      grid-template-columns: 1fr;
     }
   }
 
@@ -353,6 +408,35 @@
         <span>Target</span>
         <input id="asset-target-input" name="target" required placeholder="nginx:latest / https://example.com / 10.0.0.1" value="{{ edit_asset.target if edit_asset else '' }}">
       </label>
+      <label class="field field-wide source-host-field" id="source-host-field">
+        <span>Server / Cluster sumber</span>
+        <input id="asset-source-host-input" name="source_host" placeholder="IP/hostname OpenShift node, registry, atau server asal image" value="{{ edit_asset.source_host if edit_asset and edit_asset.source_host else '' }}">
+      </label>
+      <label class="field" id="image-source-field">
+        <span>Sumber image</span>
+        <select name="image_source_type" id="image-source-select">
+          {% set current_image_source = edit_asset.image_source_type if edit_asset and edit_asset.image_source_type else 'registry' %}
+          <option value="registry" {% if current_image_source != 'openshift' %}selected{% endif %}>Registry umum / lokal</option>
+          <option value="openshift" {% if current_image_source == 'openshift' %}selected{% endif %}>OpenShift internal</option>
+        </select>
+      </label>
+      <div class="openshift-auth-panel" id="openshift-auth-panel">
+        <div class="openshift-auth-header">
+          <h4>Koneksi registry OpenShift</h4>
+          <p>Diisi hanya untuk image dari registry OpenShift private agar SATRIA dapat menjalankan Trivy tanpa mengubah konfigurasi server.</p>
+        </div>
+        <div class="openshift-auth-fields">
+          <label class="field">
+            <span>User OpenShift</span>
+            <input id="openshift-username-input" name="openshift_username" autocomplete="username" placeholder="contoh: pjki.anton" value="{{ edit_asset.openshift_username if edit_asset and edit_asset.openshift_username else '' }}">
+          </label>
+          <label class="field">
+            <span>Password / token OpenShift</span>
+            <input id="openshift-password-input" name="openshift_password" type="password" autocomplete="current-password" placeholder="{% if edit_asset and edit_asset.openshift_password %}Token sudah tersimpan, kosongkan jika tidak diubah{% else %}Tempel token dari oc whoami -t{% endif %}">
+          </label>
+        </div>
+        <p class="openshift-token-note">Disarankan memakai token hasil <code>oc whoami -t</code>. Token tidak ditampilkan ulang saat edit.</p>
+      </div>
       <label class="field">
         <span>Environment</span>
         <select name="environment">
@@ -477,13 +561,15 @@
     <ul>
       <li>Nama aset yang mudah dikenali oleh tim operasi, misalnya <code>SAKTI API Dev</code>.</li>
       <li>Target berupa nama image dan tag yang jelas, misalnya <code>registry.internal/sakti-api:2026.07.01</code>.</li>
+      <li>Isi Server / Cluster sumber dengan IP, hostname, atau nama cluster OpenShift tempat image berasal, misalnya <code>10.10.10.21</code>, <code>ocp-prod-worker-01</code>, atau <code>registry.apps.ocp.local</code>.</li>
+      <li>Jika image berada di registry OpenShift private, pilih sumber image <code>OpenShift internal</code> lalu isi user dan token OpenShift.</li>
       <li>Environment dan PIC untuk memudahkan koordinasi setelah temuan muncul.</li>
       <li>Pastikan image tersedia di server SATRIA atau dapat diambil dari registry yang dapat diakses.</li>
     </ul>
   </div>
   <div class="context-card">
     <h4>Ringkas cara operasional</h4>
-    <p>Gunakan mode ini untuk memeriksa artefak image sebelum deployment. Container tidak harus dalam keadaan berjalan; image harus tersedia di host SATRIA. Setelah aset disimpan, lanjutkan pemindaian dengan profil container seperti <code>quick_container</code>, <code>full_container</code>, atau <code>sbom_scan</code>.</p>
+    <p>Gunakan mode ini untuk memeriksa artefak image sebelum deployment. Bila image berada di OpenShift atau server lain, lakukan pull atau push ke registry yang dapat diakses SATRIA, lalu isi Target dengan <code>registry/repo/image:tag</code>. Field Server / Cluster sumber hanya menjadi konteks asal image, bukan target scanner.</p>
   </div>
 </template>
 
@@ -585,6 +671,11 @@
   (() => {
     const typeSelect = document.getElementById("asset-type-select");
     const targetInput = document.getElementById("asset-target-input");
+    const sourceHostField = document.getElementById("source-host-field");
+    const sourceHostInput = document.getElementById("asset-source-host-input");
+    const imageSourceField = document.getElementById("image-source-field");
+    const imageSourceSelect = document.getElementById("image-source-select");
+    const openshiftAuthPanel = document.getElementById("openshift-auth-panel");
     const modeLabel = document.getElementById("guidance-mode-label");
     const guidanceHost = document.getElementById("contextual-guidance-content");
     const sopLink = document.getElementById("asset-sop-link");
@@ -599,6 +690,20 @@
       modeLabel.textContent = label;
       targetInput.placeholder = placeholder;
       sopLink.href = `/asset-sop?asset_type=${encodeURIComponent(assetType)}`;
+      if (sourceHostField && sourceHostInput) {
+        const isContainer = assetType === "container_image";
+        sourceHostField.style.display = isContainer ? "" : "none";
+        sourceHostInput.placeholder = isContainer
+          ? "contoh: 10.10.10.21 / ocp-prod-worker-01 / registry.apps.ocp.local"
+          : "opsional";
+      }
+      const isContainer = assetType === "container_image";
+      if (imageSourceField) {
+        imageSourceField.style.display = isContainer ? "" : "none";
+      }
+      if (openshiftAuthPanel && imageSourceSelect) {
+        openshiftAuthPanel.classList.toggle("is-visible", isContainer && imageSourceSelect.value === "openshift");
+      }
 
       if (guidanceTemplate) {
         guidanceHost.innerHTML = "";
@@ -607,6 +712,9 @@
     };
 
     typeSelect.addEventListener("change", () => renderForType(typeSelect.value));
+    if (imageSourceSelect) {
+      imageSourceSelect.addEventListener("change", () => renderForType(typeSelect.value));
+    }
     renderForType(typeSelect.value);
   })();
 </script>
@@ -621,13 +729,20 @@
   </div>
   <div class="table-wrap">
     <table>
-      <tr><th>No.</th><th>Nama</th><th>Jenis</th><th>Target</th><th>Env</th><th>Criticality</th><th>Owner</th><th>Aksi</th></tr>
+      <tr><th>No.</th><th>Nama</th><th>Jenis</th><th>Target</th><th>Sumber</th><th>Env</th><th>Criticality</th><th>Owner</th><th>Aksi</th></tr>
       {% for a in assets %}
       <tr>
         <td>{{ loop.index }}</td>
         <td>{{ a.name }}</td>
         <td>{{ a.asset_type }}</td>
         <td><code>{{ a.target }}</code></td>
+        <td>
+          {% if a.source_host %}
+          <span class="asset-source-meta">{{ a.source_host }}</span>
+          {% else %}
+          -
+          {% endif %}
+        </td>
         <td>{{ a.environment }}</td>
         <td>{{ a.criticality }}</td>
         <td>{{ a.owner or '-' }}</td>

@@ -722,6 +722,48 @@
     align-items: stretch;
   }
 
+  .home-perisai-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    margin-bottom: 18px;
+    align-items: stretch;
+  }
+
+  .home-perisai-grid .home-analytics-panel {
+    min-width: 0;
+  }
+
+  .home-perisai-grid .home-pie-row {
+    grid-template-columns: minmax(190px, 0.72fr) minmax(220px, 1fr);
+  }
+
+  .home-perisai-grid .home-pie-wrap {
+    min-height: 430px;
+    align-items: center;
+  }
+
+  .home-perisai-note {
+    padding: 14px 16px;
+    border: 1px solid rgba(20, 57, 98, 0.08);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.72);
+  }
+
+  .home-perisai-note strong,
+  .home-perisai-note p {
+    display: block;
+    margin: 0;
+    color: var(--text);
+  }
+
+  .home-perisai-note p {
+    margin-top: 6px;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+
+
   .home-analytics-panel {
     min-height: 360px;
     padding: 22px;
@@ -937,6 +979,22 @@
   .home-legend .legend-link-zap { --leader-angle: 25deg; --leader-width: 122px; color: #7c3aed; }
   .home-legend .legend-link-openvas { --leader-angle: 36deg; --leader-width: 126px; color: #ef4444; }
 
+  .home-analytics-grid .home-legend a:nth-child(1) { --leader-angle: -30deg; --leader-width: 178px; }
+  .home-analytics-grid .home-legend a:nth-child(2) { --leader-angle: -16deg; --leader-width: 158px; }
+  .home-analytics-grid .home-legend a:nth-child(3) { --leader-angle: 0deg; --leader-width: 142px; }
+  .home-analytics-grid .home-legend a:nth-child(4) { --leader-angle: 16deg; --leader-width: 158px; }
+  .home-analytics-grid .home-legend a:nth-child(5) { --leader-angle: 30deg; --leader-width: 178px; }
+  .home-analytics-grid .home-legend a:only-child { --leader-angle: -18deg; --leader-width: 172px; }
+
+  .home-perisai-grid .home-legend a:nth-child(1) { --leader-angle: -38deg; --leader-width: 260px; }
+  .home-perisai-grid .home-legend a:nth-child(2) { --leader-angle: -26deg; --leader-width: 240px; }
+  .home-perisai-grid .home-legend a:nth-child(3) { --leader-angle: -14deg; --leader-width: 220px; }
+  .home-perisai-grid .home-legend a:nth-child(4) { --leader-angle: 0deg; --leader-width: 205px; }
+  .home-perisai-grid .home-legend a:nth-child(5) { --leader-angle: 15deg; --leader-width: 220px; }
+  .home-perisai-grid .home-legend a:nth-child(6) { --leader-angle: 28deg; --leader-width: 240px; }
+  .home-perisai-grid .home-legend a:nth-child(7) { --leader-angle: 40deg; --leader-width: 270px; }
+  .home-perisai-grid .home-legend a:nth-child(8) { --leader-angle: 50deg; --leader-width: 310px; }
+
   .home-legend a:hover {
     transform: translateY(-1px);
     border-color: rgba(47, 134, 199, 0.2);
@@ -1087,7 +1145,8 @@
     .dashboard-metrics,
     .workflow-compact-grid,
     .quick-action-grid,
-    .home-analytics-grid {
+    .home-analytics-grid,
+    .home-perisai-grid {
       grid-template-columns: 1fr;
     }
   }
@@ -1251,6 +1310,90 @@
         <a class="legend-link-{{ scanner|lower }}" href="/findings?scanner={{ scanner|urlencode }}"><i class="dot {{ scanner|lower }}"></i><span class="legend-copy"><b>{{ scanner|upper }}</b><small>{{ total }} temuan, {{ "{:.1f}".format(percent) }}%</small></span></a>
         {% endif %}
         {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="home-perisai-grid" aria-label="Analitik PERISAI beranda">
+  <div class="panel home-analytics-panel soft">
+    <div class="panel-head">
+      <div>
+        <span class="section-kicker">Status PERISAI</span>
+        <h3>Distribusi status case PERISAI</h3>
+      </div>
+    </div>
+    <div class="home-pie-row">
+      <div class="home-pie-wrap">
+        <div class="home-pie">
+          <svg class="home-svg" viewBox="0 0 120 120" role="img" aria-label="Distribusi status case PERISAI">
+            <circle class="pie-bg" cx="60" cy="60" r="56"></circle>
+            <circle class="pie-track" cx="60" cy="60" r="42"></circle>
+            {% for segment in iris_state_pie_segments %}
+            <a href="{{ segment.href }}" aria-label="{{ segment.label }} {{ segment.value }}">
+              <circle class="pie-slice" cx="60" cy="60" r="42" stroke="{{ segment.color }}" stroke-dasharray="{{ segment.dasharray }}" stroke-dashoffset="{{ segment.dashoffset }}"></circle>
+            </a>
+            {% endfor %}
+            <circle class="pie-hole" cx="60" cy="60" r="26"></circle>
+          </svg>
+          <a class="home-pie-label" href="/tickets">
+            <span>{{ iris_state_total }}</span>
+            <small>Ticket</small>
+          </a>
+        </div>
+      </div>
+      <div class="home-legend">
+        {% for segment in iris_state_pie_segments %}
+        {% set percent = (segment.value / iris_state_total * 100) if iris_state_total else 0 %}
+        <a class="legend-link-{{ segment.label|lower|replace(' ', '-') }}" href="{{ segment.href }}" style="color: {{ segment.color }};">
+          <i class="dot {{ segment.label|lower|replace(' ', '-') }}" style="background: {{ segment.color }};"></i>
+          <span class="legend-copy"><b>{{ segment.label }}</b><small>{{ segment.value }} tiket, {{ "{:.1f}".format(percent) }}%</small></span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="panel home-analytics-panel soft">
+    <div class="panel-head">
+      <div>
+        <span class="section-kicker">Alert PERISAI</span>
+        <h3>Antrian status alert PERISAI</h3>
+      </div>
+    </div>
+    <div class="home-pie-row">
+      <div class="home-pie-wrap">
+        <div class="home-pie">
+          <svg class="home-svg" viewBox="0 0 120 120" role="img" aria-label="Distribusi status alert PERISAI">
+            <circle class="pie-bg" cx="60" cy="60" r="56"></circle>
+            <circle class="pie-track" cx="60" cy="60" r="42"></circle>
+            {% for segment in iris_alert_status_pie_segments %}
+            <a href="{{ segment.href }}" aria-label="{{ segment.label }} {{ segment.value }}">
+              <circle class="pie-slice" cx="60" cy="60" r="42" stroke="{{ segment.color }}" stroke-dasharray="{{ segment.dasharray }}" stroke-dashoffset="{{ segment.dashoffset }}"></circle>
+            </a>
+            {% endfor %}
+            <circle class="pie-hole" cx="60" cy="60" r="26"></circle>
+          </svg>
+          <a class="home-pie-label" href="{{ iris_login_url or '/tickets' }}" {% if iris_login_url %}target="_blank" rel="noopener"{% endif %}>
+            <span>{{ iris_alert_status_total }}</span>
+            <small>Alert</small>
+          </a>
+        </div>
+      </div>
+      <div class="home-legend">
+        {% for segment in iris_alert_status_pie_segments %}
+        {% set percent = (segment.value / iris_alert_status_total * 100) if iris_alert_status_total else 0 %}
+        <a class="legend-link-{{ segment.label|lower|replace(' ', '-') }}" href="{{ segment.href }}" style="color: {{ segment.color }};" {% if iris_login_url %}target="_blank" rel="noopener"{% endif %}>
+          <i class="dot {{ segment.label|lower|replace(' ', '-') }}" style="background: {{ segment.color }};"></i>
+          <span class="legend-copy"><b>{{ segment.label }}</b><small>{{ segment.value }} alert, {{ "{:.1f}".format(percent) }}%</small></span>
+        </a>
+        {% endfor %}
+        {% if not iris_alert_status_pie_segments %}
+        <div class="home-perisai-note">
+          <strong>Data alert belum tersedia</strong>
+          <p>SATRIA belum memperoleh agregat status alert dari endpoint dashboard PERISAI.</p>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>

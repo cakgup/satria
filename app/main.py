@@ -1,12 +1,12 @@
 import hashlib
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 from pathlib import Path
 import re
 import secrets
 import shutil
 import subprocess
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, urlencode
 from fastapi import Depends, FastAPI, Form, Header, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
@@ -20,8 +20,8 @@ from .config import get_settings
 from .models import AppSetting, Asset, AuditLog, Finding, ReleaseArtifact, ScanAllowlistEntry, ScanJob, ServiceAccountCredential, TicketCase
 from .schemas import AssetCreate, AssetOut, FindingOut, PipelinePublishTicketOut, PipelinePublishTicketRequest, PipelineScanCreate, PipelineScanResultOut, PipelineScanStatusOut, PipelineSeveritySummary, ReleaseIntakeCreate, ReleaseIntakeOut, ScanCreate, ScanOut
 from .scanner_runner import SUPPORTED_PROFILES, scanners_for_profile
-from .tasks import run_scan_job
-from .iris import delete_remote_ticket_case, get_remote_case_bundle, import_remote_cases_to_satria, list_remote_cases, refresh_ticket_case_from_iris, send_finding_to_iris, sync_ticket_case
+from .tasks import celery_app, run_scan_job
+from .iris import delete_remote_ticket_case, get_remote_case_bundle, import_remote_cases_to_satria, list_remote_alert_status_counts, list_remote_cases, refresh_ticket_case_from_iris, send_finding_to_iris, sync_ticket_case
 from .reporting import active_findings_query, count_pie_segments, count_pie_style, get_summary, severity_pie_segments, severity_pie_style, export_findings_csv, export_findings_xlsx, executive_markdown_report
 from .soc import MANUAL_PLAYBOOKS, SOC_DEMO_USERS, SOC_SOP, classification_label_for_case, default_soc_id_for_case, playbook_choices, tags_for_case
 from .ticketing import add_ticket_activity, add_ticket_evidence, add_ticket_task, create_manual_case_from_playbook, seed_demo_manual_cases, update_ticket_case
@@ -943,6 +943,64 @@ def _severity_summary_for_scan(db: Session, scan_job_id: int) -> dict[str, int]:
     return summary
 
 
+def _running_scan_timeout_seconds(scan: ScanJob) -> int:
+    settings = get_settings()
+    if scan.scanner == 'openvas' or scan.profile == 'infra_va':
+        return max(settings.greenbone_max_wait_seconds + 300, 900)
+    return 7200
+
+
+def _enqueue_scan_job(db: Session, job: ScanJob) -> ScanJob:
+    result = run_scan_job.apply_async(args=[job.id])
+    job.celery_task_id = result.id
+    db.commit()
+    db.refresh(job)
+    return job
+
+
+def _expire_stale_running_scans(db: Session) -> int:
+    now = datetime.utcnow()
+    expired = 0
+    running_scans = db.query(ScanJob).filter(ScanJob.status == 'running').all()
+    for scan in running_scans:
+        started_at = scan.started_at or scan.created_at
+        if not started_at:
+            continue
+        if not scan.celery_task_id and started_at <= now - timedelta(minutes=5):
+            scan.status = 'failed'
+            scan.completed_at = now
+            scan.message = (
+                'Scan ditandai gagal karena tidak memiliki task Celery aktif. '
+                'Kemungkinan worker sempat restart atau task eksternal berhenti sebelum status akhir tersimpan.'
+            )
+            db.add(AuditLog(
+                action='scan_orphan_failed',
+                object_type='scan_job',
+                object_id=str(scan.id),
+                detail=scan.message,
+            ))
+            expired += 1
+            continue
+        if started_at > now - timedelta(seconds=_running_scan_timeout_seconds(scan)):
+            continue
+        scan.status = 'failed'
+        scan.completed_at = now
+        scan.message = (
+            'Scan melewati batas waktu eksekusi dan otomatis dihentikan oleh SATRIA. '
+            'Untuk OpenVAS, periksa koneksi Greenbone, status task gvmd, dan port list yang digunakan.'
+        )
+        db.add(AuditLog(
+            action='scan_timeout',
+            object_type='scan_job',
+            object_id=str(scan.id),
+            detail=scan.message,
+        ))
+        expired += 1
+    if expired:
+        db.commit()
+    return expired
+
+
 def _normalize_gate_decision(value: str | None, fallback: str) -> str:
     normalized = (value or '').strip().lower()
     if normalized in {'allowed', 'need_approval', 'blocked', 'pending'}:
@@ -1070,13 +1128,20 @@ def _scan_message_summary(scan: ScanJob) -> str:
     if not message:
         return '-'
 
+    def clean_summary(value: str) -> str:
+        summary = value.strip()
+        scanner_prefix = f"{(scan.scanner or '').strip().lower()}:"
+        if scanner_prefix and summary.lower().startswith(scanner_prefix):
+            summary = summary[len(scanner_prefix):].strip()
+        return (summary[:120] + '...') if len(summary) > 120 else summary
+
     if scan.scanner == 'openvas':
         first_line = next((line.strip() for line in message.splitlines() if line.strip()), '')
         if first_line:
             summary = first_line
             if ' report_id=' in summary:
                 summary = summary.split(' report_id=', 1)[0]
-            return summary
+            return clean_summary(summary)
 
     if scan.scanner == 'zap':
         lower = message.lower()
@@ -1084,16 +1149,44 @@ def _scan_message_summary(scan: ScanJob) -> str:
             start = lower.find('total of ')
             end = lower.find(' urls', start)
             total = message[start + len('total of '):end].strip()
-            return f'zap: total_urls={total}'
+            return f'total_urls={total}'
         first_line = next((line.strip() for line in message.splitlines() if line.strip()), '')
-        return (first_line[:120] + '...') if len(first_line) > 120 else first_line
+        return clean_summary(first_line)
 
     first_line = next((line.strip() for line in message.splitlines() if line.strip()), '')
-    return (first_line[:120] + '...') if len(first_line) > 120 else first_line
+    return clean_summary(first_line)
+
+
+def _format_indonesian_datetime(value) -> str:
+    if not value:
+        return '-'
+    month_names = {
+        1: 'Januari',
+        2: 'Februari',
+        3: 'Maret',
+        4: 'April',
+        5: 'Mei',
+        6: 'Juni',
+        7: 'Juli',
+        8: 'Agustus',
+        9: 'September',
+        10: 'Oktober',
+        11: 'November',
+        12: 'Desember',
+    }
+    try:
+        return f"{value.day:02d} {month_names[value.month]} {value.year}, {value:%H:%M:%S}"
+    except AttributeError:
+        return str(value)
 
 
 def _scan_row(scan: ScanJob) -> dict:
     mode_label, mode_class = _scan_mode(scan)
+    priority_severity_counts = {'Critical': 0, 'High': 0, 'Medium': 0}
+    for finding in scan.findings:
+        severity = finding.severity_normalized
+        if severity in priority_severity_counts:
+            priority_severity_counts[severity] += 1
     has_remote_cleanup = any(
         finding.ticket_case and (finding.ticket_case.remote_case_id or finding.ticket_case.remote_alert_id)
         for finding in scan.findings
@@ -1102,6 +1195,7 @@ def _scan_row(scan: ScanJob) -> dict:
         'id': scan.id,
         'asset_id': scan.asset_id,
         'asset_name': scan.asset.name if scan.asset else '-',
+        'asset_target': scan.asset.target if scan.asset and scan.asset.target else '-',
         'profile': scan.profile,
         'scanner': scan.scanner,
         'status': scan.status,
@@ -1111,10 +1205,14 @@ def _scan_row(scan: ScanJob) -> dict:
         'message': scan.message or '-',
         'message_summary': _scan_message_summary(scan),
         'created_at': scan.created_at,
+        'created_at_label': _format_indonesian_datetime(scan.created_at),
         'can_delete': scan.status != 'running',
         'can_retry': bool(scan.asset_id and scan.profile and scan.status != 'running'),
+        'can_cancel': scan.status in {'queued', 'running'},
         'has_remote_cleanup': has_remote_cleanup,
         'findings_count': len(scan.findings),
+        'priority_severity_counts': priority_severity_counts,
+        'priority_findings_count': sum(priority_severity_counts.values()),
     }
 
 
@@ -1595,6 +1693,85 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
     }
     latest_findings = active_findings_query(db).order_by(Finding.risk_score.desc(), Finding.id.desc()).limit(5).all()
     latest_scans = db.query(ScanJob).filter(ScanJob.is_visible == True).order_by(ScanJob.id.desc()).limit(5).all()  # noqa: E712
+    remote_cases = list_remote_cases()
+    imported = import_remote_cases_to_satria(db, remote_cases) if remote_cases else 0
+    if imported:
+        db.commit()
+    remote_case_map = {
+        str(case.get('case_id')): case
+        for case in remote_cases
+        if case.get('case_id') is not None
+    }
+    monitored_tickets = []
+    ticket_views: dict[int, dict] = {}
+    tickets = db.query(TicketCase).order_by(TicketCase.updated_at.desc(), TicketCase.id.desc()).limit(300).all()
+    for ticket in tickets:
+        remote = remote_case_map.get(str(ticket.remote_case_id))
+        if remote_cases and ticket.remote_case_id and not remote:
+            continue
+        ticket_view = _ticket_case_view(ticket, remote)
+        ticket_views[ticket.id] = ticket_view
+        monitored_tickets.append(ticket)
+    iris_state_order = [
+        'Open',
+        'Assigned',
+        'In Progress',
+        'Remediated',
+        'Retest',
+        'Closed',
+        'False Positive',
+        'Accepted Risk',
+        'Recovery',
+        'Containment',
+        'Reporting',
+        'Eradication',
+        'Post-Incident',
+    ]
+    iris_state_colors = {
+        'Open': '#4f5ed9',
+        'Assigned': '#7c3aed',
+        'In Progress': '#f28a30',
+        'Remediated': '#4fb8a7',
+        'Retest': '#f5cc42',
+        'Closed': '#5ec865',
+        'False Positive': '#94a3b8',
+        'Accepted Risk': '#64748b',
+        'Recovery': '#0ea5e9',
+        'Containment': '#a855f7',
+        'Reporting': '#ec4899',
+        'Eradication': '#10b981',
+        'Post-Incident': '#f59e0b',
+    }
+    iris_state_counts: dict[str, int] = {key: 0 for key in iris_state_order}
+    for ticket in monitored_tickets:
+        state = ticket_views[ticket.id].get('remote_state') or 'Unknown'
+        if state not in iris_state_counts:
+            iris_state_counts[state] = 0
+        iris_state_counts[state] += 1
+    iris_state_pie_segments = count_pie_segments(
+        iris_state_counts,
+        iris_state_order + [key for key in iris_state_counts.keys() if key not in iris_state_order],
+        iris_state_colors,
+        lambda key: f"/tickets?remote_state={quote_plus(key)}",
+    )
+    iris_state_total = sum(iris_state_counts.values())
+    iris_alert_status_order = ['New', 'Assigned', 'In progress', 'Pending', 'Closed', 'Escalated']
+    iris_alert_status_colors = {
+        'New': '#4f5ed9',
+        'Assigned': '#7c3aed',
+        'In progress': '#f28a30',
+        'Pending': '#f5cc42',
+        'Closed': '#5ec865',
+        'Escalated': '#dc4b4f',
+    }
+    iris_alert_status_counts = list_remote_alert_status_counts()
+    iris_alert_status_pie_segments = count_pie_segments(
+        iris_alert_status_counts,
+        iris_alert_status_order,
+        iris_alert_status_colors,
+        lambda key: _iris_login_url() or "/tickets",
+    )
+    iris_alert_status_total = sum(iris_alert_status_counts.values())
     return templates.TemplateResponse('dashboard.html', {
         'request': request,
         'counts': counts,
@@ -1630,6 +1807,11 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
             },
             lambda key: f'/findings?scanner={quote_plus(key)}',
         ),
+        'iris_login_url': _iris_login_url(),
+        'iris_state_pie_segments': iris_state_pie_segments,
+        'iris_state_total': iris_state_total,
+        'iris_alert_status_pie_segments': iris_alert_status_pie_segments,
+        'iris_alert_status_total': iris_alert_status_total,
         'latest_findings': latest_findings,
         'latest_scans': latest_scans,
     })
@@ -1744,8 +1926,13 @@ def create_asset_form(
     criticality: str = Form('medium'),
     owner: str = Form(''),
     technical_pic: str = Form(''),
+    source_host: str = Form(''),
+    image_source_type: str = Form('registry'),
+    openshift_username: str = Form(''),
+    openshift_password: str = Form(''),
     db: Session = Depends(get_db),
 ):
+    normalized_image_source = image_source_type if asset_type == 'container_image' and image_source_type == 'openshift' else 'registry'
     asset = Asset(
         name=name,
         asset_type=asset_type,
@@ -1754,6 +1941,10 @@ def create_asset_form(
         criticality=criticality,
         owner=owner or None,
         technical_pic=technical_pic or None,
+        source_host=source_host or None,
+        image_source_type=normalized_image_source if asset_type == 'container_image' else None,
+        openshift_username=(openshift_username.strip() or None) if normalized_image_source == 'openshift' else None,
+        openshift_password=(openshift_password or None) if normalized_image_source == 'openshift' else None,
     )
     db.add(asset)
     db.add(AuditLog(action='asset_created', object_type='asset', detail=name))
@@ -1771,6 +1962,10 @@ def update_asset_form(
     criticality: str = Form('medium'),
     owner: str = Form(''),
     technical_pic: str = Form(''),
+    source_host: str = Form(''),
+    image_source_type: str = Form('registry'),
+    openshift_username: str = Form(''),
+    openshift_password: str = Form(''),
     db: Session = Depends(get_db),
 ):
     asset = db.get(Asset, asset_id)
@@ -1784,6 +1979,16 @@ def update_asset_form(
     asset.criticality = criticality
     asset.owner = owner or None
     asset.technical_pic = technical_pic or None
+    asset.source_host = source_host or None
+    normalized_image_source = image_source_type if asset_type == 'container_image' and image_source_type == 'openshift' else 'registry'
+    asset.image_source_type = normalized_image_source if asset_type == 'container_image' else None
+    if normalized_image_source == 'openshift':
+        asset.openshift_username = openshift_username.strip() or None
+        if openshift_password:
+            asset.openshift_password = openshift_password
+    else:
+        asset.openshift_username = None
+        asset.openshift_password = None
 
     db.add(AuditLog(
         action='asset_updated',
@@ -1916,7 +2121,7 @@ def create_scan_form(asset_id: int = Form(...), profile: str = Form(...), db: Se
     db.add(AuditLog(action='scan_created', object_type='scan_job', detail=f'{asset.name}/{profile}'))
     db.commit()
     db.refresh(job)
-    run_scan_job.delay(job.id)
+    _enqueue_scan_job(db, job)
     return RedirectResponse('/scans', status_code=303)
 
 @app.get('/scans', response_class=HTMLResponse)
@@ -1926,6 +2131,7 @@ def scans_page(
     status: str | None = None,
     profile: str | None = None,
 ):
+    _expire_stale_running_scans(db)
     q = db.query(ScanJob).filter(ScanJob.is_visible == True)  # noqa: E712
     if status:
         q = q.filter(ScanJob.status == status)
@@ -1955,6 +2161,8 @@ def scan_detail(
     scan = db.get(ScanJob, scan_job_id)
     if not scan:
         raise HTTPException(status_code=404, detail='scan not found')
+    _expire_stale_running_scans(db)
+    db.refresh(scan)
     findings = (
         db.query(Finding)
         .filter(Finding.scan_job_id == scan.id)
@@ -1985,6 +2193,33 @@ def hide_scan_history(scan_job_id: int, next_url: str = Form('/scans'), db: Sess
         object_type='scan_job',
         object_id=str(scan_job_id),
         detail=f"profile={scan.profile}; findings={counts['findings_deleted']}; tickets={counts['tickets_deleted']}",
+    ))
+    db.commit()
+    return RedirectResponse(next_url or '/scans', status_code=303)
+
+
+@app.post('/scans/{scan_job_id}/cancel')
+def cancel_scan(scan_job_id: int, next_url: str = Form('/scans'), db: Session = Depends(get_db)):
+    scan = db.get(ScanJob, scan_job_id)
+    if not scan:
+        raise HTTPException(status_code=404, detail='scan not found')
+    if scan.status not in {'queued', 'running'}:
+        return RedirectResponse(next_url or '/scans', status_code=303)
+
+    if scan.celery_task_id:
+        try:
+            celery_app.control.revoke(scan.celery_task_id, terminate=True, signal='SIGTERM')
+        except Exception:
+            pass
+
+    scan.status = 'cancelled'
+    scan.completed_at = datetime.utcnow()
+    scan.message = 'Scan dibatalkan oleh operator melalui tombol Cancel.'
+    db.add(AuditLog(
+        action='scan_cancelled',
+        object_type='scan_job',
+        object_id=str(scan.id),
+        detail=scan.message,
     ))
     db.commit()
     return RedirectResponse(next_url or '/scans', status_code=303)
@@ -2063,7 +2298,7 @@ def rerun_scan(scan_job_id: int, next_url: str = Form('/scans'), db: Session = D
     db.add(AuditLog(action='scan_rerun', object_type='scan_job', object_id=str(scan.id), detail=f'{asset.name}/{scan.profile}'))
     db.commit()
     db.refresh(job)
-    run_scan_job.delay(job.id)
+    _enqueue_scan_job(db, job)
     return RedirectResponse(next_url or '/scans', status_code=303)
 
 
@@ -2100,7 +2335,11 @@ def findings_page(
     scanner: str | None = None,
     asset_id: int | None = None,
     scan_job_id: int | None = None,
+    page: int = 1,
+    per_page: int = 100,
 ):
+    page = max(page, 1)
+    per_page = min(max(per_page, 25), 200)
     q = active_findings_query(db)
     asset_options_query = active_findings_query(db)
     if severity:
@@ -2117,13 +2356,19 @@ def findings_page(
     if scan_job_id:
         q = q.filter(Finding.scan_job_id == scan_job_id)
         asset_options_query = asset_options_query.filter(Finding.scan_job_id == scan_job_id)
+    total_findings = q.count()
+    total_pages = max((total_findings + per_page - 1) // per_page, 1)
+    if page > total_pages:
+        page = total_pages
+    offset = (page - 1) * per_page
     findings = (
         q.options(
             joinedload(Finding.asset),
             joinedload(Finding.ticket_case),
         )
         .order_by(Finding.risk_score.desc(), Finding.id.desc())
-        .limit(300)
+        .offset(offset)
+        .limit(per_page)
         .all()
     )
     asset_ids_subquery = asset_options_query.with_entities(Finding.asset_id.label('asset_id')).distinct().subquery()
@@ -2150,6 +2395,22 @@ def findings_page(
         active_filters.append({'label': 'Scanner', 'value': scanner.upper()})
     if selected_asset:
         active_filters.append({'label': 'Aset', 'value': selected_asset.name})
+    pagination_params = {
+        key: value for key, value in {
+            'severity': severity,
+            'status': status,
+            'scanner': scanner,
+            'asset_id': asset_id,
+            'scan_job_id': scan_job_id,
+            'per_page': per_page,
+        }.items()
+        if value not in (None, '')
+    }
+
+    def page_url(target_page: int) -> str:
+        return f"/findings?{urlencode({**pagination_params, 'page': target_page})}"
+
+    page_window = list(range(max(1, page - 2), min(total_pages, page + 2) + 1))
     return templates.TemplateResponse('findings.html', {
         'request': request,
         'findings': findings,
@@ -2162,6 +2423,25 @@ def findings_page(
         'assets': assets,
         'scanners': ['trivy', 'syft', 'grype', 'zap', 'openvas'],
         'active_filters': active_filters,
+        'pagination': {
+            'page': page,
+            'per_page': per_page,
+            'total_items': total_findings,
+            'total_pages': total_pages,
+            'offset': offset,
+            'start_item': offset + 1 if total_findings else 0,
+            'end_item': min(offset + len(findings), total_findings),
+            'has_prev': page > 1,
+            'has_next': page < total_pages,
+            'prev_url': page_url(page - 1) if page > 1 else None,
+            'next_url': page_url(page + 1) if page < total_pages else None,
+            'first_url': page_url(1),
+            'last_url': page_url(total_pages),
+            'page_window': [
+                {'number': item, 'url': page_url(item), 'is_current': item == page}
+                for item in page_window
+            ],
+        },
     })
 
 
@@ -2250,6 +2530,23 @@ def tickets_page(
     )
     iris_state_total = sum(iris_state_counts.values())
     iris_state_primary = next((key for key in iris_state_order if iris_state_counts.get(key, 0) > 0), 'Open')
+    iris_alert_status_order = ['New', 'Assigned', 'In progress', 'Pending', 'Closed', 'Escalated']
+    iris_alert_status_colors = {
+        'New': '#4f5ed9',
+        'Assigned': '#7c3aed',
+        'In progress': '#f28a30',
+        'Pending': '#f5cc42',
+        'Closed': '#5ec865',
+        'Escalated': '#dc4b4f',
+    }
+    iris_alert_status_counts = list_remote_alert_status_counts()
+    iris_alert_status_pie_segments = count_pie_segments(
+        iris_alert_status_counts,
+        iris_alert_status_order,
+        iris_alert_status_colors,
+        lambda key: _iris_login_url() or "/tickets",
+    )
+    iris_alert_status_total = sum(iris_alert_status_counts.values())
     ticket_summary = {
         'total': len(monitored_tickets),
         'finding': sum(1 for ticket in monitored_tickets if ticket.case_kind == 'finding'),
@@ -2270,6 +2567,9 @@ def tickets_page(
         'iris_state_pie_style': iris_state_pie_style,
         'iris_state_total': iris_state_total,
         'iris_state_primary': iris_state_primary,
+        'iris_alert_status_counts': iris_alert_status_counts,
+        'iris_alert_status_pie_segments': iris_alert_status_pie_segments,
+        'iris_alert_status_total': iris_alert_status_total,
         'status_filter': status,
         'case_kind_filter': case_kind,
         'remote_state_filter': remote_state,
@@ -2690,7 +2990,7 @@ def api_v1_create_scan(
     ))
     db.commit()
     db.refresh(job)
-    run_scan_job.delay(job.id)
+    _enqueue_scan_job(db, job)
     return _pipeline_status_payload(job, db)
 
 
@@ -2703,6 +3003,8 @@ def api_v1_scan_status(
     scan = db.get(ScanJob, scan_id)
     if not scan:
         _raise_api_error(404, 'SCAN_NOT_FOUND', 'scan not found', scan_id=scan_id)
+    _expire_stale_running_scans(db)
+    db.refresh(scan)
     return _pipeline_status_payload(scan, db)
 
 
@@ -2715,6 +3017,8 @@ def api_v1_scan_result(
     scan = db.get(ScanJob, scan_id)
     if not scan:
         _raise_api_error(404, 'SCAN_NOT_FOUND', 'scan not found', scan_id=scan_id)
+    _expire_stale_running_scans(db)
+    db.refresh(scan)
     return _pipeline_result_payload(scan, db)
 
 
@@ -2821,7 +3125,7 @@ def api_create_scan(payload: ScanCreate, db: Session = Depends(get_db)):
     db.add(job)
     db.commit()
     db.refresh(job)
-    run_scan_job.delay(job.id)
+    _enqueue_scan_job(db, job)
     return job
 
 @app.get('/api/findings', response_model=list[FindingOut])

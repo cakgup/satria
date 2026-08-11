@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     iris_url: str | None = Field(default=None, alias='IRIS_URL')
     iris_api_key: str | None = Field(default=None, alias='IRIS_API_KEY')
     iris_verify_ssl: bool = Field(default=False, alias='IRIS_VERIFY_SSL')
+    iris_alert_dashboard_id: int | None = Field(default=1, alias='IRIS_ALERT_DASHBOARD_ID')
+    iris_alert_dashboard_path: str | None = Field(default=None, alias='IRIS_ALERT_DASHBOARD_PATH')
     iris_customer_name: str = Field(default='SATRIA', alias='IRIS_CUSTOMER_NAME')
     iris_customer_description: str = Field(default='Customer placeholder created by SATRIA automation', alias='IRIS_CUSTOMER_DESCRIPTION')
     iris_customer_sla: str = Field(default='Standard incident response workflow', alias='IRIS_CUSTOMER_SLA')
@@ -60,6 +62,9 @@ class Settings(BaseSettings):
     zap_container_name: str = Field(default='satria-zap', alias='ZAP_CONTAINER_NAME')
     allow_active_scan: bool = Field(default=False, alias='ALLOW_ACTIVE_SCAN')
     scan_target_allowlist: str = Field(default='localhost,127.0.0.1', alias='SCAN_TARGET_ALLOWLIST')
+    trivy_insecure_registry: bool = Field(default=False, alias='TRIVY_INSECURE_REGISTRY')
+    trivy_username: str | None = Field(default=None, alias='TRIVY_USERNAME')
+    trivy_password: str | None = Field(default=None, alias='TRIVY_PASSWORD')
 
     def allowlist(self) -> list[str]:
         return [item.strip() for item in self.scan_target_allowlist.split(',') if item.strip()]

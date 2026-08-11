@@ -14,6 +14,10 @@ class Asset(Base):
     criticality: Mapped[str] = mapped_column(String(20), default='medium')
     owner: Mapped[str | None] = mapped_column(String(200), nullable=True)
     technical_pic: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    source_host: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    image_source_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    openshift_username: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    openshift_password: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -89,6 +93,7 @@ class ScanJob(Base):
     profile: Mapped[str] = mapped_column(String(80), index=True)
     scanner: Mapped[str] = mapped_column(String(80), index=True)
     status: Mapped[str] = mapped_column(String(30), default='queued', index=True)
+    celery_task_id: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
     message: Mapped[str | None] = mapped_column(Text, nullable=True)
     raw_report_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_visible: Mapped[bool] = mapped_column(Boolean, default=True, index=True)

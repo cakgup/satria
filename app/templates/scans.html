@@ -53,8 +53,23 @@
     box-shadow: 0 16px 28px rgba(180, 98, 74, 0.18);
   }
 
+  .cancel-action {
+    min-height: 42px;
+    padding: 9px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(221, 151, 42, 0.18);
+    background: linear-gradient(180deg, #fff8ec, #f8e1bc);
+    color: #8a5a13;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 12px 24px rgba(221, 151, 42, 0.12);
+    font-weight: 800;
+  }
+
   .message-cell {
-    min-width: 260px;
+    min-width: 300px;
+    max-width: 520px;
   }
 
   .message-stack {
@@ -64,12 +79,79 @@
     gap: 8px;
   }
 
+  .scan-result-severity {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .scan-severity-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 28px;
+    padding: 5px 9px;
+    border-radius: 999px;
+    border: 1px solid rgba(20, 57, 98, 0.08);
+    background: rgba(255, 255, 255, 0.78);
+    font-size: 0.78rem;
+    font-weight: 850;
+    line-height: 1;
+    box-shadow: 0 10px 18px rgba(20, 57, 98, 0.06);
+  }
+
+  .scan-severity-pill.critical {
+    background: rgba(239, 68, 68, 0.13);
+    color: #b42318;
+  }
+
+  .scan-severity-pill.high {
+    background: rgba(249, 115, 22, 0.14);
+    color: #9a4b12;
+  }
+
+  .scan-severity-pill.medium {
+    background: rgba(250, 204, 21, 0.18);
+    color: #7a5a08;
+  }
+
   .message-summary {
     display: inline-flex;
     max-width: 100%;
     color: var(--text);
     line-height: 1.45;
     word-break: break-word;
+  }
+
+  .scan-history-table th,
+  .scan-history-table td {
+    vertical-align: top;
+  }
+
+  .scan-history-table .asset-column {
+    min-width: 190px;
+  }
+
+  .scan-asset-meta {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 500;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+
+  .scan-asset-meta strong {
+    color: var(--text-soft);
+    font-weight: 650;
+  }
+
+  .scan-history-table .compact-column {
+    white-space: nowrap;
   }
 
   .delete-dialog {
@@ -176,9 +258,6 @@
   <div class="hero-actions">
     <a class="hero-button primary" href="/scan/new">Jalankan Scan Baru</a>
     <a class="hero-button" href="/findings">Buka Findings</a>
-    <form method="post" action="/scans/archive-operational">
-      <button class="hero-button subtle" type="submit">Arsipkan Non-Operasional</button>
-    </form>
   </div>
 </section>
 
@@ -194,7 +273,7 @@
     <label>Status
       <select name="status">
         <option value="">Semua status</option>
-        {% for item in ['queued', 'running', 'completed', 'failed'] %}
+        {% for item in ['queued', 'running', 'completed', 'failed', 'cancelled'] %}
         <option value="{{ item }}" {% if status_filter == item %}selected{% endif %}>{{ item }}</option>
         {% endfor %}
       </select>
@@ -223,30 +302,40 @@
     <span class="helper-copy">Status indicates scan job results. Use the scan result button to open findings for the selected job.</span>
   </div>
   <div class="table-wrap">
-    <table>
-      <tr><th>No.</th><th>Asset</th><th>Profile</th><th>Scanner</th><th>Status</th><th>Mode</th><th>Report</th><th>Message</th><th>Created</th><th>Action</th></tr>
+    <table class="scan-history-table">
+      <tr><th>No.</th><th>Asset</th><th>Profile</th><th>Scanner</th><th>Status</th><th>Result</th><th>Created</th><th>Action</th></tr>
       {% for s in scans %}
       <tr>
         <td><a class="scan-link" href="/scans/{{ s.id }}">{{ loop.index }}</a></td>
-        <td><a class="scan-link" href="/scans/{{ s.id }}">{{ s.asset_name }}</a></td>
-        <td><a class="scan-link" href="/scans/{{ s.id }}">{{ s.profile }}</a></td>
-        <td><a class="scan-link" href="/scans/{{ s.id }}">{{ s.scanner }}</a></td>
-        <td><a class="scan-link" href="/scans/{{ s.id }}"><span class="status">{{ s.status }}</span></a></td>
-        <td><a class="scan-link" href="/scans/{{ s.id }}"><span class="status {{ s.mode_class }}">{{ s.mode_label }}</span></a></td>
-        <td><a class="scan-link" href="/scans/{{ s.id }}"><code>{{ s.report_path }}</code></a></td>
+        <td class="asset-column">
+          <a class="scan-link" href="/scans/{{ s.id }}">{{ s.asset_name }}</a>
+          <span class="scan-asset-meta"><strong>Target/IP:</strong> {{ s.asset_target }}</span>
+        </td>
+        <td class="compact-column"><a class="scan-link" href="/scans/{{ s.id }}">{{ s.profile }}</a></td>
+        <td class="compact-column"><a class="scan-link" href="/scans/{{ s.id }}">{{ s.scanner }}</a></td>
+        <td class="compact-column"><a class="scan-link" href="/scans/{{ s.id }}"><span class="status">{{ s.status }}</span></a></td>
         <td class="message-cell">
           <div class="message-stack">
-            <a class="scan-link message-summary" href="/scans/{{ s.id }}"><small>{{ s.message_summary }}</small></a>
-            <a class="table-action" href="/findings?scan_job_id={{ s.id }}">Hasil scan{% if s.findings_count %} ({{ s.findings_count }}){% endif %}</a>
+            <a class="scan-result-severity" href="/findings?scan_job_id={{ s.id }}" aria-label="Buka hasil scan prioritas">
+              <span class="scan-severity-pill critical">Critical = {{ s.priority_severity_counts.Critical }}</span>
+              <span class="scan-severity-pill high">High = {{ s.priority_severity_counts.High }}</span>
+              <span class="scan-severity-pill medium">Medium = {{ s.priority_severity_counts.Medium }}</span>
+            </a>
           </div>
         </td>
-        <td><a class="scan-link" href="/scans/{{ s.id }}">{{ s.created_at }}</a></td>
+        <td class="compact-column"><a class="scan-link" href="/scans/{{ s.id }}">{{ s.created_at_label }}</a></td>
         <td>
           <div class="asset-actions">
             {% if s.can_retry %}
             <form method="post" action="/scans/{{ s.id }}/rerun">
               <input type="hidden" name="next_url" value="/scans">
               <button class="table-action" type="submit">Ulang</button>
+            </form>
+            {% endif %}
+            {% if s.can_cancel %}
+            <form method="post" action="/scans/{{ s.id }}/cancel">
+              <input type="hidden" name="next_url" value="/scans">
+              <button class="cancel-action" type="submit">Cancel</button>
             </form>
             {% endif %}
             {% if s.can_delete %}
@@ -261,8 +350,6 @@
               data-failure-url="/scans/{{ s.id }}"
               data-has-remote-cleanup="{{ 'true' if s.has_remote_cleanup else 'false' }}"
             >Hapus</button>
-            {% else %}
-            <span class="helper-copy">Running</span>
             {% endif %}
           </div>
         </td>

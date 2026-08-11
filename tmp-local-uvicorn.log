@@ -1,0 +1,30 @@
+INFO:     127.0.0.1:55184 - "GET /tickets HTTP/1.1" 303 See Other
+INFO:     127.0.0.1:55184 - "GET /login?next=%2Ftickets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55193 - "GET /tickets HTTP/1.1" 303 See Other
+INFO:     127.0.0.1:55193 - "GET /login?next=%2Ftickets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55209 - "GET /login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55209 - "POST /login HTTP/1.1" 303 See Other
+INFO:     127.0.0.1:55209 - "GET /tickets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60763 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60763 - "GET /static/style.css?v=content-typography-20260803 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60765 - "GET /tickets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60448 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52676 - "GET /login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52676 - "POST /login HTTP/1.1" 303 See Other
+INFO:     127.0.0.1:52676 - "GET /tickets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52714 - "POST /login HTTP/1.1" 303 See Other
+INFO:     127.0.0.1:52714 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52714 - "GET /tickets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60046 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60046 - "GET /static/style.css?v=content-typography-20260803 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60046 - "GET /tickets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60153 - "GET /tickets/25 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60156 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60157 - "GET /findings/5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52439 - "POST /findings/5/send-to-iris HTTP/1.1" 303 See Other
+INFO:     127.0.0.1:52439 - "GET /findings/5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52439 - "POST /findings/5/send-to-iris HTTP/1.1" 303 See Other
+INFO:     127.0.0.1:52439 - "GET /findings/5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52452 - "GET /findings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52505 - "GET /tickets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55004 - "GET /tickets?remote_state=Open HTTP/1.1" 200 OK

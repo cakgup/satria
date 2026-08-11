@@ -11,6 +11,9 @@ class AssetCreate(BaseModel):
     criticality: str = 'medium'
     owner: Optional[str] = None
     technical_pic: Optional[str] = None
+    source_host: Optional[str] = None
+    image_source_type: Optional[str] = None
+    openshift_username: Optional[str] = None
 
 class AssetOut(AssetCreate):
     id: int

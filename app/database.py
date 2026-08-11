@@ -25,11 +25,21 @@ def init_db():
 def _ensure_runtime_schema():
     inspector = inspect(engine)
 
+    if inspector.has_table('assets'):
+        asset_columns = {column['name'] for column in inspector.get_columns('assets')}
+        _add_missing_columns('assets', {
+            'source_host': "VARCHAR(255)",
+            'image_source_type': "VARCHAR(50)",
+            'openshift_username': "VARCHAR(200)",
+            'openshift_password': "TEXT",
+        }, asset_columns)
+
     if inspector.has_table('scan_jobs'):
         scan_job_columns = {column['name'] for column in inspector.get_columns('scan_jobs')}
         _add_missing_columns('scan_jobs', {
             'is_visible': "BOOLEAN DEFAULT TRUE",
             'release_id': 'INTEGER',
+            'celery_task_id': "VARCHAR(120)",
         }, scan_job_columns)
         if 'release_id' not in scan_job_columns and inspector.has_table('release_artifacts'):
             _ensure_foreign_key(

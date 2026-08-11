@@ -9,6 +9,15 @@ from .normalizers import normalize_report
 
 settings = get_settings()
 celery_app = Celery('satria', broker=settings.celery_broker_url, backend=settings.celery_result_backend)
+celery_app.conf.update(
+    task_soft_time_limit=max(settings.greenbone_max_wait_seconds + 300, 1800),
+    task_time_limit=max(settings.greenbone_max_wait_seconds + 600, 2100),
+)
+
+
+def _safe_job_message(value: object) -> str:
+    return str(value).replace('\x00', '').strip()
+
 
 @celery_app.task(name='run_scan_job')
 def run_scan_job(scan_job_id: int) -> dict:
@@ -17,6 +26,8 @@ def run_scan_job(scan_job_id: int) -> dict:
         job = db.get(ScanJob, scan_job_id)
         if not job:
             return {'status': 'not_found', 'scan_job_id': scan_job_id}
+        if job.status == 'cancelled':
+            return {'status': 'cancelled', 'scan_job_id': scan_job_id}
         asset = job.asset
         job.status = 'running'
         job.started_at = datetime.utcnow()
@@ -26,11 +37,28 @@ def run_scan_job(scan_job_id: int) -> dict:
         total_findings = 0
         scanners = scanners_for_profile(job.profile)
         for scanner in scanners:
+            db.refresh(job)
+            if job.status == 'cancelled':
+                return {'status': 'cancelled', 'scan_job_id': job.id}
             # Update current scanner label for simple UI visibility.
             job.scanner = '+'.join(scanners)
             db.commit()
-            report_path, payload, msg = run_scanner(scanner, asset.asset_type, asset.target, settings.report_dir, job.id, job.profile)
+            registry_username = asset.openshift_username if asset.image_source_type == 'openshift' else None
+            registry_password = asset.openshift_password if asset.image_source_type == 'openshift' else None
+            report_path, payload, msg = run_scanner(
+                scanner,
+                asset.asset_type,
+                asset.target,
+                settings.report_dir,
+                job.id,
+                job.profile,
+                registry_username=registry_username,
+                registry_password=registry_password,
+            )
             all_messages.append(f'{scanner}: {msg}')
+            db.refresh(job)
+            if job.status == 'cancelled':
+                return {'status': 'cancelled', 'scan_job_id': job.id}
             job.raw_report_path = str(report_path)
             db.commit()
 
@@ -73,20 +101,24 @@ def run_scan_job(scan_job_id: int) -> dict:
                     db.rollback()
             db.commit()
 
-        job.status = 'completed'
-        job.completed_at = datetime.utcnow()
-        job.message = '\n'.join(all_messages) + f'\nnew_findings={total_findings}'
-        db.add(AuditLog(action='scan_completed', object_type='scan_job', object_id=str(job.id), detail=job.message))
+        db.refresh(job)
+        if job.status != 'cancelled':
+            job.status = 'completed'
+            job.completed_at = datetime.utcnow()
+            job.message = _safe_job_message('\n'.join(all_messages) + f'\nnew_findings={total_findings}')
+            db.add(AuditLog(action='scan_completed', object_type='scan_job', object_id=str(job.id), detail=job.message))
+            db.commit()
+            return {'status': 'completed', 'scan_job_id': job.id, 'new_findings': total_findings}
         db.commit()
-        return {'status': 'completed', 'scan_job_id': job.id, 'new_findings': total_findings}
+        return {'status': 'cancelled', 'scan_job_id': job.id}
     except Exception as exc:
         db.rollback()
         job = db.get(ScanJob, scan_job_id)
         if job:
             job.status = 'failed'
             job.completed_at = datetime.utcnow()
-            job.message = str(exc)
+            job.message = _safe_job_message(exc)
             db.commit()
-        return {'status': 'failed', 'scan_job_id': scan_job_id, 'error': str(exc)}
+        return {'status': 'failed', 'scan_job_id': scan_job_id, 'error': _safe_job_message(exc)}
     finally:
         db.close()

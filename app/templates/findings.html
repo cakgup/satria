@@ -108,6 +108,73 @@
     white-space: normal;
   }
 
+  .pagination-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+  }
+
+  .pagination-summary {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .page-link,
+  .page-current {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(20, 57, 98, 0.1);
+    background: rgba(255, 255, 255, 0.74);
+    color: var(--brand-blue);
+    font-weight: 800;
+    text-decoration: none;
+    box-shadow: 0 10px 24px rgba(20, 57, 98, 0.06);
+  }
+
+  .page-current {
+    background: linear-gradient(135deg, var(--brand-blue), var(--brand-navy));
+    color: #ffffff;
+  }
+
+  .page-link.is-disabled {
+    pointer-events: none;
+    opacity: 0.42;
+    color: var(--muted);
+  }
+
+  .per-page-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 6px;
+    color: var(--muted);
+    font-size: 0.88rem;
+    font-weight: 700;
+  }
+
+  .per-page-control select {
+    width: auto;
+    min-height: 40px;
+    padding: 0 34px 0 12px;
+    border-radius: 14px;
+    font-weight: 800;
+  }
+
   @media (max-width: 1180px) {
     .filter-form {
       grid-template-columns: repeat(2, minmax(220px, 1fr));
@@ -135,6 +202,11 @@
       width: 100%;
       justify-content: center;
     }
+
+    .pagination-bar,
+    .pagination-controls {
+      justify-content: center;
+    }
   }
 </style>
 <section class="hero">
@@ -142,11 +214,6 @@
     <span class="eyebrow">Langkah 3</span>
     <h2>Tindak Lanjut Temuan.</h2>
     <p>Penanganan awal direkomendasikan dimulai dari temuan berstatus <strong>Critical</strong> dan <strong>High</strong> yang masih <strong>Open</strong>.</p>
-  </div>
-  <div class="hero-actions">
-    <a class="hero-button primary" href="/findings?severity=Critical">Critical</a>
-    <a class="hero-button" href="/findings?severity=High">High</a>
-    <a class="hero-button subtle" href="/vulnerability-summary">Bulk PERISAI & Reports</a>
   </div>
 </section>
 
@@ -228,7 +295,7 @@
       <tr><th>No.</th><th>Risk</th><th>Severity</th><th>Asset</th><th>Scanner</th><th>Type</th><th>Title</th><th>CVE/CWE</th><th>Status</th><th>Ticket</th></tr>
       {% for f in findings %}
       <tr>
-        <td><a href="/findings/{{ f.id }}">{{ loop.index }}</a></td>
+        <td><a href="/findings/{{ f.id }}">{{ pagination.offset + loop.index }}</a></td>
         <td><strong>{{ f.risk_score }}</strong></td>
         <td><span class="sev {{ f.severity_normalized|lower }}">{{ f.severity_normalized }}</span></td>
         <td>{{ f.asset.name }}</td>
@@ -245,5 +312,38 @@
     <p class="empty-note">Tidak terdapat temuan yang sesuai dengan filter yang dipilih.</p>
     {% endif %}
   </div>
+  {% if pagination.total_items %}
+  <div class="pagination-bar">
+    <div class="pagination-summary">
+      Menampilkan {{ pagination.start_item }}–{{ pagination.end_item }} dari {{ pagination.total_items }} temuan.
+    </div>
+    <div class="pagination-controls">
+      <a class="page-link {% if not pagination.has_prev %}is-disabled{% endif %}" href="{{ pagination.first_url }}">Awal</a>
+      <a class="page-link {% if not pagination.has_prev %}is-disabled{% endif %}" href="{{ pagination.prev_url or pagination.first_url }}">Sebelumnya</a>
+      {% for item in pagination.page_window %}
+        {% if item.is_current %}
+        <span class="page-current">{{ item.number }}</span>
+        {% else %}
+        <a class="page-link" href="{{ item.url }}">{{ item.number }}</a>
+        {% endif %}
+      {% endfor %}
+      <a class="page-link {% if not pagination.has_next %}is-disabled{% endif %}" href="{{ pagination.next_url or pagination.last_url }}">Berikutnya</a>
+      <a class="page-link {% if not pagination.has_next %}is-disabled{% endif %}" href="{{ pagination.last_url }}">Akhir</a>
+      <form method="get" action="/findings" class="per-page-control">
+        {% if severity_filter %}<input type="hidden" name="severity" value="{{ severity_filter }}">{% endif %}
+        {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+        {% if scanner_filter %}<input type="hidden" name="scanner" value="{{ scanner_filter }}">{% endif %}
+        {% if asset_filter %}<input type="hidden" name="asset_id" value="{{ asset_filter }}">{% endif %}
+        {% if scan_job_filter %}<input type="hidden" name="scan_job_id" value="{{ scan_job_filter }}">{% endif %}
+        <span>Per halaman</span>
+        <select name="per_page" onchange="this.form.submit()">
+          {% for size in [50, 100, 200] %}
+          <option value="{{ size }}" {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>
+          {% endfor %}
+        </select>
+      </form>
+    </div>
+  </div>
+  {% endif %}
 </section>
 {% endblock %}

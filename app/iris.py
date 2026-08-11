@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
+import requests
+import urllib3
 from sqlalchemy.orm import Session
 
 from .config import get_settings
@@ -11,8 +14,11 @@ from .soc import default_soc_id_for_case, tags_for_case
 from .ticketing import create_ticket_for_finding
 
 settings = get_settings()
+if not settings.iris_verify_ssl:
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 IRIS_IMPORTED_ASSET_NAME = "IRIS Imported Cases"
 IRIS_IMPORTED_ASSET_TARGET = "iris://remote-case-monitor"
+IRIS_ALERT_STATUS_ORDER = ["New", "Assigned", "In progress", "Pending", "Closed", "Escalated"]
 
 try:
     from dfir_iris_client.alert import Alert
@@ -44,6 +50,24 @@ def list_remote_cases() -> list[dict]:
         return data if isinstance(data, list) else []
     except Exception:
         return []
+
+
+def list_remote_alert_status_counts() -> dict[str, int]:
+    """Read PERISAI alert status aggregates without importing alert payloads."""
+    if not (settings.iris_url and settings.iris_api_key):
+        return {}
+
+    filtered_counts = _alert_status_counts_from_filter_api()
+    if filtered_counts:
+        return filtered_counts
+
+    endpoints = _alert_dashboard_endpoints()
+    for endpoint in endpoints:
+        payload = _get_iris_json(endpoint)
+        counts = _extract_alert_status_counts(payload)
+        if counts:
+            return _normalize_alert_status_counts(counts)
+    return {}
 
 
 def import_remote_cases_to_satria(db: Session, remote_cases: list[dict] | None = None) -> int:
@@ -433,6 +457,164 @@ def _client_session() -> ClientSession:
         ssl_verify=settings.iris_verify_ssl,
         agent="SATRIA",
     )
+
+
+def _alert_dashboard_endpoints() -> list[str]:
+    if settings.iris_alert_dashboard_path:
+        return [settings.iris_alert_dashboard_path]
+    if settings.iris_alert_dashboard_id:
+        return [f"/custom-dashboards/api/dashboards/{settings.iris_alert_dashboard_id}/data"]
+    return []
+
+
+def _get_iris_json(path: str) -> dict[str, Any]:
+    url = path if path.startswith(("http://", "https://")) else f"{settings.iris_url.rstrip('/')}/{path.lstrip('/')}"
+    headers = {
+        "Authorization": f"Bearer {settings.iris_api_key}",
+        "X-API-KEY": settings.iris_api_key or "",
+        "Accept": "application/json",
+    }
+    try:
+        response = requests.get(url, headers=headers, verify=settings.iris_verify_ssl, timeout=20)
+        if response.status_code != 200:
+            return {}
+        data = response.json()
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def _alert_status_counts_from_filter_api() -> dict[str, int]:
+    status_ids = {
+        "New": 2,
+        "Assigned": 3,
+        "In progress": 4,
+        "Pending": 5,
+        "Closed": 6,
+        "Escalated": 8,
+    }
+    counts: dict[str, int] = {key: 0 for key in IRIS_ALERT_STATUS_ORDER}
+    has_response = False
+    for status, status_id in status_ids.items():
+        payload = _get_iris_json(f"/alerts/filter?alert_status_id={status_id}&page=1&per_page=1&sort=desc")
+        data = payload.get("data") if isinstance(payload.get("data"), dict) else payload
+        total = _safe_int(data.get("total") if isinstance(data, dict) else 0)
+        if total > 0:
+            counts[status] = total
+        if payload.get("status") == "success" or total > 0:
+            has_response = True
+    return counts if has_response else {}
+
+
+def _extract_alert_status_counts(payload: dict[str, Any]) -> dict[str, int]:
+    candidates = _walk_alert_status_candidates(payload)
+    for candidate in candidates:
+        counts = _counts_from_candidate(candidate)
+        if counts:
+            return counts
+    return {}
+
+
+def _walk_alert_status_candidates(payload: Any) -> list[Any]:
+    candidates: list[Any] = []
+    if isinstance(payload, dict):
+        name = str(payload.get("name") or payload.get("title") or "").lower()
+        definition = payload.get("definition") if isinstance(payload.get("definition"), dict) else {}
+        definition_name = str(definition.get("name") or definition.get("title") or "").lower()
+        if "status alert" in name or "status alert" in definition_name or "alert status" in name:
+            candidates.append(payload.get("data") or payload)
+        for value in payload.values():
+            candidates.extend(_walk_alert_status_candidates(value))
+    elif isinstance(payload, list):
+        for item in payload:
+            candidates.extend(_walk_alert_status_candidates(item))
+    return candidates
+
+
+def _counts_from_candidate(candidate: Any) -> dict[str, int]:
+    if not candidate:
+        return {}
+    if isinstance(candidate, dict):
+        chart_counts = _counts_from_chart_payload(candidate)
+        if chart_counts:
+            return chart_counts
+        row_counts = _counts_from_rows(candidate.get("rows") or candidate.get("data") or candidate.get("items"))
+        if row_counts:
+            return row_counts
+        direct_counts = {
+            key: _safe_int(value)
+            for key, value in candidate.items()
+            if _canonical_alert_status(key) and _safe_int(value) > 0
+        }
+        return direct_counts
+    if isinstance(candidate, list):
+        return _counts_from_rows(candidate)
+    return {}
+
+
+def _counts_from_chart_payload(payload: dict[str, Any]) -> dict[str, int]:
+    labels = payload.get("labels")
+    datasets = payload.get("datasets")
+    if isinstance(labels, list) and isinstance(datasets, list) and datasets:
+        data = datasets[0].get("data") if isinstance(datasets[0], dict) else None
+        if isinstance(data, list):
+            return {
+                str(label): _safe_int(value)
+                for label, value in zip(labels, data)
+                if _canonical_alert_status(str(label)) and _safe_int(value) > 0
+            }
+    return {}
+
+
+def _counts_from_rows(rows: Any) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    if not isinstance(rows, list):
+        return counts
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        status = (
+            row.get("status_name")
+            or row.get("alert_status.status_name")
+            or row.get("status")
+            or row.get("label")
+            or row.get("name")
+        )
+        value = row.get("count") or row.get("value") or row.get("total") or row.get("y")
+        canonical = _canonical_alert_status(str(status or ""))
+        if canonical:
+            counts[canonical] = counts.get(canonical, 0) + _safe_int(value)
+    return {key: value for key, value in counts.items() if value > 0}
+
+
+def _normalize_alert_status_counts(counts: dict[str, int]) -> dict[str, int]:
+    normalized = {key: 0 for key in IRIS_ALERT_STATUS_ORDER}
+    for key, value in counts.items():
+        canonical = _canonical_alert_status(str(key))
+        if canonical:
+            normalized[canonical] = normalized.get(canonical, 0) + _safe_int(value)
+    return normalized
+
+
+def _canonical_alert_status(status: str) -> str | None:
+    normalized = " ".join(status.replace("_", " ").replace("-", " ").split()).lower()
+    mapping = {
+        "new": "New",
+        "assigned": "Assigned",
+        "in progress": "In progress",
+        "inprogress": "In progress",
+        "pending": "Pending",
+        "closed": "Closed",
+        "escalated": "Escalated",
+    }
+    return mapping.get(normalized)
+
+
+def _safe_int(value: Any) -> int:
+    try:
+        return int(float(value or 0))
+    except (TypeError, ValueError):
+        return 0
 
 
 def _sync_case_metadata(case_client: Case, user_client: User, classification_helper: CaseClassificationsHelper, ticket_case: TicketCase):

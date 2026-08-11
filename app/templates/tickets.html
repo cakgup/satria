@@ -16,6 +16,61 @@
     border-radius: 11px;
   }
 
+  .ticket-monitor-table th,
+  .ticket-monitor-table td {
+    vertical-align: top;
+  }
+
+  .ticket-monitor-table .case-column {
+    min-width: 250px;
+  }
+
+  .ticket-monitor-table .source-column {
+    min-width: 210px;
+  }
+
+  .ticket-monitor-table .owner-column {
+    min-width: 170px;
+  }
+
+  .ticket-monitor-table .status-column {
+    min-width: 120px;
+  }
+
+  .ticket-monitor-table .compact-column {
+    white-space: nowrap;
+  }
+
+  .ticket-actions-compact {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .ticket-actions-compact form {
+    margin: 0;
+  }
+
+  .ticket-actions-compact .table-action {
+    min-width: 88px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+  }
+
+  .ticket-action-link {
+    color: var(--primary-strong);
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-decoration: none;
+    line-height: 1.35;
+  }
+
+  .ticket-action-link:hover {
+    text-decoration: underline;
+  }
+
   .ticket-kpis {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -54,19 +109,21 @@
 
   .ticket-analytics {
     display: grid;
-    grid-template-columns: minmax(320px, 0.95fr) minmax(0, 1.05fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 18px;
+    align-items: stretch;
     margin-bottom: 18px;
   }
 
   .ticket-analytics-panel {
+    min-width: 0;
     padding: 22px 22px 20px;
   }
 
   .ticket-pie-row {
     display: grid;
-    grid-template-columns: 300px minmax(0, 1fr);
-    gap: 22px;
+    grid-template-columns: minmax(190px, 0.7fr) minmax(220px, 1fr);
+    gap: 18px;
     align-items: stretch;
     padding-top: 10px;
   }
@@ -75,7 +132,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 520px;
+    min-height: 430px;
   }
 
   .ticket-pie {
@@ -205,7 +262,7 @@
 
   .ticket-legend a {
     --leader-angle: 0deg;
-    --leader-width: 190px;
+    --leader-width: 220px;
     position: relative;
     display: grid;
     grid-template-columns: 14px minmax(0, 1fr);
@@ -234,19 +291,27 @@
     pointer-events: none;
   }
 
-  .ticket-legend .legend-link-open { --leader-angle: -28deg; --leader-width: 212px; color: #4f5ed9; }
-  .ticket-legend .legend-link-assigned { --leader-angle: -22deg; --leader-width: 208px; color: #7c3aed; }
-  .ticket-legend .legend-link-in-progress { --leader-angle: -16deg; --leader-width: 204px; color: #f28a30; }
-  .ticket-legend .legend-link-remediated { --leader-angle: -8deg; --leader-width: 198px; color: #4fb8a7; }
-  .ticket-legend .legend-link-retest { --leader-angle: 0deg; --leader-width: 194px; color: #f5cc42; }
-  .ticket-legend .legend-link-closed { --leader-angle: 8deg; --leader-width: 198px; color: #5ec865; }
-  .ticket-legend .legend-link-false-positive { --leader-angle: 16deg; --leader-width: 204px; color: #94a3b8; }
-  .ticket-legend .legend-link-accepted-risk { --leader-angle: 22deg; --leader-width: 208px; color: #64748b; }
-  .ticket-legend .legend-link-recovery { --leader-angle: 28deg; --leader-width: 214px; color: #0ea5e9; }
-  .ticket-legend .legend-link-containment { --leader-angle: 34deg; --leader-width: 220px; color: #a855f7; }
-  .ticket-legend .legend-link-reporting { --leader-angle: 40deg; --leader-width: 226px; color: #ec4899; }
-  .ticket-legend .legend-link-eradication { --leader-angle: 46deg; --leader-width: 234px; color: #10b981; }
-  .ticket-legend .legend-link-post-incident { --leader-angle: 52deg; --leader-width: 244px; color: #f59e0b; }
+  .ticket-legend a:nth-child(1) { --leader-angle: -38deg; --leader-width: 260px; }
+  .ticket-legend a:nth-child(2) { --leader-angle: -26deg; --leader-width: 240px; }
+  .ticket-legend a:nth-child(3) { --leader-angle: -14deg; --leader-width: 220px; }
+  .ticket-legend a:nth-child(4) { --leader-angle: 0deg; --leader-width: 205px; }
+  .ticket-legend a:nth-child(5) { --leader-angle: 15deg; --leader-width: 220px; }
+  .ticket-legend a:nth-child(6) { --leader-angle: 28deg; --leader-width: 240px; }
+  .ticket-legend a:nth-child(7) { --leader-angle: 40deg; --leader-width: 270px; }
+  .ticket-legend a:nth-child(8) { --leader-angle: 50deg; --leader-width: 310px; }
+  .ticket-legend .legend-link-open { color: #4f5ed9; }
+  .ticket-legend .legend-link-assigned { color: #7c3aed; }
+  .ticket-legend .legend-link-in-progress { color: #f28a30; }
+  .ticket-legend .legend-link-remediated { color: #4fb8a7; }
+  .ticket-legend .legend-link-retest { color: #f5cc42; }
+  .ticket-legend .legend-link-closed { color: #5ec865; }
+  .ticket-legend .legend-link-false-positive { color: #94a3b8; }
+  .ticket-legend .legend-link-accepted-risk { color: #64748b; }
+  .ticket-legend .legend-link-recovery { color: #0ea5e9; }
+  .ticket-legend .legend-link-containment { color: #a855f7; }
+  .ticket-legend .legend-link-reporting { color: #ec4899; }
+  .ticket-legend .legend-link-eradication { color: #10b981; }
+  .ticket-legend .legend-link-post-incident { color: #f59e0b; }
 
   .ticket-legend a:hover {
     transform: translateY(-1px);
@@ -324,23 +389,44 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 10px;
-    border-radius: 999px;
-    font-size: 0.84rem;
-    font-weight: 800;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    margin-bottom: 8px;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    font-size: 0.95rem;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: lowercase;
+    margin-bottom: 6px;
   }
 
   .source-badge.finding {
-    background: rgba(107, 145, 224, 0.16);
     color: #3557a3;
   }
 
   .source-badge.manual {
-    background: rgba(240, 199, 92, 0.22);
     color: #8f6418;
+  }
+
+  .ticket-source-title {
+    color: var(--text);
+    font-size: 0.95rem;
+    font-weight: 500;
+    line-height: 1.35;
+  }
+
+  .ticket-activity {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text);
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .ticket-activity span {
+    color: var(--muted);
+    font-weight: 500;
   }
 
   .ticket-submeta {
@@ -350,7 +436,7 @@
     line-height: 1.45;
   }
 
-  @media (max-width: 1180px) {
+  @media (max-width: 980px) {
     .ticket-kpis {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -402,40 +488,7 @@
     <a class="hero-button" href="{{ iris_login_url }}" target="_blank" rel="noopener">Login PERISAI</a>
     {% endif %}
     <a class="hero-button" href="/soc-sop">SOP SOC</a>
-    <a class="hero-button subtle" href="/vulnerability-summary">Report</a>
   </div>
-</section>
-
-<section class="filter-bar panel">
-  <form method="get" action="/tickets" class="filter-form js-auto-filter-form">
-    <label>Status
-      <select name="status">
-        <option value="">Semua status</option>
-        {% for item in ['Open','Assigned','In Progress','Remediated','Retest','Closed','False Positive','Accepted Risk'] %}
-        <option value="{{ item }}" {% if status_filter == item %}selected{% endif %}>{{ item }}</option>
-        {% endfor %}
-      </select>
-    </label>
-    <label>Jenis Case
-      <select name="case_kind">
-        <option value="">Semua case</option>
-        <option value="finding" {% if case_kind_filter == 'finding' %}selected{% endif %}>Finding</option>
-        <option value="manual" {% if case_kind_filter == 'manual' %}selected{% endif %}>Manual Incident</option>
-      </select>
-    </label>
-    <label>Status IRIS
-      <select name="remote_state">
-        <option value="">Semua status IRIS</option>
-        {% for item in ['Open','Assigned','In Progress','Remediated','Retest','Closed','False Positive','Accepted Risk'] %}
-        <option value="{{ item }}" {% if remote_state_filter == item %}selected{% endif %}>{{ item }}</option>
-        {% endfor %}
-      </select>
-    </label>
-    <div class="filter-actions">
-      <span class="helper-copy">Filter diterapkan secara otomatis saat pilihan diubah.</span>
-      <a class="text-link reset-link" href="/tickets">Reset</a>
-    </div>
-  </form>
 </section>
 
 <section class="ticket-kpis">
@@ -516,25 +569,87 @@
   <section class="panel ticket-analytics-panel">
     <div class="panel-head">
       <div>
-        <span class="section-kicker">Interpretasi</span>
-        <h3>Interpretasi status tiket PERISAI</h3>
+        <span class="section-kicker">Alert PERISAI</span>
+        <h3>Antrian status alert PERISAI</h3>
       </div>
     </div>
-    <div class="ticket-note-list">
-      <div class="ticket-note-item">
-        <strong>Open</strong>
-        <p>Case telah terbentuk di PERISAI dan masih aktif untuk triage, analisis, atau tindak lanjut.</p>
+    <div class="ticket-pie-row">
+      <div class="ticket-pie-wrap">
+        <div class="ticket-pie">
+          <svg class="ticket-svg" viewBox="0 0 120 120" role="img" aria-label="Distribusi status alert PERISAI">
+            <circle class="pie-bg" cx="60" cy="60" r="56"></circle>
+            <circle class="pie-track" cx="60" cy="60" r="42"></circle>
+            {% for segment in iris_alert_status_pie_segments %}
+            <a href="{{ segment.href }}" aria-label="{{ segment.label }} {{ segment.value }}">
+              <circle
+                class="pie-slice"
+                cx="60"
+                cy="60"
+                r="42"
+                stroke="{{ segment.color }}"
+                stroke-dasharray="{{ segment.dasharray }}"
+                stroke-dashoffset="{{ segment.dashoffset }}"
+              ></circle>
+            </a>
+            {% endfor %}
+            <circle class="pie-hole" cx="60" cy="60" r="26"></circle>
+          </svg>
+          <a class="ticket-pie-label" href="{{ iris_login_url or '/tickets' }}" {% if iris_login_url %}target="_blank" rel="noopener"{% endif %}>
+            <span>{{ iris_alert_status_total }}</span>
+            <small>Alert</small>
+          </a>
+        </div>
       </div>
-      <div class="ticket-note-item">
-        <strong>Assigned / In Progress</strong>
-        <p>Case telah ditugaskan kepada analis atau pemilik tertentu di PERISAI.</p>
-      </div>
-      <div class="ticket-note-item">
-        <strong>Closed / Remediated</strong>
-        <p>Case telah diselesaikan atau ditutup pada alur kerja PERISAI. SATRIA tetap menampilkan status sebagai referensi pemantauan.</p>
+      <div class="ticket-legend">
+        {% for segment in iris_alert_status_pie_segments %}
+        {% set percent = (segment.value / iris_alert_status_total * 100) if iris_alert_status_total else 0 %}
+        <a class="legend-link-{{ segment.label|lower|replace(' ', '-') }}" href="{{ segment.href }}" style="color: {{ segment.color }};" {% if iris_login_url %}target="_blank" rel="noopener"{% endif %}>
+          <i class="dot {{ segment.label|lower|replace(' ', '-') }}" style="background: {{ segment.color }};"></i>
+          <span class="legend-copy"><b>{{ segment.label }}</b><small>{{ segment.value }} alert, {{ "{:.1f}".format(percent) }}%</small></span>
+        </a>
+        {% endfor %}
+        {% if not iris_alert_status_pie_segments %}
+        <div class="ticket-note-item">
+          <strong>Data alert belum tersedia</strong>
+          <p>SATRIA belum memperoleh agregat status alert dari endpoint dashboard PERISAI. Tidak ada detail alert yang ditarik atau disimpan.</p>
+        </div>
+        {% endif %}
       </div>
     </div>
   </section>
+
+</section>
+
+<section class="filter-bar panel">
+  <form method="get" action="/tickets" class="filter-form js-auto-filter-form">
+    <label>Status
+      <select name="status">
+        <option value="">Semua status</option>
+        {% for item in ['Open','Assigned','In Progress','Remediated','Retest','Closed','False Positive','Accepted Risk'] %}
+        <option value="{{ item }}" {% if status_filter == item %}selected{% endif %}>{{ item }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Jenis Case
+      <select name="case_kind">
+        <option value="">Semua case</option>
+        <option value="finding" {% if case_kind_filter == 'finding' %}selected{% endif %}>Finding</option>
+        <option value="manual" {% if case_kind_filter == 'manual' %}selected{% endif %}>Manual Incident</option>
+      </select>
+    </label>
+    <label>Status IRIS
+      <select name="remote_state">
+        <option value="">Semua status IRIS</option>
+        {% for item in ['Open','Assigned','In Progress','Remediated','Retest','Closed','False Positive','Accepted Risk'] %}
+        <option value="{{ item }}" {% if remote_state_filter == item %}selected{% endif %}>{{ item }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <div class="filter-actions">
+      <span class="helper-copy">Filter diterapkan secara otomatis saat pilihan diubah.</span>
+      <a class="text-link reset-link" href="/tickets">Reset</a>
+    </div>
+  </form>
 </section>
 
 <section class="panel">
@@ -543,53 +658,43 @@
       <span class="section-kicker">Monitor PERISAI</span>
       <h3>Daftar case yang dipantau dari PERISAI</h3>
     </div>
-    <span class="helper-copy">Tabel ini menampilkan tiket yang berasal dari temuan SATRIA serta tiket input manual yang statusnya dipantau melalui IRIS.</span>
+    <span class="helper-copy">Tabel ini menampilkan tiket yang berasal dari temuan SATRIA serta tiket pada PERISAI.</span>
   </div>
   <div class="table-wrap">
-    <table>
-      <tr><th>IRIS Case</th><th>Sumber</th><th>Asset</th><th>Pelapor / Unit</th><th>Workflow</th><th>IRIS State</th><th>IRIS Owner</th><th>Classification</th><th>Sync</th><th>Task</th><th>Evidence</th><th>Customer</th><th>Aksi</th></tr>
+    <table class="ticket-monitor-table">
+      <tr><th>Case</th><th>Sumber / Asset</th><th>Status</th><th>Penanggung Jawab</th><th>Classification</th><th>Aktivitas</th><th>Aksi</th></tr>
       {% for ticket in tickets %}
       {% set ticket_view = ticket_views[ticket.id] %}
       <tr>
-        <td><a href="/tickets/{{ ticket.id }}">Case #{{ ticket.id }}</a><br>{{ ticket_view.remote_name }}<br><small>SOC ID: {{ ticket_view.soc_id }}</small></td>
-        <td>
+        <td class="case-column"><a href="/tickets/{{ ticket.id }}">Case #{{ ticket.id }}</a><br>{{ ticket_view.remote_name }}<br><small>SOC ID: {{ ticket_view.soc_id }}</small></td>
+        <td class="source-column">
           {% if ticket.finding %}
-          <span class="source-badge finding">Finding SATRIA</span><br>
+          <span class="source-badge finding">finding satria</span><br>
           <a href="/findings/{{ ticket.finding.id }}">Finding #{{ ticket.finding.id }}</a><br><span class="sev {{ ticket.finding.severity_normalized|lower }}">{{ ticket.finding.severity_normalized }}</span>
           {% else %}
-          <span class="source-badge manual">Input Manual</span><br>
-          <strong>{{ ticket.incident_type or 'manual-incident' }}</strong><br><small>{{ ticket.playbook or '-' }}</small>
+          <span class="source-badge manual">input manual</span><br>
+          <span class="ticket-source-title">{{ ticket.incident_type or 'manual-incident' }}</span><br><small>{{ ticket.playbook or '-' }}</small>
           {% endif %}
+          <span class="ticket-submeta">Asset: {{ ticket.asset.name }}</span>
         </td>
-        <td>{{ ticket.asset.name }}</td>
-        <td>
-          {{ ticket.reporter or '-' }}
-          <span class="ticket-submeta">{{ ticket.organization_unit or ticket.source_channel or '-' }}</span>
+        <td class="status-column">
+          <span class="status">{{ ticket_view.remote_state }}</span>
+          <span class="ticket-submeta">{{ ticket.last_sync_status }}{% if ticket.last_sync_error %} · {{ ticket.last_sync_error }}{% endif %}</span>
         </td>
-        <td>{{ ticket_view.workflow_status }}</td>
-        <td>{{ ticket_view.remote_state }}<br><small>Open: {{ ticket_view.remote_open_date }}</small></td>
-        <td>{{ ticket_view.remote_owner }}</td>
+        <td class="owner-column">
+          {{ ticket_view.remote_owner }}
+          <span class="ticket-submeta">Pelapor: {{ ticket.reporter or '-' }}</span>
+          <span class="ticket-submeta">Unit: {{ ticket.organization_unit or ticket.source_channel or '-' }}</span>
+        </td>
         <td>{{ ticket_view.classification }}</td>
-        <td>{{ ticket.last_sync_status }}{% if ticket.last_sync_error %}<br><small>{{ ticket.last_sync_error }}</small>{% endif %}</td>
-        <td>{{ ticket.tasks|length }}</td>
-        <td>{{ ticket.evidences|length }}</td>
-        <td>{{ ticket_view.customer }}<br><small>Remote ID: {{ ticket.remote_case_id or ticket.remote_alert_id or '-' }}</small></td>
+        <td class="compact-column">
+          <span class="ticket-activity"><span>Task</span> {{ ticket.tasks|length }}</span><br>
+          <span class="ticket-activity"><span>Evidence</span> {{ ticket.evidences|length }}</span>
+        </td>
         <td>
-          <div class="ticket-actions">
+          <div class="ticket-actions-compact">
             <a class="table-action" href="/tickets/{{ ticket.id }}">Detail</a>
-            {% if ticket.remote_case_id %}
-            <form method="post" action="/tickets/{{ ticket.id }}/refresh">
-              <button class="table-action" type="submit">Refresh</button>
-            </form>
-            {% else %}
-            <form method="post" action="/tickets/{{ ticket.id }}/sync">
-              <button class="table-action" type="submit">Ulang Sync</button>
-            </form>
-            {% endif %}
           </div>
-          {% if iris_login_url %}
-          <small><a href="{{ iris_login_url }}" target="_blank" rel="noopener">Login PERISAI</a></small>
-          {% endif %}
         </td>
       </tr>
       {% endfor %}

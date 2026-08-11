@@ -1,5 +1,6 @@
 import ipaddress
 import json
+import os
 import shutil
 import subprocess
 import time
@@ -77,13 +78,13 @@ def is_allowed_target(target: str) -> bool:
     return False
 
 
-def run_command(command: list[str], output_path: Path | None = None, timeout: int = 900) -> tuple[bool, str]:
+def run_command(command: list[str], output_path: Path | None = None, timeout: int = 900, env: dict[str, str] | None = None) -> tuple[bool, str]:
     try:
         if output_path:
             with output_path.open('w', encoding='utf-8') as fh:
-                proc = subprocess.run(command, stdout=fh, stderr=subprocess.PIPE, text=True, timeout=timeout)
+                proc = subprocess.run(command, stdout=fh, stderr=subprocess.PIPE, text=True, timeout=timeout, env=env)
         else:
-            proc = subprocess.run(command, capture_output=True, text=True, timeout=timeout)
+            proc = subprocess.run(command, capture_output=True, text=True, timeout=timeout, env=env)
         if proc.returncode == 0:
             return True, proc.stderr if output_path else proc.stdout
         return False, proc.stderr or proc.stdout
@@ -91,7 +92,16 @@ def run_command(command: list[str], output_path: Path | None = None, timeout: in
         return False, str(exc)
 
 
-def run_scanner(scanner: str, asset_type: str, target: str, report_dir: str, scan_id: int, profile: str) -> tuple[Path, dict[str, Any], str]:
+def run_scanner(
+    scanner: str,
+    asset_type: str,
+    target: str,
+    report_dir: str,
+    scan_id: int,
+    profile: str,
+    registry_username: str | None = None,
+    registry_password: str | None = None,
+) -> tuple[Path, dict[str, Any], str]:
     report_base = Path(report_dir)
     report_base.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
@@ -108,7 +118,7 @@ def run_scanner(scanner: str, asset_type: str, target: str, report_dir: str, sca
         raise RuntimeError(f'target not in allowlist: {prepared_target}')
 
     if scanner == 'trivy':
-        payload, msg = run_trivy(asset_type, target, path)
+        payload, msg = run_trivy(asset_type, target, path, registry_username, registry_password)
     elif scanner == 'syft':
         payload, msg = run_syft(asset_type, target, path)
     elif scanner == 'grype':
@@ -137,7 +147,13 @@ def load_json_or_sample(path: Path, scanner: str, target: str, msg: str) -> tupl
         raise RuntimeError(f'{scanner} produced invalid JSON output for target {target}')
 
 
-def run_trivy(asset_type: str, target: str, path: Path) -> tuple[dict[str, Any], str]:
+def run_trivy(
+    asset_type: str,
+    target: str,
+    path: Path,
+    registry_username: str | None = None,
+    registry_password: str | None = None,
+) -> tuple[dict[str, Any], str]:
     if not shutil.which('trivy'):
         raise RuntimeError('trivy is not installed in worker container')
     mode = 'image'
@@ -147,8 +163,20 @@ def run_trivy(asset_type: str, target: str, path: Path) -> tuple[dict[str, Any],
         mode = 'fs'
     cache_dir = Path('/tmp') / f'trivy-cache-{path.stem}'
     cache_dir.mkdir(parents=True, exist_ok=True)
-    cmd = ['trivy', mode, '--cache-dir', str(cache_dir), '--scanners', 'vuln', '--format', 'json', '--output', str(path), target]
-    ok, msg = run_command(cmd, timeout=1200)
+    cmd = ['trivy', mode, '--cache-dir', str(cache_dir), '--scanners', 'vuln', '--format', 'json', '--output', str(path)]
+    if mode == 'image' and settings.trivy_insecure_registry:
+        cmd.append('--insecure')
+    cmd.append(target)
+    command_env = None
+    trivy_username = registry_username or settings.trivy_username
+    trivy_password = registry_password or settings.trivy_password
+    if mode == 'image' and trivy_username and trivy_password:
+        command_env = {
+            **os.environ,
+            'TRIVY_USERNAME': trivy_username,
+            'TRIVY_PASSWORD': trivy_password,
+        }
+    ok, msg = run_command(cmd, timeout=1200, env=command_env)
     if not ok:
         raise RuntimeError(f'trivy failed for target {target}: {msg}')
     return load_json_or_sample(path, 'trivy', target, msg)

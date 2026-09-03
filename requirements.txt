@@ -16,3 +16,5 @@ dfir-iris-client==2.0.4
 docker==7.1.0
 python-gvm==27.4.0
 itsdangerous==2.2.0
+
+cvss==3.6

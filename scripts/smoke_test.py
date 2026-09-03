@@ -57,9 +57,17 @@ def run_sync_delay(scan_job_id: int):
 
 
 main.run_scan_job.delay = run_sync_delay
+
+# Dispatch now uses apply_async; keep the smoke test entirely synchronous.
+from types import SimpleNamespace
+def sync_apply(args):
+    run_sync_delay(*args)
+    return SimpleNamespace(id="smoke-test-task")
+main.run_scan_job.apply_async = sync_apply
 init_db()
 
 with TestClient(main.app) as client:
+    client.post("/login", data={"username": "smoke-tester"})
     checks: list[str] = []
 
     health = client.get("/health")

@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Security Assessment, Tracking, Remediation, and Incident Automation</strong><br>
-  Panel orkestrasi pemindaian keamanan yang menyatukan registrasi aset, eksekusi scan, prioritisasi temuan, keputusan gate, dan monitoring ticket DFIR-IRIS dalam satu dashboard operasional.
+  Panel orkestrasi pemindaian keamanan yang menyatukan registrasi aset, eksekusi scan, OWASP WSTG Assessment, prioritisasi temuan, keputusan gate, dan monitoring ticket DFIR-IRIS dalam satu dashboard operasional.
 </p>
 
 <p align="center">
@@ -26,6 +26,7 @@ Repository ini dibuat sebagai panel orkestrasi keamanan untuk tim operasional ya
 
 - mendaftarkan aset dari berbagai jenis target;
 - menjalankan scan dengan engine yang berbeda dari satu panel;
+- mendokumentasikan penetration testing menggunakan OWASP WSTG, Rules of Engagement (RoE), evidence, dan CVSS 4.0;
 - membaca hasil dalam bentuk severity, risk score, dan status tindak lanjut;
 - memutuskan apakah artefak atau target `allowed`, `need_approval`, atau `blocked`;
 - mengirim temuan prioritas ke DFIR-IRIS tanpa memindahkan operator ke workflow lain;
@@ -65,6 +66,7 @@ Dengan pola ini, SATRIA menjadi jembatan antara assessment teknis, enrichment al
 - Wizard operasional berbasis step agar operator mengikuti urutan kerja yang konsisten.
 - Scan orchestration untuk Trivy, Syft, Grype, ZAP, dan OpenVAS dari satu panel.
 - Scan history, retry job, cleanup lokal, dan detail eksekusi per scan.
+- OWASP WSTG Assessment dengan 107 checklist, RoE yang dapat diperbarui, paste screenshot, dan penilaian CVSS 4.0.
 - Findings view dengan filter otomatis, severity donut, risk summary, dan prioritas temuan.
 - Ticket publish ke DFIR-IRIS untuk temuan prioritas, plus monitoring status case dari SATRIA.
 - Report dan analytics untuk ringkasan scan, exposure aset, severity, status finding, dan status case IRIS.
@@ -85,6 +87,9 @@ Dengan pola ini, SATRIA menjadi jembatan antara assessment teknis, enrichment al
 
 - `Scans`
   Digunakan untuk menjalankan scan, melihat riwayat job, membuka detail eksekusi, retry scan, dan membersihkan data lokal yang sudah tidak relevan.
+
+- `Assessments`
+  Checklist aktivitas penetration testing menggunakan OWASP WSTG. Pilih aset, tulis Rules of Engagement (RoE), catat hasil pengujian dan evidence, lalu simpan temuan dengan CVSS 4.0. Tombol **Ubah RoE** tersedia pada daftar dan detail assessment.
 
 - `Findings`
   Menampilkan kartu ringkasan temuan di bagian atas, filter severity/aset/status/scanner, dan daftar temuan berdasarkan prioritas risiko. Dari sini operator dapat membuka detail temuan dan mempublish tiket ke IRIS.
@@ -362,6 +367,45 @@ Catatan yang masih perlu diperhatikan pada pengembangan lanjutan:
 - Pastikan tipe target dan profile scan dipilih dengan benar agar hasil tidak bias.
 - Gunakan publish ke IRIS hanya untuk finding yang memang perlu dilacak secara formal.
 - Untuk pipeline, pastikan API key dibatasi dengan scope minimum yang diperlukan.
+
+---
+
+
+
+
+## OWASP WSTG Assessment
+
+Menu **Operations > Assessments** menyediakan pengujian manual untuk aset SATRIA. Pilih aset yang sudah terdaftar, buat assessment, lalu catat hasil checklist dan temuan. Menu Assets juga menyediakan tautan Assessment per aset.
+
+- 107 checklist WSTG beserta panduan pengujian.
+- Rules of Engagement (RoE) pada form pembuatan dan detail assessment, serta tombol **Ubah RoE** / **Simpan RoE** untuk memperbaruinya.
+- Tampilan mengikuti palet biru template SATRIA.
+- Kalkulator CVSS 4.0 (Base, Threat, Environmental, Supplemental); skor dihitung ulang di server dari vector yang valid. CVSS 3.x ditolak.
+- Laporan temuan: nama kerentanan, kategori OWASP Top 10:2021, path, deskripsi, bukti gambar, dampak, dan rekomendasi.
+- Evidence dapat ditempel dari Snipping Tool dengan Ctrl+V atau diunggah (PNG/JPEG/WebP, maksimal 5 gambar, 5 MB/gambar, 15 MB total).
+- Temuan disimpan langsung ke Findings dan ikut Report/ekspor. Tindak lanjut memakai Tickets yang sudah ada. Pengiriman ke IRIS tetap melalui tindakan pengguna pada Findings.
+- Tombol hapus kecil meminta konfirmasi. Assessment/temuan yang sudah memiliki tiket tidak dapat dihapus dari modul ini.
+
+### Cara menggunakan
+
+1. Daftarkan target di **Assets**, lalu buka **Operations > Assessments** dan pilih **Buat assessment**.
+2. Pilih aset dan isi **Rules of Engagement (RoE)**: target dan batasan scope, jadwal, aktivitas yang diizinkan/dilarang, kontak penanggung jawab, serta kondisi penghentian pengujian.
+3. Gunakan **Ubah RoE** pada daftar atau detail assessment untuk memperbarui aturan. Isi sebelumnya otomatis terisi; klik **Simpan RoE**. Perubahan RoE tidak mengubah checklist, temuan, atau evidence.
+4. Isi **Checklist WSTG** dan lampirkan bukti melalui Ctrl+V dari Snipping Tool atau unggah gambar.
+5. Pada **Kalkulator CVSS 4.0**, pilih 11 metrik Base atau tempel vector lengkap. Lengkapi laporan kerentanan lalu simpan temuan.
+6. Buka temuan di **Findings** untuk tindak lanjut melalui **Tickets** dan pelaporan melalui **Report**.
+
+Panduan instalasi dan operasional: [docs/assessments.md](docs/assessments.md).
+
+### Penyimpanan dan kompatibilitas
+
+Modul mengikuti sesi login SATRIA. Data baru dan evidence tersimpan di database SATRIA; database WSTG Compass terpisah tidak diimpor otomatis. Startup menambahkan tabel assessment tanpa mengubah tabel lama. Record ScanJob internal yang tidak terlihat digunakan sebagai relasi data dan tidak menjalankan scanner. RoE menggunakan field `scope` dan endpoint yang sudah ada, sehingga data lama tetap tersedia.
+
+Skor CVSS dihitung ulang di server dan dibandingkan dengan engine FIRST JavaScript pada 4.096 vector uji. Metrik Supplemental disimpan dalam vector tetapi tidak mengubah skor.
+
+### Validasi
+
+Validasi lokal: `python scripts/test_assessments.py` dan `python scripts/check_cvss_reference.py` (memerlukan Node.js). Keduanya tidak mengakses data produksi. Untuk smoke test utama, set DATABASE_URL SQLite dan REPORT_DIR ke direktori sementara karena script membersihkan fixture miliknya.
 
 ---
 

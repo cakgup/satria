@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, LargeBinary, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .database import Base
 
@@ -138,6 +138,7 @@ class Finding(Base):
     asset: Mapped['Asset'] = relationship(back_populates='findings')
     scan_job: Mapped['ScanJob'] = relationship(back_populates='findings')
     ticket_case: Mapped['TicketCase | None'] = relationship(back_populates='finding')
+    assessment_detail: Mapped['AssessmentFinding | None'] = relationship(back_populates='finding', cascade='all, delete-orphan', uselist=False)
 
 class AuditLog(Base):
     __tablename__ = 'audit_logs'
@@ -243,3 +244,66 @@ class TicketActivity(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     ticket_case: Mapped['TicketCase'] = relationship(back_populates='activities')
+
+
+class Assessment(Base):
+    __tablename__ = 'assessments'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    asset_id: Mapped[int] = mapped_column(ForeignKey('assets.id'), index=True)
+    scan_job_id: Mapped[int] = mapped_column(ForeignKey('scan_jobs.id'), unique=True)
+    name: Mapped[str] = mapped_column(String(200))
+    scope: Mapped[str] = mapped_column(Text, default='')
+    environment: Mapped[str] = mapped_column(String(50))
+    owner_name: Mapped[str] = mapped_column(String(200))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    asset: Mapped['Asset'] = relationship()
+    scan_job: Mapped['ScanJob'] = relationship()
+    results: Mapped[list['AssessmentResult']] = relationship(back_populates='assessment', cascade='all, delete-orphan')
+    finding_details: Mapped[list['AssessmentFinding']] = relationship(back_populates='assessment')
+
+
+class AssessmentResult(Base):
+    __tablename__ = 'assessment_results'
+    __table_args__ = (UniqueConstraint('assessment_id', 'test_code'),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    assessment_id: Mapped[int] = mapped_column(ForeignKey('assessments.id'), index=True)
+    test_code: Mapped[str] = mapped_column(String(100))
+    status: Mapped[str] = mapped_column(String(30), default='Not Started')
+    remark: Mapped[str] = mapped_column(Text, default='')
+    evidence_url: Mapped[str] = mapped_column(Text, default='')
+    tester_name: Mapped[str] = mapped_column(String(200), default='')
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    assessment: Mapped['Assessment'] = relationship(back_populates='results')
+    images: Mapped[list['AssessmentResultImage']] = relationship(cascade='all, delete-orphan')
+
+
+class AssessmentFinding(Base):
+    __tablename__ = 'assessment_findings'
+    finding_id: Mapped[int] = mapped_column(ForeignKey('findings.id'), primary_key=True)
+    assessment_id: Mapped[int] = mapped_column(ForeignKey('assessments.id'), index=True)
+    test_code: Mapped[str] = mapped_column(String(100), default='')
+    cvss_vector: Mapped[str] = mapped_column(String(512))
+    impact_description: Mapped[str] = mapped_column(Text, default='')
+    owasp_categories: Mapped[str] = mapped_column(Text, default='[]')
+    finding: Mapped['Finding'] = relationship(back_populates='assessment_detail')
+    assessment: Mapped['Assessment'] = relationship(back_populates='finding_details')
+    images: Mapped[list['AssessmentFindingImage']] = relationship(cascade='all, delete-orphan')
+
+
+class AssessmentResultImage(Base):
+    __tablename__ = 'assessment_result_images'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    result_id: Mapped[int] = mapped_column(ForeignKey('assessment_results.id'), index=True)
+    name: Mapped[str] = mapped_column(String(200))
+    mime: Mapped[str] = mapped_column(String(30))
+    image: Mapped[bytes] = mapped_column(LargeBinary)
+
+
+class AssessmentFindingImage(Base):
+    __tablename__ = 'assessment_finding_images'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    finding_id: Mapped[int] = mapped_column(ForeignKey('assessment_findings.finding_id'), index=True)
+    name: Mapped[str] = mapped_column(String(200))
+    mime: Mapped[str] = mapped_column(String(30))
+    image: Mapped[bytes] = mapped_column(LargeBinary)

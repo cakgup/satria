@@ -1,0 +1,4 @@
+{% extends "base.html" %}
+{% block content %}
+<iframe id="assessmentWorkspace" title="Assessments WSTG" src="/assessments/workspace{{ ('?' ~ request.url.query) if request.url.query else '' }}" style="display:block;width:100%;height:calc(100vh - 210px);min-height:660px;border:0;border-radius:18px;background:#f4f7fb" allow="clipboard-read; clipboard-write"></iframe>
+{% endblock %}

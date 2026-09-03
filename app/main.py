@@ -27,6 +27,8 @@ from .soc import MANUAL_PLAYBOOKS, SOC_DEMO_USERS, SOC_SOP, classification_label
 from .ticketing import add_ticket_activity, add_ticket_evidence, add_ticket_task, create_manual_case_from_playbook, seed_demo_manual_cases, update_ticket_case
 
 app = FastAPI(title='SATRIA', version='0.1.0-mvp')
+from .assessments import router as assessments_router
+app.include_router(assessments_router)
 app.mount('/static', StaticFiles(directory='app/static'), name='static')
 templates = Jinja2Templates(directory='app/templates')
 
@@ -1098,6 +1100,9 @@ async def require_login(request: Request, call_next):
     if request.state.current_user:
         return await call_next(request)
 
+    if path.startswith('/assessments/api/'):
+        return JSONResponse({'detail': 'Silakan login ke SATRIA.'}, status_code=401)
+
     destination = quote_plus(path)
     if request.url.query:
         destination = quote_plus(f'{path}?{request.url.query}')
@@ -1267,6 +1272,8 @@ def _cleanup_container_image_for_asset(db: Session, asset: Asset) -> dict[str, s
 
 
 def _delete_scan_payload(db: Session, scan: ScanJob) -> dict[str, int]:
+    if scan.profile == 'manual_assessment':
+        raise HTTPException(409, 'Kelola pengujian manual melalui menu Assessments.')
     finding_ids = [item.id for item in db.query(Finding.id).filter(Finding.scan_job_id == scan.id).all()]
     tickets_deleted = 0
     findings_deleted = 0
@@ -2159,6 +2166,8 @@ def scan_detail(
     db: Session = Depends(get_db),
 ):
     scan = db.get(ScanJob, scan_job_id)
+    if scan and scan.profile == 'manual_assessment':
+        raise HTTPException(409, 'Kelola pengujian manual melalui menu Assessments.')
     if not scan:
         raise HTTPException(status_code=404, detail='scan not found')
     _expire_stale_running_scans(db)
@@ -2183,6 +2192,8 @@ def scan_detail(
 @app.post('/scans/{scan_job_id}/delete')
 def hide_scan_history(scan_job_id: int, next_url: str = Form('/scans'), db: Session = Depends(get_db)):
     scan = db.get(ScanJob, scan_job_id)
+    if scan and scan.profile == 'manual_assessment':
+        raise HTTPException(409, 'Kelola pengujian manual melalui menu Assessments.')
     if not scan:
         raise HTTPException(status_code=404, detail='scan not found')
     if scan.status == 'running':
@@ -2201,6 +2212,8 @@ def hide_scan_history(scan_job_id: int, next_url: str = Form('/scans'), db: Sess
 @app.post('/scans/{scan_job_id}/cancel')
 def cancel_scan(scan_job_id: int, next_url: str = Form('/scans'), db: Session = Depends(get_db)):
     scan = db.get(ScanJob, scan_job_id)
+    if scan and scan.profile == 'manual_assessment':
+        raise HTTPException(409, 'Kelola pengujian manual melalui menu Assessments.')
     if not scan:
         raise HTTPException(status_code=404, detail='scan not found')
     if scan.status not in {'queued', 'running'}:
@@ -2233,6 +2246,8 @@ def delete_scan_with_remote_cleanup(
     db: Session = Depends(get_db),
 ):
     scan = db.get(ScanJob, scan_job_id)
+    if scan and scan.profile == 'manual_assessment':
+        raise HTTPException(409, 'Kelola pengujian manual melalui menu Assessments.')
     if not scan:
         raise HTTPException(status_code=404, detail='scan not found')
     if scan.status == 'running':
@@ -2278,6 +2293,8 @@ def delete_scan_with_remote_cleanup(
 @app.post('/scans/{scan_job_id}/rerun')
 def rerun_scan(scan_job_id: int, next_url: str = Form('/scans'), db: Session = Depends(get_db)):
     scan = db.get(ScanJob, scan_job_id)
+    if scan and scan.profile == 'manual_assessment':
+        raise HTTPException(409, 'Kelola pengujian manual melalui menu Assessments.')
     if not scan:
         raise HTTPException(status_code=404, detail='scan not found')
     asset = db.get(Asset, scan.asset_id)
@@ -2421,7 +2438,7 @@ def findings_page(
         'asset_filter': asset_id,
         'scan_job_filter': scan_job_id,
         'assets': assets,
-        'scanners': ['trivy', 'syft', 'grype', 'zap', 'openvas'],
+        'scanners': ['trivy', 'syft', 'grype', 'zap', 'openvas', 'manual-wstg'],
         'active_filters': active_filters,
         'pagination': {
             'page': page,

@@ -24,9 +24,18 @@
     <dt>Type</dt><dd>{{ finding.finding_type }}</dd>
     <dt>Severity</dt><dd><span class="sev {{ finding.severity_normalized|lower }}">{{ finding.severity_normalized }}</span></dd>
     <dt>Risk Score</dt><dd>{{ finding.risk_score }}</dd>
+    {% if finding.assessment_detail %}
+    <dt>Assessment</dt><dd><a href="/assessments?id={{ finding.assessment_detail.assessment_id }}&finding_id={{ finding.id }}">Buka laporan assessment #{{ finding.assessment_detail.assessment_id }}</a></dd>
+    <dt>CVSS 4.0</dt><dd>{{ finding.cvss_score }} / <code>{{ finding.assessment_detail.cvss_vector }}</code></dd>
+    <dt>WSTG</dt><dd>{{ finding.assessment_detail.test_code or 'Temuan umum' }}</dd>
+    <dt>OWASP Top 10:2021</dt><dd>{{ finding.assessment_detail.owasp_categories }}</dd>
+    <dt>Dampak</dt><dd style="white-space:pre-wrap">{{ finding.assessment_detail.impact_description }}</dd>
+    <dt>Bukti gambar</dt><dd>{% for image in finding.assessment_detail.images %}<a href="/assessments/api/finding-evidence/{{ image.id }}" target="_blank" rel="noopener"><img src="/assessments/api/finding-evidence/{{ image.id }}" alt="{{ image.name }}" style="max-width:100%;max-height:360px"></a>{% endfor %}</dd>
+    {% else %}
     <dt>CVE/CWE</dt><dd>{{ finding.cve or finding.cwe or '-' }}</dd>
     <dt>Package</dt><dd>{{ finding.package_name or '-' }} {{ finding.installed_version or '' }}</dd>
     <dt>Fixed Version</dt><dd>{{ finding.fixed_version or '-' }}</dd>
+    {% endif %}
     <dt>Affected Component</dt><dd><code>{{ finding.affected_component or '-' }}</code></dd>
     <dt>Evidence</dt><dd><pre>{{ finding.evidence or '-' }}</pre></dd>
     <dt>Description</dt><dd>{{ finding.description or '-' }}</dd>

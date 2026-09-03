@@ -30,6 +30,9 @@
   {% elif current_path.startswith('/scans') %}
     {% set page_title = 'Pemindaian' %}
     {% set page_caption = 'Pemantauan dan pelaksanaan pekerjaan pemindaian keamanan.' %}
+  {% elif current_path.startswith('/assessments') %}
+    {% set page_title = 'Assessments' %}
+    {% set page_caption = 'Pengujian manual WSTG, evidence, dan penilaian CVSS 4.0 per aset.' %}
   {% elif current_path.startswith('/findings') %}
     {% set page_title = 'Findings' %}
     {% set page_caption = 'Prioritisasi temuan berdasarkan tingkat risiko dan status tindak lanjut.' %}
@@ -69,6 +72,9 @@
       </a>
       <a href="/scans" class="{% if request.url.path.startswith('/scans') %}active{% endif %}" title="Scans">
         <span class="nav-icon">S</span><span class="nav-label">Scans</span>
+      </a>
+      <a href="/assessments" class="{% if request.url.path.startswith('/assessments') %}active{% endif %}" title="Assessments">
+        <span class="nav-icon">W</span><span class="nav-label">Assessments</span>
       </a>
       <a href="/findings" class="{% if request.url.path.startswith('/findings') %}active{% endif %}" title="Findings">
         <span class="nav-icon">F</span><span class="nav-label">Findings</span>

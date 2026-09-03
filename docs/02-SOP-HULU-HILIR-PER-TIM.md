@@ -2,8 +2,8 @@
 
 ## Navigasi Dokumen Terkait
 
-- [Indeks dokumentasi SATRIA](C:/Users/gufroni/Documents/GitHub/satria/docs/README.md)
-- [Panduan Operasional SOC](C:/Users/gufroni/Documents/GitHub/satria/docs/03-PANDUAN-OPERASIONAL-SOC.md)
+- [Indeks dokumentasi SATRIA](README.md)
+- [Panduan Operasional SOC](03-PANDUAN-OPERASIONAL-SOC.md)
 - [Manual Book SATRIA](08-MANUAL-BOOK-SATRIA.md)
 - [Integrasi Wazuh ke PERISAI](05-INTEGRASI-WAZUH-KE-PERISAI.md)
 

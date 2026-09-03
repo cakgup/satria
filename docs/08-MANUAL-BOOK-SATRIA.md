@@ -46,10 +46,10 @@ Gunakan alamat berikut untuk operasional internal:
 
 | Layanan | URL / Alamat | Fungsi Operasional |
 |---|---|---|
-| SATRIA Web Console | `http://10.216.208.249:8090` | Aplikasi utama SATRIA untuk asset, scan, findings, tickets, laporan, admin token, dan gate policy. |
-| SATRIA API Docs | `http://10.216.208.249:8090/docs` | Dokumentasi endpoint API SATRIA untuk integrasi pipeline dan otomasi. |
-| PERISAI / DFIR-IRIS | `http://10.216.208.249:8092` | Case management, ticketing, investigasi, dan tindak lanjut insiden. |
-| Wazuh Manager | `10.216.29.173` | Sumber alert keamanan yang terintegrasi dengan Telegram, email, dan PERISAI / DFIR-IRIS. |
+| SATRIA Web Console | `<URL_LAYANAN_INTERNAL>` | Aplikasi utama SATRIA untuk asset, scan, findings, tickets, laporan, admin token, dan gate policy. |
+| SATRIA API Docs | `<URL_LAYANAN_INTERNAL>/docs` | Dokumentasi endpoint API SATRIA untuk integrasi pipeline dan otomasi. |
+| PERISAI / DFIR-IRIS | `<URL_LAYANAN_INTERNAL>` | Case management, ticketing, investigasi, dan tindak lanjut insiden. |
+| Wazuh Manager | `<IP_ASET>` | Sumber alert keamanan yang terintegrasi dengan Telegram, email, dan PERISAI / DFIR-IRIS. |
 
 Catatan:
 
@@ -59,7 +59,7 @@ Catatan:
 
 ### Login
 
-1. Buka `http://10.216.208.249:8090`.
+1. Buka `<URL_LAYANAN_INTERNAL>`.
 2. Masukkan username dan password yang diberikan administrator.
 3. Setelah berhasil login, pengguna diarahkan ke dashboard.
 4. Gunakan tombol `Logout` setelah selesai memakai aplikasi.
@@ -200,7 +200,7 @@ Menu `Assets` digunakan untuk menambahkan, mengubah, mengarsipkan, dan mengelola
 |---|---|---|
 | `container_image` | `nginx:latest`, `registry.internal/app:tag` | Trivy, Syft, Grype |
 | `web_application` | `https://example.go.id` | ZAP |
-| `server_ip` | `10.216.208.249` | OpenVAS |
+| `server_ip` | `<IP_ASET>` | OpenVAS |
 | `web_url` | `https://example.com` | ZAP |
 | `source_repository` | `https://git.example/repo.git` | Trivy repo, Syft |
 | `filesystem` | `/opt/releases/app` | Trivy fs, Syft |
@@ -403,8 +403,8 @@ Allowlist digunakan untuk memastikan target web atau infrastruktur berada dalam 
 Contoh allowlist:
 
 ```text
-10.216.208.107
-10.216.208.0/24
+<IP_ASET>
+<CIDR_ASET>
 sipp.internal.go.id
 https://sipp.example.go.id
 ```
@@ -848,7 +848,7 @@ SATRIA dapat meneruskan finding ke PERISAI / DFIR-IRIS.
 URL operasional PERISAI / DFIR-IRIS:
 
 ```text
-http://10.216.208.249:8092
+<URL_LAYANAN_INTERNAL>
 ```
 
 ### 14.1 Kapan Publish ke IRIS
@@ -894,7 +894,7 @@ SATRIA dapat menjadi bagian dari ekosistem SOC bersama Wazuh dan PERISAI.
 Alamat operasional Wazuh Manager:
 
 ```text
-10.216.29.173
+<IP_ASET>
 ```
 
 Ringkasan alur:
@@ -1020,7 +1020,7 @@ Kemungkinan penyebab:
 Langkah cek:
 
 ```bash
-curl -I http://10.216.208.249:8092
+curl -I <URL_LAYANAN_INTERNAL>
 ```
 
 ### 17.6 Storage Docker Membesar

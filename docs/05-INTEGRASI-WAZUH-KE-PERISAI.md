@@ -418,7 +418,7 @@ import json
 import subprocess
 import sys
 
-BOT_TOKEN = "ISI_DENGAN_BOT_TOKEN"
+BOT_TOKEN = "<DIISI_DARI_CREDENTIAL_STORE>"
 CHAT_ID = "ISI_DENGAN_CHAT_ID"
 MAX_MESSAGE_LEN = 3900
 
@@ -692,8 +692,8 @@ Contoh konfigurasi credential di dalam script:
 ```python
 SMTP_HOST = "mail.smtp2go.com"
 SMTP_PORT = 443
-SMTP_USERNAME = "ISI_DENGAN_SMTP_USERNAME"
-SMTP_PASSWORD = "ISI_DENGAN_SMTP_PASSWORD"
+SMTP_USERNAME = "<DIISI_DARI_CREDENTIAL_STORE>"
+SMTP_PASSWORD = "<DIISI_DARI_CREDENTIAL_STORE>"
 EMAIL_FROM = "sender-yang-sudah-diverifikasi@example.com"
 EMAIL_TO = "soc@example.com"
 REPLY_TO = "soc@example.com"
@@ -730,8 +730,8 @@ from email.message import EmailMessage
 
 SMTP_HOST = "mail.smtp2go.com"
 SMTP_PORT = 443
-SMTP_USERNAME = "ISI_DENGAN_SMTP_USERNAME"
-SMTP_PASSWORD = "ISI_DENGAN_SMTP_PASSWORD"
+SMTP_USERNAME = "<DIISI_DARI_CREDENTIAL_STORE>"
+SMTP_PASSWORD = "<DIISI_DARI_CREDENTIAL_STORE>"
 EMAIL_FROM = "sender-yang-sudah-diverifikasi@example.com"
 EMAIL_TO = [
     "soc-l1@example.com",

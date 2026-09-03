@@ -2,8 +2,8 @@
 
 ## Navigasi Dokumen Terkait
 
-- [Indeks dokumentasi SATRIA](C:/Users/gufroni/Documents/GitHub/satria/docs/README.md)
-- [SOP Hulu-Hilir Per Tim](C:/Users/gufroni/Documents/GitHub/satria/docs/02-SOP-HULU-HILIR-PER-TIM.md)
+- [Indeks dokumentasi SATRIA](README.md)
+- [SOP Hulu-Hilir Per Tim](02-SOP-HULU-HILIR-PER-TIM.md)
 - [Manual Book SATRIA](08-MANUAL-BOOK-SATRIA.md)
 - [Integrasi Wazuh ke PERISAI](05-INTEGRASI-WAZUH-KE-PERISAI.md)
 

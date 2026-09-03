@@ -265,12 +265,12 @@ Minimum yang disarankan:
 - Docker Engine
 - Docker Compose plugin
 - Git
-- Port `8090` untuk SATRIA lokal
+- Port aplikasi sesuai konfigurasi `BACKEND_PUBLIC_PORT`
 - Resource tambahan jika OpenVAS dan IRIS dijalankan dalam host yang sama
 
 Jika ingin menguji pipeline secara lokal:
 
-- port `8088` untuk Jenkins lokal
+- port Jenkins sesuai konfigurasi `JENKINS_HTTP_PORT`
 
 ---
 
@@ -284,8 +284,8 @@ docker compose up -d --build
 
 Setelah stack aktif:
 
-- aplikasi lokal: [http://<SATRIA_HOST>:<SATRIA_PORT>](http://<SATRIA_HOST>:<SATRIA_PORT>)
-- health check: [http://<SATRIA_HOST>:<SATRIA_PORT>/health](http://<SATRIA_HOST>:<SATRIA_PORT>/health)
+- aplikasi: gunakan alamat SATRIA dari konfigurasi deployment internal.
+- health check: endpoint `/health` pada deployment tersebut.
 
 Untuk stop stack:
 
@@ -307,18 +307,18 @@ Repository ini menyediakan dua pola uji Jenkins untuk simulasi interkoneksi ke S
 
 Endpoint operasional yang disarankan:
 
-- Jenkins server: [http://<JENKINS_SERVER_HOST>:<JENKINS_SERVER_PORT>](http://<JENKINS_SERVER_HOST>:<JENKINS_SERVER_PORT>)
+- Jenkins server: gunakan alamat yang tersedia pada konfigurasi internal.
 - job utama: `satria-security-gate`
 - job demo lolos: `satria-gate-passed-demo`
 - job demo gagal: `satria-gate-failed-demo`
 
 Endpoint lokal untuk pengembangan:
 
-- Jenkins lokal: [http://<JENKINS_LOCAL_HOST>:<JENKINS_LOCAL_PORT>](http://<JENKINS_LOCAL_HOST>:<JENKINS_LOCAL_PORT>)
+- Jenkins lokal: gunakan port dari konfigurasi lokal.
 
 Catatan keamanan:
 
-- seluruh hostname, IP, port, username, password, dan token pada README ini disamarkan;
+- URL aset, alamat layanan internal, dan nilai kredensial tidak dicantumkan pada README;
 - gunakan environment variable, secret manager, atau credential store internal untuk nilai aktual;
 - jangan menuliskan kembali kredensial produksi pada dokumentasi proyek.
 

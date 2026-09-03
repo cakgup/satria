@@ -12,9 +12,9 @@ https://github.com/greenbone/openvas-scanner
 Setelah Greenbone berjalan, isi `.env` SATRIA:
 
 ```env
-GREENBONE_HOST=<host-gvmd-or-gsad>
-GREENBONE_USERNAME=<username>
-GREENBONE_PASSWORD=<password>
+GREENBONE_HOST=<DIISI_DARI_KONFIGURASI_INTERNAL>
+GREENBONE_USERNAME=<DIISI_DARI_CREDENTIAL_STORE>
+GREENBONE_PASSWORD=<DIISI_DARI_CREDENTIAL_STORE>
 GREENBONE_VERIFY_SSL=false
 ```
 

@@ -14,8 +14,8 @@ docker compose up -d
 Setelah IRIS berjalan, isi `.env` SATRIA:
 
 ```env
-IRIS_URL=https://<host-iris>
-IRIS_API_KEY=<api-key-service-account>
+IRIS_URL=<DIISI_DARI_KONFIGURASI_INTERNAL>
+IRIS_API_KEY=<DIISI_DARI_CREDENTIAL_STORE>
 IRIS_VERIFY_SSL=false
 ```
 

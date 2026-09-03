@@ -11,14 +11,14 @@ Direktori ini menyiapkan Jenkins berbasis Docker untuk kebutuhan uji pipeline ke
 
 ## Port bawaan
 
-- Jenkins UI: `http://<JENKINS_LOCAL_HOST>:<JENKINS_LOCAL_PORT>`
+- Jenkins UI: gunakan alamat pada konfigurasi deployment internal.
 - Jenkins agent port: `50088`
 
 ## Jenkins Server Terpusat
 
 Jenkins hasil duplikasi lokal sudah tersedia pada server:
 
-- Jenkins UI: `http://<JENKINS_SERVER_HOST>:<JENKINS_SERVER_PORT>`
+- Jenkins UI: gunakan alamat pada konfigurasi deployment internal.
 - service: `jenkins-satria.service`
 - job utama: `satria-security-gate`
 - job demo lolos: `satria-gate-passed-demo`
@@ -26,8 +26,8 @@ Jenkins hasil duplikasi lokal sudah tersedia pada server:
 
 Deployment server berjalan native melalui `systemd` karena runtime Docker/Podman pada host target belum tersedia. Konfigurasi integrasi SATRIA tetap sama dengan Jenkins lokal:
 
-- `SATRIA_URL=http://<SATRIA_HOST>:<SATRIA_PORT>`
-- `SATRIA_API_TOKEN=<satria-api-token>`
+- `SATRIA_URL=<DIISI_DARI_KONFIGURASI_INTERNAL>`
+- `SATRIA_API_TOKEN`: diambil dari Jenkins Credentials atau secret manager.
 - `SATRIA_ASSET_CODE=JENKINS-DEMO`
 - `SATRIA_ASSET_NAME=Jenkins Demo Service`
 
@@ -63,10 +63,10 @@ Contoh:
 ```env
 JENKINS_HTTP_PORT=8088
 JENKINS_AGENT_PORT=50088
-JENKINS_ADMIN_ID=<jenkins-admin-username>
-JENKINS_ADMIN_PASSWORD=<jenkins-admin-password>
-SATRIA_URL=http://<SATRIA_HOST>:<SATRIA_PORT>
-SATRIA_API_TOKEN=<satria-api-token>
+JENKINS_ADMIN_ID=<DIISI_DARI_CREDENTIAL_STORE>
+JENKINS_ADMIN_PASSWORD=<DIISI_DARI_CREDENTIAL_STORE>
+SATRIA_URL=<DIISI_DARI_KONFIGURASI_INTERNAL>
+SATRIA_API_TOKEN=<DIISI_DARI_CREDENTIAL_STORE>
 SATRIA_ASSET_CODE=JENKINS-DEMO
 SATRIA_ASSET_NAME=Jenkins Demo Service
 ```
@@ -81,7 +81,7 @@ docker compose up -d --build
 
 Lalu buka:
 
-- Jenkins: `http://<JENKINS_LOCAL_HOST>:<JENKINS_LOCAL_PORT>`
+- Jenkins: gunakan alamat pada konfigurasi lokal.
 
 Catatan keamanan:
 
@@ -152,6 +152,6 @@ Catatan penting:
 
 ## Referensi lanjutan
 
-- [Indeks dokumentasi SATRIA](C:/Users/gufroni/Documents/GitHub/satria/docs/README.md)
-- [docs/06-SKENARIO-JENKINS-LOKAL-KE-SATRIA.md](C:/Users/gufroni/Documents/GitHub/satria/docs/06-SKENARIO-JENKINS-LOKAL-KE-SATRIA.md)
-- [docs/08-AUDIT-UR-CICD-SATRIA-2026-07-04.md](C:/Users/gufroni/Documents/GitHub/satria/docs/08-AUDIT-UR-CICD-SATRIA-2026-07-04.md)
+- [Indeks dokumentasi SATRIA](../../docs/README.md)
+- [docs/06-SKENARIO-JENKINS-LOKAL-KE-SATRIA.md](../../docs/06-SKENARIO-JENKINS-LOKAL-KE-SATRIA.md)
+- [docs/08-AUDIT-UR-CICD-SATRIA-2026-07-04.md](../../docs/08-AUDIT-UR-CICD-SATRIA-2026-07-04.md)
